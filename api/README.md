@@ -1,6 +1,6 @@
 # Контракт входа и первого онлайн-журнала
 
-**Предложено, S0-01 / [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16)**. Реализации API, БД и web пока нет. Согласование двумя разработчиками и интеграция PR предшествуют зависимым #19/#23. Технические предложения описаны в [ADR 0005](../planning/adr/0005-first-online-contract.md); требования/происхождение — [DECISIONS](../planning/DECISIONS.md). Формат OpenAPI 3.0.3 и chi уже приняты в [ADR 0004](../planning/adr/0004-chi-and-api-documentation.md).
+**Предложено, S0-01 / [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16)**. Реализации API, БД и web пока нет. Согласование двумя разработчиками и интеграция PR предшествуют зависимым #19/#23. Технические предложения описаны в [ADR 0006](../planning/adr/0006-first-online-contract.md); требования/происхождение — [DECISIONS](../planning/DECISIONS.md). Формат OpenAPI 3.0.3 и chi уже приняты в [ADR 0004](../planning/adr/0004-chi-and-api-documentation.md).
 
 [OpenAPI](openapi/openapi.yaml) содержит семь запланированных операций, схемы, параметры и все предусмотренные ответы. [Реестр](ENDPOINTS.md) проверяет их полноту. [Словарь](DATA-DICTIONARY.md) различает предметные понятия без проектирования API финансов/чата; [открытые решения](OPEN-QUESTIONS.md) указывают источник, владельца решения и блокируемую функцию.
 

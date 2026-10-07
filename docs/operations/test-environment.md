@@ -2,7 +2,7 @@
 
 ## Предпосылки и границы
 
-Docker Engine/Buildx и Compose v2, Python 3, Git; сборка использует закреплённые образы, lockfiles и Go из [ops/Dockerfile](../../ops/Dockerfile). Для CI/host-проверок Go 1.27.1, Node 24.19.0/npm 11.9.0. Test — самостоятельный [Compose](../../ops/test-compose.yaml), не overlay dev-среды. Свой уникальный Compose project, тома и config; API и БД не имеют опубликованных портов. БД подключена только к Docker network `internal: true`; снаружи доступен edge. Host/Docker administrator всё равно имеет доступ: это не граница прав администратора или tenant/RLS.
+Docker Engine/Buildx и Compose v2 или новее, Python 3, Git; сборка использует закреплённые образы, lockfiles и Go из [ops/Dockerfile](../../ops/Dockerfile). Для CI/host-проверок Go 1.27.1, Node 24.19.0/npm 11.9.0. Test — самостоятельный [Compose](../../ops/test-compose.yaml), не overlay dev-среды. Свой уникальный Compose project, тома и config; API и БД не имеют опубликованных портов. БД подключена только к Docker network `internal: true`; снаружи доступен edge. Host/Docker administrator всё равно имеет доступ: это не граница прав администратора или tenant/RLS.
 
 Main `02d9630` включает #20/PR #85: bootstrap-local запускается явно только в этом отдельном синтетическом кластере, затем migrator выполняет схему 3/seed, API получает только judeos_runtime. Readiness отвергает привилегированную runtime роль. Bootstrap admin credential не передаётся API/миграциям; runtime не получает admin/migrator secrets. Это переиспользование опубликованного интерфейса #20, не новая политика production или реализованная auth #21.
 
@@ -50,7 +50,9 @@ API main принимает DATABASE_URL через environment. Docker administ
 
 Production пока не развёрнут. Если он появится, используются отдельные host/config-каталоги, credentials, project/тома, ключи внешних сервисов и права; test не копирует production config/данные. Этот генератор создаёт только test. Ни production secrets, ни deploy credentials не требуются PR checks. Workflow не выполняет SSH/deployment. Не задавайте секреты в frontend/Vite variables: клиентская сборка публична.
 
-## Публичный test — после предоставления параметров
+## Публичный test
+
+Для предоставленной пользователем Hostinger VPS / judopride.tech использовать [точные команды первого запуска](hostinger-first-run.md). Оператор — NikishGum, доступ/автоматизация готовятся отдельно в #91. Первый опубликованный образ, работающий внешний HTTPS и main protection ещё не подтверждены. Следующий пример — общая форма конфигурации, не результат размещения.
 
 Нужны: площадка и host/OS с Docker, реальный FQDN и управление DNS A/AAAA, адрес host, защищённый доступ управления, ответственный оператор, доступ к GHCR digest, правила inbound firewall и outbound ACME. Не передавать ключи/токены в чат; доступ подключается через поддерживаемые credentials окружения. Реальные роли/права доступа и production-контур не считаются согласованными.
 

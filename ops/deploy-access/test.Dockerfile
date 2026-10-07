@@ -13,4 +13,5 @@ RUN --mount=type=secret,id=build_ca,mode=0444 \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/access
 COPY ops/deploy-access/ .
+COPY ops/test-release-check.py ops/test-env.py /opt/
 CMD ["python3", "-m", "unittest", "discover", "-s", "/opt/access", "-p", "test_*.py", "-v"]

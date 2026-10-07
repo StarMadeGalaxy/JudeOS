@@ -150,7 +150,10 @@ class Adapter(unittest.TestCase):
         (migrations / "00001.sql").write_text("synthetic SQL")
         for name in ["test-stack.py", "test-probe.py", "test-compose.yaml", "test-public.Caddyfile"]:
             (ops / name).write_text("# synthetic command contract fixture\n")
-        (ops / "test-release-check.py").write_text("def validate_manifest(data, commit, root):\n    return data['registry_digest']\n")
+        # Exercise the accepted #22 validator/config generator, with synthetic
+        # GitHub and Docker command boundaries and no public network.
+        for name in ["test-release-check.py", "test-env.py"]:
+            shutil.copy(HERE.parent / name, ops / name)
         def git(*args):
             return subprocess.check_output(["git", "-C", str(self.checkout), *args], stderr=subprocess.DEVNULL, text=True).strip()
         git("init");git("add", ".")
@@ -190,6 +193,8 @@ class Adapter(unittest.TestCase):
 
     def command(self, args, **kwargs):
         if args[0] == "/usr/bin/git":return self.real_run(args, **kwargs)
+        if args[:2] == ["/usr/bin/python3", "-I"] and args[2].endswith("/ops/test-env.py"):
+            return self.real_run(args, **kwargs)
         self.calls.append(args)
         if args[:4] == ["/usr/bin/docker", "image", "inspect", self.data["registry_digest"]]:
             identity = [self.data["local_image_id"], "linux/amd64", self.data["source_commit"], "sha-" + self.data["source_commit"]]
@@ -247,25 +252,32 @@ class Adapter(unittest.TestCase):
         with self.assertRaisesRegex(Exception,"unsafe_adapter"):self.apply()
         self.assertEqual(self.calls,[])
 
-    def test_operator_activation_preserves_config_and_writes_policy_last(self):
-        (self.checkout/"ops/test-env.py").write_text("# synthetic fixture\n")
-        self.real_run(["git","-C",str(self.checkout),"add","."], check=True, stdout=subprocess.DEVNULL)
-        self.real_run(["git","-C",str(self.checkout),"-c","user.name=Synthetic","-c","user.email=synthetic@example.invalid","commit","-m","activation"],check=True,stdout=subprocess.DEVNULL)
-        sha=self.real_run(["git","-C",str(self.checkout),"rev-parse","HEAD"],check=True,capture_output=True,text=True).stdout.strip()
-        self.real_run(["git","-C",str(self.checkout),"update-ref","refs/remotes/origin/main",sha],check=True)
-        self.data["source_commit"]=sha
+    def activate(self, config_dir):
+        self.real_run(["git","-C",str(self.checkout),"update-ref","refs/remotes/origin/main",self.sha],check=True)
+        self.data["source_commit"]=self.sha
         m=self.root/"release.json";m.write_text(json.dumps(self.data))
         managed=self.root/"managed-config";managed.mkdir();(managed/"managed").write_text("managed-v1\n")
-        before=self.config.read_text()
         fake_install=types.SimpleNamespace(CONFIG=managed,LIB=self.lib,safe_dir=installer.safe_dir,write=installer.write)
         original_load=enable.load
         with patch.object(enable,"STATE_DIR",self.root/"state"), patch.object(enable,"load",side_effect=lambda name,p: fake_install if name=="install" else self.fake_gate if name=="gate" else original_load(name,p)):
-            enable.enable(self.checkout,m,self.config_dir)
-            self.assertEqual(self.config.read_text(),before)
-            self.assertEqual(json.loads((managed/"release.json").read_text())["source_commit"],sha)
+            enable.enable(self.checkout,m,config_dir)
+            self.assertEqual(json.loads((managed/"release.json").read_text())["source_commit"],self.sha)
             self.assertEqual((managed/"release.json").stat().st_mode & 0o777,0o600)
             self.assertFalse(any(c[0]=="/usr/bin/docker" for c in self.calls))
-            with self.assertRaisesRegex(ValueError,"already_enabled"):enable.enable(self.checkout,m,self.config_dir)
+            with self.assertRaisesRegex(ValueError,"already_enabled"):enable.enable(self.checkout,m,config_dir)
+
+    def test_operator_activation_preserves_config_and_writes_policy_last(self):
+        before=self.config.read_text()
+        self.activate(self.config_dir)
+        self.assertEqual(self.config.read_text(),before)
+
+    def test_operator_activation_creates_real_public_config_without_starting_app(self):
+        directory=self.root/"new-config"
+        self.activate(directory)
+        self.assertIn("TEST_DOMAIN=judopride.tech\n",(directory/"test.env").read_text())
+        self.assertIn("TEST_IMAGE="+self.data["registry_digest"],(directory/"test.env").read_text())
+        self.assertEqual(directory.stat().st_mode & 0o777,0o700)
+        for file in directory.iterdir():self.assertEqual(file.stat().st_mode & 0o777,0o600)
 
 
 if __name__ == "__main__":unittest.main(verbosity=2)

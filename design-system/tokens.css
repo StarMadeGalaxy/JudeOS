@@ -1,0 +1,75 @@
+/* Judo Pride v1.0 — 2026-10-06.
+ * Executable counterpart to DESIGN.md. Source extraction and normalization
+ * are distinguished in DESIGN.md and SOURCES.md. Load Rubik separately.
+ * This file defines tokens only; it does not override framework components.
+ */
+:root {
+  --jp-primary: #db0c0c;
+  --jp-primary-hover: #323232;
+  --jp-white: #ffffff;
+  --jp-surface: #f5f7fa;
+  --jp-section: #eff3f9;
+  --jp-footer: #eef3f9;
+  --jp-text: #282828;
+  --jp-text-hero: #303030;
+  --jp-text-muted: #60666d;
+  --jp-decorative-muted: #89969b;
+  --jp-border: #dedede;
+  --jp-divider: #eaebed;
+  --jp-link: #3468d4; /* Accessible normalization of source #3f74e8. */
+
+  --jp-font-family: "Rubik", Arial, sans-serif;
+  --jp-font-display-size: clamp(1.875rem, 1.6153846154rem + 1.1538461538vw, 3rem);
+  --jp-font-display-weight: 700;
+  --jp-font-display-line: 1.2;
+  --jp-font-headline-size: clamp(1.4375rem, 1.2644230769rem + 0.7692307692vw, 2.1875rem);
+  --jp-font-headline-weight: 700;
+  --jp-font-headline-line: 1.2;
+  --jp-font-title-size: 25px;
+  --jp-font-title-weight: 600;
+  --jp-font-title-line: 1.2;
+  --jp-font-body-size: 16px;
+  --jp-font-body-weight: 400;
+  --jp-font-body-line: 1.6;
+  --jp-font-label-size: 14px;
+  --jp-font-label-weight: 500;
+  --jp-font-label-line: 1.4;
+
+  --jp-radius-control: 5px;
+  --jp-radius-field: 10px;
+  --jp-radius-card: 20px;
+  --jp-radius-photo-large: 25px;
+  --jp-radius-feature: 30px;
+  --jp-radius-pill: 999px;
+
+  --jp-space-xs: 4px;
+  --jp-space-sm: 8px;
+  --jp-space-md: 16px;
+  --jp-space-lg: 32px;
+  --jp-space-card: 20px;
+  --jp-space-card-roomy: 30px;
+  --jp-space-panel: 40px;
+  --jp-space-section: 48px;
+  --jp-space-section-large: 80px;
+
+  --jp-container-max: 1260px;
+  --jp-page-gutter: 16px; /* Recommended future-project normalization. */
+  --jp-shadow-header: 0 2px 4px 0 rgba(0, 0, 0, .1);
+  --jp-shadow-panel: 0 21px 25px -24px #c5c5c5;
+  --jp-shadow-card: 0 19px 36px -12px #dedede;
+  --jp-shadow-news: 1px 1px 27px 0 #9797975c;
+  --jp-shadow-button: 0 19px 36px -17px #db0c0c;
+  --jp-shadow-button-hover: 0 19px 36px -12px #373737;
+  --jp-motion-fast: 200ms;
+  --jp-motion-standard: 300ms;
+  --jp-motion-link: 400ms;
+  --jp-motion-easing: linear;
+  --jp-focus-width: 2px; /* Accessibility extension. */
+  --jp-focus-offset: 3px;
+}
+
+/* Breakpoints are recorded in .impeccable/design.json.
+ * CSS custom properties cannot be used directly inside media query conditions.
+ * Use literal min-width: 576px / 768px / 992px / 1200px in components.
+ * Component motion must respect prefers-reduced-motion.
+ */

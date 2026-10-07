@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T16:58:08.561878+00:00",
+  "title": "Design System: Judo Pride",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "primary"
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "primary-hover"
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "white"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "surface"
+      },
+      "section": {
+        "role": "neutral",
+        "displayName": "section"
+      },
+      "footer": {
+        "role": "neutral",
+        "displayName": "footer"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "text"
+      },
+      "text-hero": {
+        "role": "neutral",
+        "displayName": "text-hero"
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "text-muted"
+      },
+      "decorative-muted": {
+        "role": "neutral",
+        "displayName": "decorative-muted"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "border"
+      },
+      "divider": {
+        "role": "neutral",
+        "displayName": "divider"
+      },
+      "link": {
+        "role": "secondary",
+        "displayName": "link"
+      }
+    },
+    "shadows": [
+      {
+        "name": "header",
+        "value": "0 2px 4px 0 rgba(0,0,0,.1)",
+        "purpose": "Шапка сайта."
+      },
+      {
+        "name": "card",
+        "value": "0 19px 36px -12px #dedede",
+        "purpose": "Карточка программы."
+      },
+      {
+        "name": "news",
+        "value": "1px 1px 27px 0 #9797975c",
+        "purpose": "Карточка новости."
+      },
+      {
+        "name": "primary-button",
+        "value": "0 19px 36px -17px #db0c0c",
+        "purpose": "Основная кнопка."
+      }
+    ],
+    "motion": [
+      {
+        "name": "fast",
+        "value": "200ms linear",
+        "purpose": "FAQ и быстрые состояния."
+      },
+      {
+        "name": "standard",
+        "value": "300ms linear",
+        "purpose": "Основные переходы сайта."
+      },
+      {
+        "name": "underline",
+        "value": "400ms",
+        "purpose": "Подчёркивание вторичной ссылки."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "576px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "992px"
+      },
+      {
+        "name": "xl",
+        "value": "1200px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Основная кнопка",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Извлечённый основной вариант; focus и reduced-motion добавлены для нового проекта.",
+      "html": "<button class=\"ds-primary\" type=\"button\">Оставить заявку</button>",
+      "css": ".ds-primary{font-family:Rubik,Arial,sans-serif;background:#db0c0c;color:#fff;border:0;border-radius:5px;padding:15px 25px;font-size:14px;font-weight:500;line-height:1.4;text-transform:uppercase;cursor:pointer;box-shadow:0 19px 36px -17px #db0c0c;transition:background-color 300ms linear,transform 300ms linear,box-shadow 300ms linear}.ds-primary:focus-visible{outline:2px solid #db0c0c;outline-offset:3px;}@media(hover:hover){.ds-primary:hover{background:#323232;transform:translateY(-5px);box-shadow:0 19px 36px -12px #373737}}.ds-primary:active{transform:translateY(0)}.ds-primary:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}.ds-primary:hover{transform:none}}"
+    },
+    {
+      "name": "Вторичная кнопка",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "На основе кнопки входа; вторичный текст затемнён для читаемости.",
+      "html": "<button class=\"ds-secondary\" type=\"button\">Вход в кабинет</button>",
+      "css": ".ds-secondary{font-family:Rubik,Arial,sans-serif;background:#f5f7fa;color:#60666d;border:1px solid #dedede;border-radius:5px;padding:10px 20px;font-size:14px;font-weight:400;line-height:1.4;cursor:pointer;transition:color 300ms linear,border-color 300ms linear}.ds-secondary:hover{color:#db0c0c;border-color:#db0c0c}.ds-secondary:focus-visible{outline:2px solid #db0c0c;outline-offset:3px;}.ds-secondary:active{background:#eff3f9}"
+    },
+    {
+      "name": "Поле имени",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Нормализованный пример: label, 16 px и focus — дополнения.",
+      "html": "<label class=\"ds-label\" for=\"ds-name\">Имя</label><input class=\"ds-input\" id=\"ds-name\" type=\"text\" autocomplete=\"given-name\" placeholder=\"Ваше имя\">",
+      "css": ".ds-label{font-family:Rubik,Arial,sans-serif;display:block;color:#282828;font-size:14px;font-weight:500;margin-bottom:8px}.ds-input{font-family:Rubik,Arial,sans-serif;background:#fff;color:#282828;border:1px solid #dedede;border-radius:10px;padding:15px 20px;font-size:16px;width:calc(100% - 42px);line-height:1.2;transition:border-color 200ms linear}.ds-input::placeholder{color:#60666d}.ds-input:hover{border-color:#60666d}.ds-input:focus-visible{outline:2px solid #db0c0c;outline-offset:3px;}.ds-input:focus{border-color:#db0c0c}.ds-input:disabled{background:#f5f7fa;cursor:default}"
+    },
+    {
+      "name": "Активная навигация",
+      "kind": "nav",
+      "refersTo": "nav-active",
+      "description": "Извлечённые состояния навигации; увеличенная область нажатия — дополнение.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Пример навигации\"><a href=\"#club\">О клубе</a><a href=\"#groups\" aria-current=\"page\">Набор в группы</a></nav>",
+      "css": ".ds-nav{font-family:Rubik,Arial,sans-serif;display:flex;gap:4px;overflow-x:auto;padding:10px 0}.ds-nav a{color:#282828;background:transparent;white-space:nowrap;padding:10px 15px;border-radius:5px;font-size:16px;font-weight:400;text-decoration:none;transition:color 300ms linear,background-color 300ms linear}.ds-nav a:hover,.ds-nav a[aria-current=page]{background:#db0c0c;color:#fff}.ds-nav a:focus-visible{outline:2px solid #db0c0c;outline-offset:3px;}"
+    },
+    {
+      "name": "Возрастная метка",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Возрастная метка из собственного CSS сайта; информационный элемент.",
+      "html": "<span class=\"ds-badge\">4–6 лет</span>",
+      "css": ".ds-badge{font-family:Rubik,Arial,sans-serif;display:inline-block;background:#db0c0c;color:#fff;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:500;line-height:1.4}"
+    },
+    {
+      "name": "Содержательная карточка",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Реконструкция формы карточки программы; краткое примерное содержание, без цены и заявлений о клубе.",
+      "html": "<article class=\"ds-card\"><h3>Дзюдо для детей</h3><span class=\"ds-card-badge\">4–6 лет</span><p>Описание программы и возрастной группы.</p><a href=\"#program\">Подробнее о программе</a></article>",
+      "css": ".ds-card{font-family:Rubik,Arial,sans-serif;padding:30px 20px;border-radius:20px;background:#fff;color:#282828;text-align:center;box-shadow:0 19px 36px -12px #dedede}.ds-card h3{font-size:20px;font-weight:600;line-height:1.2;margin:0 0 10px}.ds-card p{font-size:16px;line-height:1.6;margin:16px 0}.ds-card-badge{display:inline-block;color:#fff;background:#db0c0c;padding:3px 10px;border-radius:999px;font-size:13px}.ds-card a{display:inline-block;color:#3468d4;text-underline-offset:3px;font-size:14px}.ds-card a:hover{color:#db0c0c}.ds-card a:focus-visible{outline:2px solid #db0c0c;outline-offset:3px;}"
+    },
+    {
+      "name": "Раскрывающийся вопрос",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Пример нативного FAQ в извлечённом оформлении; details — реализация будущего проекта.",
+      "html": "<details class=\"ds-faq\"><summary>Как записаться на занятие?</summary><p>Выберите программу и оставьте заявку.</p></details>",
+      "css": ".ds-faq{font-family:Rubik,Arial,sans-serif;color:#282828;border-bottom:1px solid #eaebed;padding:0 0 16px}.ds-faq summary{font-size:20px;font-weight:500;line-height:1.4;padding:16px 32px 16px 0;cursor:pointer;list-style:none;position:relative}.ds-faq summary::-webkit-details-marker{display:none}.ds-faq summary:after{content:\"+\";position:absolute;right:0;top:16px;border:1px solid currentColor;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px}.ds-faq[open] summary:after{content:\"−\"}.ds-faq[open] summary,.ds-faq summary:hover{color:#db0c0c}.ds-faq summary:focus-visible{outline:2px solid #db0c0c;outline-offset:3px;}.ds-faq p{font-size:16px;line-height:1.6;margin:0}@media(max-width:991px){.ds-faq summary{font-size:16px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Сильная команда, открытый клуб",
+    "overview": "**Creative North Star: «Сильная команда, открытый клуб».** Это рабочая формулировка характера оформления, выведенная из сайта, а не официальный слоган бренда.\n\nОснова — светлый спортивный интерфейс: красный акцент, тёмный текст, белые карточки, холодные серые подложки и фотографии клуба. Скругления и мягкие тени делают подачу дружелюбной. Заголовки уверенные, но соразмерные содержанию; визуальную энергию дают красные действия, спортивные изображения и крупные цифры.\n\n**Назначение:** использовать этот документ как основной визуальный ориентир для будущего проекта Judo Pride. Перед созданием нового экрана прочитать `DESIGN.md`, подключать значения из `design-system/tokens.css`, проверять происхождение спорных решений в `design-system/SOURCES.md`. Новые компоненты развивать из описанных ниже примитивов.\n\n**Статус и точность:** версия 1.0, исследование от 6 октября 2026 года. Извлечено из публичной HTML-разметки главной страницы, двух файлов CSS, встроенных стилей и подключения шрифтов. Полноценный просмотр страницы инструментом браузера недоступен из-за ошибки проверки административной политики. Геометрия итогового рендера, фактически загруженные шрифты, интерактивные состояния и мобильный вид не проверены визуально.\n\nДалее **«на сайте»** означает подтверждение в исходном коде, а **«для нового проекта»** — рекомендованную нормализацию или дополнение. Frontmatter задаёт нормативные токены будущего проекта; это не утверждение, что у исходного сайта уже есть единая система с такими именами. CSS является его исполняемым представлением. При изменении значений обновлять оба файла вместе.",
+    "keyCharacteristics": [
+      "Светлая основа и один основной фирменный акцент.",
+      "Rubik с поддержкой кириллицы; веса 400, 500, 600 и 700.",
+      "Скруглённые карточки и фотографии, компактные прямоугольные кнопки.",
+      "Реальные тренеры, спортсмены, тренировки и залы как главное визуальное содержание.",
+      "Заметные действия записи, спокойные информационные блоки."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Красный направляет внимание к действию и важной информации. Белый и холодный серый занимают основные площади. Дополнительные зелёные, жёлтые и пастельные оттенки в исходном коде не расширяют базовую палитру без конкретного назначения компонента.",
+        "section": "neutral"
+      },
+      {
+        "name": "The Clear Hierarchy Rule",
+        "body": "Одна шрифтовая семья; иерархия строится размером и весом. Прописные буквы — для коротких действий и фирменных надписей, обычный регистр — для содержания. На сайте кнопки используют uppercase. Не переносить это правило на все заголовки и абзацы.",
+        "section": "typography"
+      },
+      {
+        "name": "The Content First Rule",
+        "body": "Внутри карточки элементы близко друг к другу; между самостоятельными разделами больше пространства. Структуру главной не считать обязательной для каждого будущего экрана. В расписании или личном кабинете уменьшать плотность декора и сохранять те же шрифт, цвет и формы.",
+        "section": "правила нового проекта"
+      },
+      {
+        "name": "The Two Scales Rule",
+        "body": "Кнопки сохраняют компактные углы, содержательные панели — более мягкие. Не превращать все элементы в капсулы и не назначать новый radius каждой карточке.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** читать этот документ перед созданием нового интерфейса Judo Pride.",
+      "**Do** сохранять красный акцент, Rubik, светлые поверхности и характерные скругления.",
+      "**Do** использовать реальные изображения клуба и исходный логотип.",
+      "**Do** различать карточки тренеров, программ и новостей по их содержанию.",
+      "**Do** отделять извлечённые факты от улучшений для будущего проекта.",
+      "**Do** проверять клавиатуру, контраст, состояние формы и адаптацию после реализации.",
+      "**Do** обновлять frontmatter, `tokens.css` и примеры вместе при изменении системы."
+    ],
+    "donts": [
+      "**Don't** заменять фирменную основу случайной тёмной темой, стеклом или новым цветовым акцентом без отдельного решения.",
+      "**Don't** считать ошибочное объявление `--color-text-dark` надёжным токеном: в исходнике отсутствует разделяющая точка с запятой.",
+      "**Don't** считать объявленный `--primary-color: #FF3C78` главным цветом клуба: основные компоненты используют `--main-red`.",
+      "**Don't** переносить глобальное `outline: none !important` и мелкие малоконтрастные подписи.",
+      "**Don't** задавать всем изображениям единый cover: портреты и логотипы требуют сохранения содержимого.",
+      "**Don't** выдавать реконструированные образцы за скриншоты исходного сайта.",
+      "**Don't** копировать динамические цены, наборы, даты и достижения в новый проект как постоянные факты.",
+      "**Don't** переносить карусели и композицию главной на все страницы по умолчанию."
+    ]
+  }
+}

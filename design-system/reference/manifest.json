@@ -1,0 +1,24 @@
+{
+  "retrieved": "2026-10-06",
+  "method": "public source retrieval; not a browser screenshot",
+  "files": [
+    {
+      "file": "app.css",
+      "source": "https://judopride.by/css/app.css?ver=18",
+      "sha256": "7c336d049b2709ff6857ea0ae0eb003a652e8b45217a488297a8d3e1b90ab329",
+      "bytes": 86683
+    },
+    {
+      "file": "app2.css",
+      "source": "https://judopride.by/css/app2.css?ver=9",
+      "sha256": "9e70a29552214ac76607d06cab0e905c55eac5fb05a1ae9e1c4ea3d0bdc39796",
+      "bytes": 731
+    },
+    {
+      "file": "inline.css",
+      "source": "https://judopride.by/",
+      "sha256": "4bea717dd3c9ac4287b221334bd87149c6e45e6485fa24933ea8c5d71935c24f",
+      "bytes": 8289
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# The two variants are disjoint on version: exactly 0 versus minimum 1.
+# Redocly 2.59.0 reports overlap based on their other shared properties.
+openapi/openapi.yaml:
+  no-illogical-composition-keywords:
+    - '#/components/schemas/Attendance/oneOf'

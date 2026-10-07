@@ -1,0 +1,9 @@
+extends:
+  - recommended
+rules:
+  operation-4xx-response: error
+  no-invalid-media-type-examples: error
+  no-invalid-schema-examples: error
+  operation-operationId-unique: error
+  security-defined: error
+  info-license: off

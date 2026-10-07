@@ -29,4 +29,6 @@
 
 ## Принятый HTTP-стек и сопровождение
 
+Первый онлайн-сценарий S0-01 — [API/OpenAPI и примеры](../api/README.md), [реестр](../api/ENDPOINTS.md), [словарь](../api/DATA-DICTIONARY.md) и [открытые решения](../api/OPEN-QUESTIONS.md). [ADR 0005](adr/0005-first-online-contract.md): **предложено**, требует ревью/интеграции по #16; endpoint'ы ещё не реализованы.
+
 Go + net/http + **chi v5**; документация всех изменяемых частей продукта и endpoint’ов обязательна. [ADR 0004, принят](adr/0004-chi-and-api-documentation.md) фиксирует выбор; [правила API/OpenAPI/Swagger UI](../docs/API-DOCUMENTATION.md) задают контракт, реестр и проверки. Исторические архивы сохраняют прежние формулировки, действующий стек определяется этим решением.

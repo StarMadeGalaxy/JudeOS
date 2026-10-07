@@ -1,0 +1,400 @@
+{
+  "ids": {
+    "account": "00000000-0000-4000-8000-000000000001",
+    "tenant": "00000000-0000-4000-8000-000000000101",
+    "membership": "00000000-0000-4000-8000-000000000201",
+    "person": "00000000-0000-4000-8000-000000000301",
+    "athlete": "00000000-0000-4000-8000-000000000401",
+    "session": "00000000-0000-4000-8000-000000000501",
+    "group": "00000000-0000-4000-8000-000000000601",
+    "venue": "00000000-0000-4000-8000-000000000602",
+    "operation": "00000000-0000-4000-8000-000000000701"
+  },
+  "cases": [
+    {
+      "name": "login",
+      "schema": "AccessSession",
+      "valid": true,
+      "value": {
+        "account_id": "00000000-0000-4000-8000-000000000001",
+        "expires_at": "2026-10-07T21:00:00Z",
+        "memberships": [
+          {
+            "membership_id": "00000000-0000-4000-8000-000000000201",
+            "tenant_id": "00000000-0000-4000-8000-000000000101",
+            "club_name": "Синтетический клуб A",
+            "timezone": "Europe/Minsk",
+            "grants": [
+              {
+                "role": "coach",
+                "scope": "assigned_sessions"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "journal",
+      "schema": "SessionJournal",
+      "valid": true,
+      "value": {
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "in_progress",
+          "version": 1
+        },
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "display_name": "Тестовый спортсмен А",
+            "participation": "regular",
+            "trial": false,
+            "attendance": {
+              "athlete_id": "00000000-0000-4000-8000-000000000401",
+              "status": "unmarked",
+              "version": 0,
+              "recorded_at": null,
+              "recorded_by_account_id": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "mark",
+      "schema": "SetAttendanceRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "present"
+      }
+    },
+    {
+      "name": "optional-reason",
+      "schema": "SetAttendanceRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "present",
+        "reason": ""
+      }
+    },
+    {
+      "name": "saved",
+      "schema": "AttendanceSaved",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "attendance": {
+          "athlete_id": "00000000-0000-4000-8000-000000000401",
+          "status": "present",
+          "version": 1,
+          "recorded_at": "2026-10-07T15:03:00Z",
+          "recorded_by_account_id": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "version-conflict",
+      "schema": "AttendanceCommandConflict",
+      "valid": true,
+      "value": {
+        "code": "ATTENDANCE_VERSION_CONFLICT",
+        "message": "Отметка уже изменена. Выберите, какое значение сохранить.",
+        "request_id": "synthetic-request-002",
+        "operation_id": "00000000-0000-4000-8000-000000000702",
+        "current": {
+          "athlete_id": "00000000-0000-4000-8000-000000000401",
+          "status": "present",
+          "version": 1,
+          "recorded_at": "2026-10-07T15:03:00Z",
+          "recorded_by_account_id": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "invalid_request",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "INVALID_REQUEST",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "unauthenticated",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "UNAUTHENTICATED",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "forbidden",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "FORBIDDEN",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "not_found",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "NOT_FOUND",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "method_not_allowed",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "METHOD_NOT_ALLOWED",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "payload_too_large",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "PAYLOAD_TOO_LARGE",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "unsupported_media_type",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "UNSUPPORTED_MEDIA_TYPE",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "rate_limited",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "RATE_LIMITED",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "internal_error",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "INTERNAL_ERROR",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "service_unavailable",
+      "schema": "Error",
+      "valid": true,
+      "value": {
+        "code": "SERVICE_UNAVAILABLE",
+        "message": "Синтетический пример безопасной ошибки.",
+        "request_id": "synthetic-request-001"
+      }
+    },
+    {
+      "name": "trial-is-not-status",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "trial"
+      }
+    },
+    {
+      "name": "missing-version",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "status": "present"
+      }
+    },
+    {
+      "name": "no-client-author",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "present",
+        "actor_account_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "no-client-tenant",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "present",
+        "tenant_id": "00000000-0000-4000-8000-000000000101"
+      }
+    },
+    {
+      "name": "no-null-reason",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "present",
+        "reason": null
+      }
+    },
+    {
+      "name": "negative-version",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": -1,
+        "status": "present"
+      }
+    },
+    {
+      "name": "unsafe-version",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 9007199254740992,
+        "status": "present"
+      }
+    },
+    {
+      "name": "no-household-in-roster",
+      "schema": "SessionJournal",
+      "valid": false,
+      "value": {
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "in_progress",
+          "version": 1
+        },
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "display_name": "Тестовый спортсмен А",
+            "participation": "regular",
+            "trial": false,
+            "attendance": {
+              "athlete_id": "00000000-0000-4000-8000-000000000401",
+              "status": "unmarked",
+              "version": 0,
+              "recorded_at": null,
+              "recorded_by_account_id": null
+            }
+          }
+        ],
+        "household_id": "00000000-0000-4000-8000-000000000801"
+      }
+    },
+    {
+      "name": "unknown-operation-id-format",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "not-an-id",
+        "base_version": 0,
+        "status": "present"
+      }
+    },
+    {
+      "name": "too-long-reason",
+      "schema": "SetAttendanceRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000701",
+        "base_version": 0,
+        "status": "present",
+        "reason": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "name": "version-zero-must-be-unmarked",
+      "schema": "Attendance",
+      "valid": false,
+      "value": {
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "status": "present",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "name": "recorded-needs-author",
+      "schema": "Attendance",
+      "valid": false,
+      "value": {
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "status": "present",
+        "version": 1,
+        "recorded_at": "2026-10-07T15:03:00Z",
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "name": "time-must-be-utc",
+      "schema": "Attendance",
+      "valid": false,
+      "value": {
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "status": "present",
+        "version": 1,
+        "recorded_at": "2026-10-07T18:03:00+03:00",
+        "recorded_by_account_id": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  ]
+}

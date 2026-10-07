@@ -1,0 +1,23 @@
+{
+  "name": "judeos-api-contract",
+  "private": true,
+  "scripts": {
+    "lint": "redocly lint openapi/openapi.yaml",
+    "bundle": "redocly bundle openapi/openapi.yaml -o dist/openapi.json",
+    "generate": "openapi-typescript openapi/openapi.yaml -o dist/schema.d.ts",
+    "typecheck": "tsc --strict --noEmit --skipLibCheck --module nodenext --moduleResolution nodenext checks/client.ts",
+    "check": "npm run lint && npm run bundle && npm run generate && npm run typecheck && node checks/contract.cjs",
+    "preview": "node checks/preview.cjs",
+    "check:swagger": "playwright test -c checks/playwright.config.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@redocly/cli": "2.59.0",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "openapi-typescript": "7.13.0",
+    "openapi-fetch": "0.17.0",
+    "swagger-ui-dist": "5.33.1",
+    "typescript": "5.9.3"
+  }
+}

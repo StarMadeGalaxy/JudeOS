@@ -13,6 +13,7 @@
 ## Проверки
 
 - Сборка Go/web и Docker stages с сохранёнными proxy/TLS, закреплённые versions/digests/lockfiles; чистый Compose запуск на собственном новом томе, миграции → seed → API/web/Swagger; две вымышленные записи.
+- Исправлена обязательная привязка сборки к Linux CA-файлу: обычный `make up` использует trust stores образов, дополнительный CA включается явно через BUILD_CA_PATH/Compose overlay. Проверены конфигурация без host CA (в том числе старый отсутствующий путь в `.env`), свежая network build с CA/proxy и обычный запуск без CA на закэшированных зависимостях; live HTTP проходит. Явно выбранный отсутствующий bundle выдаёт ошибку, TLS не отключается.
 - Реальный PostgreSQL: пустая/старая/слишком новая схема не ready, upgrade с существующей строкой сохраняет данные/добавляет timezone, повтор up/seed не создаёт дубликатов. Отдельная тестовая БД создаётся и удаляется check-db.
 - Go race/vet/modules verify; OpenAPI/$ref/operationId/реестр, 29 схемных fixtures и примеры всех ответов, TS-клиент; chi.Walk против runtime-контракта. Tidy тестовых зависимостей goose ограничен запрещённым storage.googleapis.com; runtime build -mod=readonly проходит, ограничение не обходилось.
 - Реальные HTTP status/schema/Cache-Control/request_id, 404 запланированного API, 405/Allow и slash/HEAD/OPTIONS; остановка БД → health 200 / readiness 503, после старта БД readiness восстанавливается.

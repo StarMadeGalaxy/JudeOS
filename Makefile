@@ -1,5 +1,6 @@
 GO ?= go
-COMPOSE = docker compose --env-file .env -f ops/compose.yaml
+# A host CA bundle is opt-in; Docker images otherwise use their own trust stores.
+COMPOSE = docker compose --env-file .env -f ops/compose.yaml $(if $(BUILD_CA_PATH),-f ops/compose.ca.yaml)
 .PHONY: env install build db-up migrate seed run check check-db up down
 env:
 	python3 ops/dev-env.py

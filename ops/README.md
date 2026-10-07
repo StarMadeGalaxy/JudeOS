@@ -22,7 +22,23 @@ make up
 
 ## Прокси и CA в облачной среде
 
-Docker использует существующие proxy defaults/registry credentials. BuildKit монтирует системный CA bundle как build secret `build_ca`; по умолчанию `/etc/ssl/certs/ca-certificates.crt`. При другом расположении (включая macOS/Windows) задайте BUILD_CA_PATH в `.env` на доступный **публичный** CA bundle. npm использует NODE_EXTRA_CA_CERTS, Go — SSL_CERT_FILE; TLS verification включена. Bundle не копируется в образ. Proxy credentials не являются build secrets этого приложения и не должны попадать в `.env`/Dockerfile; не отключайте унаследованный proxy.
+Обычный `make up` использует CA stores внутри Docker images и не требует сертификата или Linux-пути на host. Это режим для стандартного Docker Desktop/macOS/Windows/Linux без отдельного TLS-intercepting proxy.
+
+Если окружение использует HTTPS-прокси с дополнительным CA, подключите существующий **публичный** bundle явно:
+
+```sh
+make up BUILD_CA_PATH="/absolute/path/to/public-ca-bundle.pem"
+```
+
+В управляемом Linux-окружении Codex используется уже настроенный combined system bundle:
+
+```sh
+make up BUILD_CA_PATH=/etc/ssl/certs/ca-certificates.crt
+```
+
+BUILD_CA_PATH передаётся как параметр Make или переменная процесса (`export BUILD_CA_PATH=...`), а не как настройка активации в `.env`. Make добавляет [compose.ca.yaml](compose.ca.yaml) к базовому Compose только при непустом параметре. При прямом вызове Docker Compose добавьте `-f ops/compose.ca.yaml` после `-f ops/compose.yaml` и передайте BUILD_CA_PATH в environment. Если выбранный файл отсутствует, явный CA-режим завершится ошибкой; обычный режим его не читает.
+
+Docker сохраняет существующие proxy defaults/registry credentials. BuildKit монтирует дополнительный bundle как optional secret `build_ca` только в CA-режиме; npm задаёт NODE_EXTRA_CA_CERTS, Go — SSL_CERT_FILE только при наличии mount. Без mount используются штатные trust stores образов. TLS verification всегда включена; bundle не копируется в image. Proxy credentials не являются build secrets приложения и не должны попадать в `.env`/Dockerfile; унаследованный proxy не отключается.
 
 Runtime scratch-образ не делает внешних HTTPS-вызовов; он работает только с внутренней синтетической БД (sslmode=disable). CA/HTTPS для будущих интеграций и размещения добавятся по их задачам. Ошибка запрета домена требует настройки политики окружения, не обхода прокси.
 

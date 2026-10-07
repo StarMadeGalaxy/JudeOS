@@ -4,8 +4,9 @@ WORKDIR /src
 COPY api/package*.json api/
 COPY apps/web/package*.json apps/web/
 RUN --mount=type=secret,id=build_ca \
-    NODE_EXTRA_CA_CERTS=/run/secrets/build_ca npm --prefix api ci --strict-ssl=true && \
-    NODE_EXTRA_CA_CERTS=/run/secrets/build_ca npm --prefix apps/web ci --strict-ssl=true
+    if [ -f /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
+    npm --prefix api ci --strict-ssl=true && \
+    npm --prefix apps/web ci --strict-ssl=true
 COPY api api
 COPY apps/web apps/web
 COPY design-system/tokens.css design-system/tokens.css
@@ -18,8 +19,9 @@ COPY cmd cmd
 COPY internal internal
 COPY db db
 RUN --mount=type=secret,id=build_ca \
-    SSL_CERT_FILE=/run/secrets/build_ca CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/api ./cmd/api && \
-    SSL_CERT_FILE=/run/secrets/build_ca CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/db ./cmd/db
+    if [ -f /run/secrets/build_ca ]; then export SSL_CERT_FILE=/run/secrets/build_ca; fi; \
+    CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/api ./cmd/api && \
+    CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/db ./cmd/db
 
 FROM scratch
 WORKDIR /app

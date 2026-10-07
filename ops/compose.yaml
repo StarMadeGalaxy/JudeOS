@@ -18,7 +18,6 @@ services:
     build:
       context: ..
       dockerfile: ops/Dockerfile
-      secrets: [build_ca]
     entrypoint: ["/app/db"]
     command: ["migrate"]
     environment:
@@ -48,6 +47,3 @@ services:
     cap_drop: [ALL]
 volumes:
   postgres-data:
-secrets:
-  build_ca:
-    file: ${BUILD_CA_PATH:-/etc/ssl/certs/ca-certificates.crt}

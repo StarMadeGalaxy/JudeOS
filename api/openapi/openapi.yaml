@@ -1,0 +1,1224 @@
+openapi: 3.0.3
+info:
+  title: JudeOS — первый онлайн-сценарий (предложено)
+  version: 0.1.0-proposed
+  description: 'S0-01 / Issue #16. Контракт на ревью, ни одна операция ещё не реализована.
+    ADR 0006 имеет статус предложено. Все примеры синтетические. До согласования двумя
+    разработчиками и merge не начинать зависимую реализацию. Account не Athlete; Household
+    не право доступа. Все ответы Cache-Control: no-store. Same-origin HTTPS, нет CORS.
+    Общая политика 404/405, слешей и служебных маршрутов описана в api/README.md.'
+  contact:
+    url: https://github.com/StarMadeGalaxy/JudeOS/issues/16
+servers:
+- url: https://judeos.example
+  description: Зарезервированный пример, не работающий сервис.
+tags:
+- name: access
+  description: Вход и серверные сессии сотрудников.
+- name: training
+  description: Разрешённые занятия и сохранённый roster.
+- name: attendance
+  description: Отметки с версией, историей и безопасным повтором.
+security:
+- staffSession: []
+paths:
+  /api/v1/access/csrf:
+    get:
+      operationId: getCsrfToken
+      tags:
+      - access
+      summary: Получить CSRF-токен
+      description: 'Same-origin bootstrap до входа и после него. Для анонимного клиента
+        создаёт preauth-cookie; для действующего входа токен привязан к сессии. Не
+        раскрывает аккаунт или клуб. Нет CORS; сторонние Origin/Fetch Metadata отклоняются.
+        Точные TTL/лимиты — #21.'
+      x-status: planned
+      x-issue: 16
+      parameters: []
+      responses:
+        '200':
+          description: Токен для памяти текущей вкладки.
+          headers:
+            Cache-Control: &id001
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID: &id002
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Set-Cookie:
+              schema: &id003
+                type: string
+              description: Создаётся только анонимный preauth; действующая сессия
+                не ротируется этим GET. HttpOnly cookie, не CSRF-токен.
+              example: __Host-judeos-preauth=synthetic-preauth-secret; Secure; HttpOnly;
+                SameSite=Lax; Path=/
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+              example:
+                csrf_token: synthetic-csrf-token-0000000000000001
+                expires_at: '2026-10-07T15:10:00Z'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security: []
+  /api/v1/access/login:
+    post:
+      operationId: loginStaff
+      tags:
+      - access
+      summary: Войти как сотрудник
+      description: 'Проверяет CSRF preauth и Origin, затем учётные данные. Неверный
+        пароль, неизвестный/отозванный аккаунт дают одну нейтральную ошибку LOGIN_FAILED.
+        Успех ротирует секрет сессии, отзывает preauth и выдаёт только memberships.
+        Для последующих команд заново GET csrf. Нормализация логина, хеш пароля, TTL/лимиты
+        — #21. При повторе входа не обещается идемпотентность.'
+      x-status: planned
+      x-issue: 16
+      parameters:
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: Сессия создана; секрет только в cookie.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Set-Cookie:
+              schema: *id003
+              description: Непрозрачный синтетический пример. Secure; HttpOnly; SameSite=Lax;
+                Path=/; без Domain.
+              example: __Host-judeos-session=synthetic-session-secret; Secure; HttpOnly;
+                SameSite=Lax; Path=/
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessSession'
+              example: &id004
+                account_id: 00000000-0000-4000-8000-000000000001
+                expires_at: '2026-10-07T21:00:00Z'
+                memberships:
+                - membership_id: 00000000-0000-4000-8000-000000000201
+                  tenant_id: 00000000-0000-4000-8000-000000000101
+                  club_name: Синтетический клуб A
+                  timezone: Europe/Minsk
+                  grants:
+                  - role: coach
+                    scope: assigned_sessions
+        '401':
+          description: Нейтральный отказ входа.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: LOGIN_FAILED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '400':
+          $ref: '#/components/responses/Error400'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security: []
+      requestBody:
+        required: true
+        description: JSON, до 16 KiB; лишние поля и null вне nullable отклоняются.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              login: synthetic.coach
+              password: synthetic-example-only
+  /api/v1/access/session:
+    get:
+      operationId: getAccessSession
+      tags:
+      - access
+      summary: Прочитать действующий вход
+      description: Проверяет актуальную сессию/Account и возвращает только активные
+        memberships и grants, без Person/Athlete/контактов. Меню не выдаёт прав; сервер
+        проверяет каждый запрос заново. GET не продлевает TTL.
+      x-status: planned
+      x-issue: 16
+      parameters: []
+      responses:
+        '200':
+          description: Метаданные действующего входа.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessSession'
+              example: *id004
+        '401':
+          $ref: '#/components/responses/Error401'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/v1/access/logout:
+    post:
+      operationId: logoutStaff
+      tags:
+      - access
+      summary: Отозвать текущую сессию
+      description: 'CSRF и Origin обязательны. Отзывает текущую сессию и очищает cookie.
+        Повтор с уже отозванной cookie получает 401, что клиент трактует как отсутствие
+        входа. Не является endpoint отзыва другого сотрудника; административный отзыв
+        — #21.'
+      x-status: planned
+      x-issue: 16
+      parameters:
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/Origin'
+      responses:
+        '204':
+          description: Сессия отозвана; тела нет.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Set-Cookie:
+              schema: *id003
+              description: Непрозрачный синтетический пример. Secure; HttpOnly; SameSite=Lax;
+                Path=/; без Domain.
+              example: __Host-judeos-session=; Max-Age=0; Secure; HttpOnly; SameSite=Lax;
+                Path=/
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/v1/tenants/{tenant_id}/sessions:
+    get:
+      operationId: listAssignedSessions
+      tags:
+      - training
+      summary: Получить назначенные занятия за дату
+      description: 'Первый сценарий: активный coach с текущим SessionCoach в клубе;
+        manager/administrator без такого grant/назначения не получают неявных прав.
+        Фильтр date — локальная дата начала занятия Europe/Minsk, а не UTC; перенос
+        сохраняет ID. Включены planned/in_progress/closed/cancelled для видимости
+        отмены. Сортировка starts_at, session_id; cursor привязан к аккаунту, tenant,
+        date и порядку, при смене фильтра 400. Каждая страница проверяет текущие права;
+        список не snapshot, клиент объединяет по ID и обновляет после переноса. Весь
+        клуб не выдаётся.'
+      x-status: planned
+      x-issue: 16
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Обязательная календарная дата в зоне клуба.
+        example: '2026-10-07'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+        description: Размер страницы, default 50; значения вне диапазона — 400.
+        example: 50
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 2048
+        description: Непрозрачный cursor из предыдущей страницы; отсутствует для первой.
+      responses:
+        '200':
+          description: Разрешённые занятия; пустой список допустим.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionPage'
+              examples:
+                page:
+                  value:
+                    items:
+                    - &id005
+                      session_id: 00000000-0000-4000-8000-000000000501
+                      tenant_id: 00000000-0000-4000-8000-000000000101
+                      group:
+                        id: 00000000-0000-4000-8000-000000000601
+                        name: Тестовая группа
+                      venue:
+                        id: 00000000-0000-4000-8000-000000000602
+                        name: Синтетический зал
+                      starts_at: '2026-10-07T15:00:00Z'
+                      ends_at: '2026-10-07T16:00:00Z'
+                      state: in_progress
+                      version: 1
+                    next_cursor: null
+                empty:
+                  value:
+                    items: []
+                    next_cursor: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/v1/tenants/{tenant_id}/sessions/{session_id}:
+    get:
+      operationId: getSessionJournal
+      tags:
+      - training
+      summary: Прочитать занятие и сохранённый состав
+      description: 'Только текущий назначенный coach, активное членство и grant assigned_sessions;
+        чужое занятие — 404. Состав берётся из SessionRoster, не вычисляется по сегодняшней
+        группе. Отмена/закрытие не удаляют отметки. Минимальный DTO содержит Person/Athlete
+        ID, имя, участие, trial и отметку. Семья, контакты, допуск, платежи не включены;
+        их контракт/права согласуются в #26. Архивирование и исторический доступ —
+        открытое решение; данный сценарий не даёт права читать архивные карточки.'
+      x-status: planned
+      x-issue: 16
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Версия занятия и независимые версии отметок.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionJournal'
+              example:
+                session: *id005
+                roster:
+                - athlete_id: 00000000-0000-4000-8000-000000000401
+                  person_id: 00000000-0000-4000-8000-000000000301
+                  display_name: Тестовый спортсмен А
+                  participation: regular
+                  trial: false
+                  attendance:
+                    athlete_id: 00000000-0000-4000-8000-000000000401
+                    status: unmarked
+                    version: 0
+                    recorded_at: null
+                    recorded_by_account_id: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /api/v1/tenants/{tenant_id}/sessions/{session_id}/attendance/{athlete_id}:
+    put:
+      operationId: setAttendance
+      tags:
+      - attendance
+      summary: Сохранить одну отметку с проверкой версии
+      description: 'Только активный coach, назначенный сейчас, и Athlete в SessionRoster
+        этого tenant. Проверяются session state и неархивный Athlete в одной транзакции
+        с эффектом/историей/OperationResult. cancelled — 409; planned/in_progress
+        разрешены, closed — исправление текущим назначенным тренером. Полномочия менеджера/администратора
+        и прежнего тренера не предполагаются (#26). base_version относится только
+        к этой отметке; перенос/смена состава не вычисляются из клиентской версии.
+        Автор/время берутся сервером. Новый принятый operation_id повышает версию
+        на 1 даже при том же status и оставляет историю до/после. Та же команда сериализуется
+        по (tenant, actor, operation_id) и возвращает прежний успешный/конфликтный
+        результат после актуальной проверки scope/состояния; другой payload/target
+        — 409 OPERATION_ID_REUSED. Type, /api/v1, target, base_version, status и нормализованная
+        reason входят в hash. 401/403/404, невалидный ввод и отказ по актуальному
+        состоянию не сохраняются как эффект. Конфликт версии сохраняется как терминальный
+        результат ID; после явного решения нужен новый ID/base_version. Повтор не
+        порождает новый аудит/уведомление. Ответ replay описывает исходный результат,
+        не сегодняшнюю версию; перечитать журнал. Нет last-write-wins, финансовых
+        эффектов или Telegram. Срок удаления результатов/ID и recovery — #18/#52;
+        до их согласования синтетический сервис не удаляет результаты.'
+      x-status: planned
+      x-issue: 16
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/AthleteId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: Применено или повтор исходного успешного результата.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Operation-Replayed:
+              schema:
+                type: boolean
+              description: true для сохранённого результата; false для первой принятой
+                команды.
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceSaved'
+              example:
+                operation_id: 00000000-0000-4000-8000-000000000701
+                attendance: &id006
+                  athlete_id: 00000000-0000-4000-8000-000000000401
+                  status: present
+                  version: 1
+                  recorded_at: '2026-10-07T15:03:00Z'
+                  recorded_by_account_id: 00000000-0000-4000-8000-000000000001
+        '409':
+          description: Конфликт версии, повтор ID с другим payload или запрет записи
+            по состоянию. Только версия возвращает current, после проверки прав.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Operation-Replayed:
+              schema:
+                type: boolean
+              description: Присутствует для сохранённого результата конфликта версии;
+                true на его повторе.
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceCommandConflict'
+              examples:
+                version:
+                  value:
+                    code: ATTENDANCE_VERSION_CONFLICT
+                    message: Отметка уже изменена. Выберите, какое значение сохранить.
+                    request_id: synthetic-request-002
+                    operation_id: 00000000-0000-4000-8000-000000000702
+                    current: *id006
+                reused:
+                  value:
+                    code: OPERATION_ID_REUSED
+                    message: Синтетический пример безопасной ошибки.
+                    request_id: synthetic-request-001
+                cancelled:
+                  value:
+                    code: SESSION_CANCELLED
+                    message: Синтетический пример безопасной ошибки.
+                    request_id: synthetic-request-001
+                archived:
+                  value:
+                    code: ATHLETE_ARCHIVED
+                    message: Синтетический пример безопасной ошибки.
+                    request_id: synthetic-request-001
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы
+            этого пути.
+          headers:
+            Cache-Control: *id001
+            X-Request-ID: *id002
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      requestBody:
+        required: true
+        description: JSON, до 16 KiB; лишние поля и null вне nullable отклоняются.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAttendanceRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000701
+              base_version: 0
+              status: present
+components:
+  securitySchemes:
+    staffSession:
+      type: apiKey
+      in: cookie
+      name: __Host-judeos-session
+      description: Серверная отзываемая сессия. Secure/HttpOnly/SameSite=Lax/Path=/;
+        host-only; секрет не передаётся в JSON и не хранится в localStorage/IndexedDB.
+  parameters:
+    TenantId:
+      name: tenant_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Кандидат клуба, проверяется через активный ClubMembership; не разрешение.
+      example: 00000000-0000-4000-8000-000000000101
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Устойчивый ID занятия внутри проверенного tenant.
+      example: 00000000-0000-4000-8000-000000000501
+    AthleteId:
+      name: athlete_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Athlete ID в сохранённом составе этого занятия; не Account/Person
+        ID.
+      example: 00000000-0000-4000-8000-000000000401
+    CsrfHeader:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 32
+        maxLength: 256
+      description: Токен GET /access/csrf, связанный с preauth или действующей сессией;
+        не сохранять на диске.
+      example: synthetic-csrf-token-0000000000000001
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uri
+        maxLength: 2048
+      description: Точное совпадение с настроенным HTTPS origin; отсутствие/null отклоняется.
+      example: https://judeos.example
+  schemas:
+    AttendanceStatus:
+      type: string
+      enum:
+      - present
+      - absent
+      - sick
+      - unmarked
+      description: Был / Не был / Болел / Не отмечен. trial принадлежит roster.
+    SessionState:
+      type: string
+      enum:
+      - planned
+      - in_progress
+      - closed
+      - cancelled
+    Role:
+      type: string
+      enum:
+      - administrator
+      - manager
+      - coach
+      description: Роль в клубе; сама по себе не выдаёт предметные права.
+    RoleGrant:
+      type: object
+      additionalProperties: false
+      required:
+      - role
+      - scope
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+        scope:
+          type: string
+          enum:
+          - club
+          - assigned_sessions
+    Membership:
+      type: object
+      additionalProperties: false
+      required:
+      - membership_id
+      - tenant_id
+      - club_name
+      - timezone
+      - grants
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        club_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          type: string
+          enum:
+          - Europe/Minsk
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleGrant'
+          minItems: 1
+    AccessSession:
+      type: object
+      additionalProperties: false
+      required:
+      - account_id
+      - expires_at
+      - memberships
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        expires_at:
+          type: string
+          format: date-time
+          pattern: Z$
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+    CsrfToken:
+      type: object
+      additionalProperties: false
+      required:
+      - csrf_token
+      - expires_at
+      properties:
+        csrf_token:
+          type: string
+          minLength: 32
+          maxLength: 256
+        expires_at:
+          type: string
+          format: date-time
+          pattern: Z$
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - login
+      - password
+      properties:
+        login:
+          type: string
+          minLength: 1
+          maxLength: 254
+          description: 'Идентификатор входа сотрудника; конкретная нормализация согласуется
+            в #21.'
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          format: password
+          writeOnly: true
+    NamedId:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+    TrainingSession:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      - tenant_id
+      - group
+      - venue
+      - starts_at
+      - ends_at
+      - state
+      - version
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        group:
+          $ref: '#/components/schemas/NamedId'
+        venue:
+          $ref: '#/components/schemas/NamedId'
+        starts_at:
+          type: string
+          format: date-time
+          description: UTC, RFC 3339 с Z; дата списка вычисляется в зоне клуба.
+          pattern: Z$
+        ends_at:
+          type: string
+          format: date-time
+          pattern: Z$
+        state:
+          $ref: '#/components/schemas/SessionState'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: Версия состояния, времени, состава и назначений; не версия
+            отметок.
+    SessionPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingSession'
+        next_cursor:
+          type: string
+          nullable: true
+          maxLength: 2048
+          description: Непрозрачный cursor; null означает конец. Не snapshot при конкурентном
+            переносе.
+    Attendance:
+      oneOf:
+      - $ref: '#/components/schemas/UnrecordedAttendance'
+      - $ref: '#/components/schemas/RecordedAttendance'
+    RosterEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - athlete_id
+      - person_id
+      - display_name
+      - participation
+      - trial
+      - attendance
+      properties:
+        athlete_id:
+          type: string
+          format: uuid
+        person_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        participation:
+          type: string
+          enum:
+          - regular
+          - guest
+          - visit
+        trial:
+          type: boolean
+        attendance:
+          $ref: '#/components/schemas/Attendance'
+    SessionJournal:
+      type: object
+      additionalProperties: false
+      required:
+      - session
+      - roster
+      properties:
+        session:
+          $ref: '#/components/schemas/TrainingSession'
+        roster:
+          type: array
+          items:
+            $ref: '#/components/schemas/RosterEntry'
+    SetAttendanceRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - status
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+          description: Новый UUID для нового намерения; тот же ID и payload при сетевом
+            повторе.
+        base_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        status:
+          $ref: '#/components/schemas/AttendanceStatus'
+        reason:
+          type: string
+          maxLength: 500
+          description: Необязательная причина; отсутствие и пустая строка нормализуются
+            одинаково; null запрещён.
+    AttendanceSaved:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - attendance
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        attendance:
+          $ref: '#/components/schemas/Attendance'
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - request_id
+      properties:
+        code:
+          type: string
+          enum:
+          - INVALID_REQUEST
+          - UNAUTHENTICATED
+          - LOGIN_FAILED
+          - CSRF_REJECTED
+          - FORBIDDEN
+          - NOT_FOUND
+          - METHOD_NOT_ALLOWED
+          - UNSUPPORTED_MEDIA_TYPE
+          - PAYLOAD_TOO_LARGE
+          - OPERATION_ID_REUSED
+          - SESSION_CANCELLED
+          - ATHLETE_ARCHIVED
+          - RATE_LIMITED
+          - INTERNAL_ERROR
+          - SERVICE_UNAVAILABLE
+        message:
+          type: string
+          minLength: 1
+          maxLength: 300
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+    AttendanceConflict:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - request_id
+      - operation_id
+      - current
+      properties:
+        code:
+          type: string
+          enum:
+          - ATTENDANCE_VERSION_CONFLICT
+        message:
+          type: string
+          minLength: 1
+          maxLength: 300
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        operation_id:
+          type: string
+          format: uuid
+        current:
+          $ref: '#/components/schemas/Attendance'
+    AttendanceCommandConflict:
+      oneOf:
+      - $ref: '#/components/schemas/Error'
+      - $ref: '#/components/schemas/AttendanceConflict'
+    UnrecordedAttendance:
+      type: object
+      additionalProperties: false
+      required:
+      - athlete_id
+      - status
+      - version
+      - recorded_at
+      - recorded_by_account_id
+      properties:
+        athlete_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - unmarked
+        version:
+          type: integer
+          minimum: 0
+          maximum: 0
+        recorded_at:
+          type: string
+          format: date-time
+          nullable: true
+          enum:
+          - null
+        recorded_by_account_id:
+          type: string
+          format: uuid
+          nullable: true
+          enum:
+          - null
+    RecordedAttendance:
+      type: object
+      additionalProperties: false
+      required:
+      - athlete_id
+      - status
+      - version
+      - recorded_at
+      - recorded_by_account_id
+      properties:
+        athlete_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AttendanceStatus'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        recorded_at:
+          type: string
+          format: date-time
+          pattern: Z$
+        recorded_by_account_id:
+          type: string
+          format: uuid
+  responses:
+    Error403:
+      description: Нет разрешения или проверка CSRF/Origin отклонена.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            forbidden:
+              value:
+                code: FORBIDDEN
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+            csrf:
+              value:
+                code: CSRF_REJECTED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+    Error429:
+      description: Ограничение частоты; Retry-After задаёт секунды ожидания.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+          description: Число секунд до следующей попытки.
+          example: 5
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: RATE_LIMITED
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error500:
+      description: Безопасная внутренняя ошибка; результат записи может быть неизвестен
+        клиенту.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INTERNAL_ERROR
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error503:
+      description: Временная недоступность; для команды результат может быть неизвестен.
+        Повторить тот же ID/payload.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+          description: Число секунд до следующей попытки.
+          example: 5
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: SERVICE_UNAVAILABLE
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error400:
+      description: Некорректный JSON, неизвестное/лишнее поле, UUID, дата или cursor.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INVALID_REQUEST
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error413:
+      description: Тело запроса превышает 16 KiB.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: PAYLOAD_TOO_LARGE
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error415:
+      description: Требуется application/json; form и text/plain не принимаются.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNSUPPORTED_MEDIA_TYPE
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error401:
+      description: Нет действующей сессии; истечение или отзыв. Никаких профилей в
+        ответе.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHENTICATED
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001
+    Error404:
+      description: Объект отсутствует или вне разрешённого scope; существование чужого
+        объекта не раскрывается.
+      headers:
+        Cache-Control: *id001
+        X-Request-ID: *id002
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: Синтетический пример безопасной ошибки.
+            request_id: synthetic-request-001

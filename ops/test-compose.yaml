@@ -1,0 +1,92 @@
+# Standalone synthetic test stack; does not overlay the development/#20 files.
+services:
+  db:
+    image: postgres:18.3@sha256:7e32e9833a6fb1c92c32552794cb6ed569d51b445a54907d35fc112ef39684db
+    environment:
+      POSTGRES_USER: judeos_test
+      POSTGRES_DB: judeos_test
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes: [postgres-data:/var/lib/postgresql]
+    networks: [private]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U judeos_test -d judeos_test]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  bootstrap:
+    image: ${TEST_IMAGE:?Set TEST_IMAGE in external test.env}
+    entrypoint: [/app/db]
+    command: [bootstrap-local]
+    env_file: ["${TEST_CONFIG_DIR:?Set external TEST_CONFIG_DIR}/bootstrap-secrets.env"]
+    networks: [private]
+    depends_on:
+      db: {condition: service_healthy}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  migrate:
+    image: ${TEST_IMAGE:?Set TEST_IMAGE in external test.env}
+    entrypoint: [/app/db]
+    command: [migrate]
+    env_file: ["${TEST_CONFIG_DIR}/migration-secrets.env"]
+    networks: [private]
+    depends_on:
+      bootstrap: {condition: service_completed_successfully}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  seed:
+    image: ${TEST_IMAGE}
+    entrypoint: [/app/db]
+    command: [seed-synthetic]
+    env_file: ["${TEST_CONFIG_DIR}/migration-secrets.env"]
+    networks: [private]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  api:
+    image: ${TEST_IMAGE}
+    env_file: ["${TEST_CONFIG_DIR}/api-secrets.env"]
+    environment:
+      HTTP_ADDR: 0.0.0.0:8080
+      WEB_DIR: /app/web
+      API_DIR: /app/contract
+    networks: [private]
+    depends_on:
+      seed: {condition: service_completed_successfully}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  edge:
+    image: caddy:2.11.2-alpine@sha256:834468128c7696cec0ceea6172f7d692daf645ae51983ca76e39da54a97c570d
+    environment:
+      TEST_DOMAIN: ${TEST_DOMAIN:?Set TEST_DOMAIN}
+      # Internal upstream stays on this Docker network; external ACME retains proxy.
+      NO_PROXY: "api,db,localhost,127.0.0.1,${NO_PROXY:-}"
+      no_proxy: "api,db,localhost,127.0.0.1,${no_proxy:-}"
+    ports:
+      - "${TEST_BIND_ADDR:-127.0.0.1}:${TEST_HTTP_PORT:-8088}:80"
+      - "${TEST_BIND_ADDR:-127.0.0.1}:${TEST_HTTPS_PORT:-8443}:443"
+    volumes:
+      - "${TEST_CADDYFILE:?Choose local or public Caddyfile}:/etc/caddy/Caddyfile:ro"
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [private, ingress]
+    depends_on: [api]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+secrets:
+  db_password:
+    file: ${TEST_CONFIG_DIR}/db-password
+networks:
+  private: {internal: true}
+  ingress: {}
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,8 @@
+{
+	admin off
+	auto_https disable_redirects
+}
+https://{$TEST_DOMAIN} {
+	tls internal
+	reverse_proxy api:8080
+}

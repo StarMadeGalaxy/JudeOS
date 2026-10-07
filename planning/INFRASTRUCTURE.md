@@ -2,6 +2,14 @@
 
 Версия 0.4 от 7 октября 2026 года, согласована с [архитектурой](ARCHITECTURE.md) и [планом MVP](MVP-DEVELOPMENT-PLAN.md). Одна VM допустима для узкого пилота; две VM — вариант разделения нагрузки, не обязательное условие и не failover. PostgreSQL-очередь и worker подключаются с соответствующими функциями S2/S3; общие релизы сохраняются. Протокол iPay описан в предоставленном PDF; режим подключения клуба, контур защиты и хостинг открыты. Ресурсный расчёт и сведения о прежней проверке тарифов сохранены из документа 0.3; при текущей интеграции цены повторно не проверялись. Acronis остаётся примером по проверке 6 октября, совместимость услуги не подтверждена.
 
+## S0: синтетический CI/test по #22
+
+[Инструкция эксплуатации](../docs/operations/README.md) описывает самостоятельный test-контур и [ADR 0009, предложено](adr/0009-ci-test-releases.md). CI проверяет Go/web/контракт, реальные PostgreSQL-миграции, воспроизводимость образа и локальный HTTPS; это не проверка публичного размещения. Test API и DB не имеют published ports; DB только в internal Docker network. Edge Caddy использует local CA для проверки либо public ACME после выбора настоящего DNS/host. Config/DB credential/API secrets находятся раздельно вне checkout; test не использует production secrets/данные.
+
+Release manifest определяет source commit, image ID/registry digest, schema и migration hashes. Предыдущий совместимый образ требует проверки readiness, не выбирается автоматически по предыдущему tag. Protection main настраивает администратор после появления checks: Go, Web and contract, Migrations, Image and HTTPS, PR/ревью и запрет force-push. Настройка не объявляется выполненной по одному workflow.
+
+Пользователь предоставил Hostinger VPS `187.7.69.230` (Ubuntu 24.04 LTS, 1 CPU / 4 GB / 50 GB) и `judopride.tech`, назначил оператором test NikishGum. [Первый запуск](../docs/operations/hostinger-first-run.md) использует опубликованный digest и сверку image/source/schema; доступ/автоматизацию готовит #91 отдельно. Сообщённый автоматический SSL не подтверждает listener: по preflight пользователя TCP 80/443 без слушателей; публичный HTTPS/firewall/доступ ещё нужно проверить. Off-host копии/scheduler/пороги/RPO/RTO/retention не выдумываются; доступны synthetic dump/restore-check и probe health/readiness/времени ответа/диска/опционального возраста копии. PR #85 (#20) merged во время работы над #22; main `02d9630` интегрирована, standalone test использует опубликованные bootstrap-local/migrator/runtime интерфейсы и схему 3. CI/HTTPS/копии повторно проверяются на этой main; общие файлы #20 не меняются. Production/реальный пилот остаются отдельными решениями.
+
 ## Вариант полного MVP после S3/S4
 
 ```mermaid

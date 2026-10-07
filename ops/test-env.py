@@ -40,9 +40,14 @@ def main():
         p.error('Public mode requires real DNS, an immutable image digest and ports 80/443')
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     password = secrets.token_hex(24)
+    migration_password = secrets.token_hex(24)
+    runtime_password = secrets.token_hex(24)
     files = {
         'db-password': password + '\n',
-        'api-secrets.env': f'DATABASE_URL=postgres://judeos_test:{password}@db:5432/judeos_test?sslmode=disable\n',
+        'bootstrap-secrets.env': f'BOOTSTRAP_DATABASE_URL=postgres://judeos_test:{password}@db:5432/judeos_test?sslmode=disable\n'
+                                 f'MIGRATION_PASSWORD={migration_password}\nRUNTIME_PASSWORD={runtime_password}\n',
+        'migration-secrets.env': f'MIGRATION_DATABASE_URL=postgres://judeos_migrator:{migration_password}@db:5432/judeos_test?sslmode=disable\n',
+        'api-secrets.env': f'DATABASE_URL=postgres://judeos_runtime:{runtime_password}@db:5432/judeos_test?sslmode=disable\n',
         'test.env': f'COMPOSE_PROJECT_NAME={a.project}\nTEST_CONFIG_DIR={directory}\n'
                     f'TEST_IMAGE={a.image}\nTEST_DOMAIN={a.domain}\n'
                     f'TEST_BIND_ADDR={"0.0.0.0" if a.public else "127.0.0.1"}\n'

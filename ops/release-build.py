@@ -59,6 +59,8 @@ def main():
         subprocess.run(args + ['--no-cache', '.'], cwd=ROOT, check=True)
         if image_id != run(['docker', 'image', 'inspect', a.image, '--format', '{{.Id}}']):
             raise SystemExit('Clean rebuild image IDs differ; do not release')
+    if run(['git', 'rev-parse', 'HEAD']) != sha or (not a.allow_dirty and run(['git', 'status', '--porcelain'])):
+        raise SystemExit('Source checkout changed during build; do not release')
     metadata = {'source_commit': sha, 'source_date_epoch': int(epoch), 'dirty': dirty,
                 'platform': 'linux/amd64', 'buildkit_version': '0.24.0', 'local_image_id': image_id,
                 'schema_version': int(version_match[1]),

@@ -30,7 +30,7 @@ def main():
         with output.open('rb') as f:
             subprocess.run(compose + ['pg_restore', '-U', 'judeos_test', '-d', name, '--exit-on-error', '--no-owner'], stdin=f, check=True)
         # Compare schema and synthetic fixture count, then remove only our random test DB.
-        sql = 'SELECT version_id FROM goose_db_version WHERE is_applied ORDER BY id DESC LIMIT 1; SELECT count(*) FROM development.sample_clubs;'
+        sql = 'SELECT version_id FROM goose_db_version WHERE is_applied ORDER BY id DESC LIMIT 1; SELECT count(*) FROM development.sample_clubs; SELECT count(*) FROM core.clubs; SELECT count(*) FROM development.sample_objects; SELECT count(*) FROM core.audit_events;'
         original = subprocess.check_output(compose + ['psql', '-U', 'judeos_test', '-d', 'judeos_test', '-At', '-v', 'ON_ERROR_STOP=1', '-c', sql])
         restored = subprocess.check_output(compose + ['psql', '-U', 'judeos_test', '-d', name, '-At', '-v', 'ON_ERROR_STOP=1', '-c', sql])
         if original != restored:

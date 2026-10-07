@@ -59,6 +59,8 @@ jobs:
           go-version-file: go.mod
       - run: |
           make db-up
+          # initdb's temporary Unix-socket server is not yet the final TCP server.
+          timeout 60s docker compose --env-file .env -f ops/compose.yaml exec -T db sh -c 'until pg_isready -h 127.0.0.1 -U judeos_dev -d judeos_dev; do sleep 1; done'
           make check-db
       - if: always()
         run: docker compose --env-file .env -f ops/compose.yaml down --volumes

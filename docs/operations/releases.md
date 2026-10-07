@@ -8,10 +8,10 @@
 |---|---|
 | `Go` | module hashes, race tests, vet, readonly build API/db |
 | `Web and contract` | npm ci по lockfiles, lint/bundle/$ref/operationId/fixtures/TS client, chi.Walk routes, TS/Vite build |
-| `Migrations` | существующие make db-up/check-db на реальном PostgreSQL: upgrade/seed/версия readiness, собственная случайная DB |
+| `Migrations` | существующие make db-up/check-db на реальном PostgreSQL: upgrade/bootstrap/seed/роли/RLS/FK/audit/версия readiness, собственная случайная DB |
 | `Image and HTTPS` | два build одного source (второй no-cache), равенство image ID, metadata, локальный TLS с проверкой CA/hostname, закрытая DB network/ports, failure/recovery readiness, существующий HTTP contract checker через HTTPS, synthetic backup/restore |
 
-Go-unit tests без JUDEOS_TEST_DATABASE_URL пропускают PostgreSQL integration test: отдельный Migrations job запускает его обязательно через существующий check-db. CI не доказывает auth/RLS #20/#21 или production readiness. После merge #20 **повторить все четыре checks** и проверить изменившиеся команды/роли в самостоятельном test-compose. Browser/реальные телефоны и внешнее публичное размещение не включены в эти checks.
+Go-unit tests без JUDEOS_TEST_DATABASE_URL пропускают PostgreSQL integration test: отдельный Migrations job запускает его обязательно через существующий check-db, предварительно ожидая final TCP readiness PostgreSQL (не временный Unix socket initdb). CI переиспользует PostgreSQL-проверки #20 из интегрированной main `02d9630`; test-compose адаптирован к опубликованным bootstrap/роль/seed интерфейсам. После этого merge все четыре checks проверяются повторно. Auth #21, продуктовые права и production readiness этим CI не доказаны. Browser/реальные телефоны и внешнее публичное размещение не включены в эти checks.
 
 ## Образ и manifest
 
@@ -28,7 +28,7 @@ Manifest `release.json`: source commit/epoch, dirty flag, platform, local image 
 Первый выпуск не имеет предыдущего проверенного release; manifest явно содержит `previous_compatible_release: null`. Это честное отсутствие кандидата, не обещание rollback. У каркаса #19 readiness принимает **ровно текущую версию схемы**: старый binary после новой миграции может вернуть 503. Нельзя автоматически считать прошлый tag совместимым или делать SQL down.
 
 1. Сохранить manifest/digest текущего и предыдущего GitHub Release вне Git. `python3 ops/release-compare.py /path/current-release.json /path/previous-release.json` выводит identifiable candidate и требует одинаковые версии/хеши схемы; разные схемы отвергаются.
-2. На отдельной синтетической БД текущей версии запустить предыдущий образ **по digest**, проверить HTTPS/readiness/web и существенные проверки. Не применять неизвестный старый migrator к общей БД. При одинаковой версии/миграциях существующие up/seed идемпотентны; после #20 это проверяется снова.
+2. На отдельной синтетической БД текущей версии запустить предыдущий образ **по digest**, проверить HTTPS/readiness/web и существенные проверки. Не применять неизвестный старый migrator к общей БД. При одинаковой версии/миграциях bootstrap/up/seed идемпотентны; повтор проверяется на интегрированной #20.
 3. Записать результат runtime check и digest предыдущего совместимого release в эксплуатационной записи вне Git/#22. Metadata comparison сам по себе совместимость не доказывает. Для изменения schema разработчик задаёт совместимость в PR и проверяет её; пока нет явного результата — остановить rollout и выбрать forward fix.
 4. Rollback приложения допускается только на записанный совместимый digest с повторным readiness. Не удалять новую схему/данные. Restore БД — отдельная операция с проверками, не скрытая часть rollback.
 

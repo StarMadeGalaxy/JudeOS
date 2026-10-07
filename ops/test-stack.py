@@ -43,9 +43,16 @@ def main():
         return
     if a.command == 'export-ca':
         dest = config.parent / 'local-root.crt'
-        command(['cp', 'edge:/data/caddy/pki/authorities/local/root.crt', str(dest)])
-        print('Exported public local-root.crt; trust only for this synthetic local test.')
-        return
+        deadline = time.monotonic() + 30
+        while True:
+            result = subprocess.run(compose + ['cp', 'edge:/data/caddy/pki/authorities/local/root.crt', str(dest)],
+                                    cwd=ROOT, env=env, capture_output=True)
+            if result.returncode == 0:
+                print('Exported public local-root.crt; trust only for this synthetic local test.')
+                return
+            if time.monotonic() >= deadline:
+                raise SystemExit('Local CA not ready; check edge startup')
+            time.sleep(1)
     # Verify actual Docker bindings and network, not just YAML declarations.
     db_id = command(['ps', '-q', 'db'], capture=True)
     db = json.loads(subprocess.check_output(['docker', 'inspect', db_id], text=True))[0]

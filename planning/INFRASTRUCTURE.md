@@ -8,7 +8,7 @@
 
 Release manifest определяет source commit, image ID/registry digest, schema и migration hashes. Предыдущий совместимый образ требует проверки readiness, не выбирается автоматически по предыдущему tag. Protection main настраивает администратор после появления checks: Go, Web and contract, Migrations, Image and HTTPS, PR/ревью и запрет force-push. Настройка не объявляется выполненной по одному workflow.
 
-Площадка, домен/DNS, защищённый доступ управления и оператор test пока не выбраны. Off-host копии/scheduler/пороги/RPO/RTO/retention не выдумываются; доступны synthetic dump/restore-check и probe health/readiness/времени ответа/диска/опционального возраста копии. После приёмки/merge #20 повторить CI и адаптировать самостоятельный test к принятым ролям/миграциям; нынешний baseline — только #19, не незавершённая #20. Production/реальный пилот остаются отдельными решениями.
+Площадка, домен/DNS, защищённый доступ управления и оператор test пока не выбраны. Off-host копии/scheduler/пороги/RPO/RTO/retention не выдумываются; доступны synthetic dump/restore-check и probe health/readiness/времени ответа/диска/опционального возраста копии. PR #85 (#20) merged во время работы над #22; main `02d9630` интегрирована, standalone test использует опубликованные bootstrap-local/migrator/runtime интерфейсы и схему 3. CI/HTTPS/копии повторно проверяются на этой main; общие файлы #20 не меняются. Production/реальный пилот остаются отдельными решениями.
 
 ## Вариант полного MVP после S3/S4
 

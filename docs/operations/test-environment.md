@@ -4,7 +4,7 @@
 
 Docker Engine/Buildx и Compose v2, Python 3, Git; сборка использует закреплённые образы, lockfiles и Go из [ops/Dockerfile](../../ops/Dockerfile). Для CI/host-проверок Go 1.27.1, Node 24.19.0/npm 11.9.0. Test — самостоятельный [Compose](../../ops/test-compose.yaml), не overlay dev-среды. Свой уникальный Compose project, тома и config; API и БД не имеют опубликованных портов. БД подключена только к Docker network `internal: true`; снаружи доступен edge. Host/Docker administrator всё равно имеет доступ: это не граница прав администратора или tenant/RLS.
 
-Каркас #19 использует одну синтетическую роль PostgreSQL для API/миграций/seed. Это временное ограничение принятой main, не готовая политика production. Отдельные runtime/migration роли принадлежат #20 и подключаются после её приёмки/merge с повторной проверкой CI. Нельзя выдавать отсутствие DB-порта за выполнение #20.
+Main `02d9630` включает #20/PR #85: bootstrap-local запускается явно только в этом отдельном синтетическом кластере, затем migrator выполняет схему 3/seed, API получает только judeos_runtime. Readiness отвергает привилегированную runtime роль. Bootstrap admin credential не передаётся API/миграциям; runtime не получает admin/migrator secrets. Это переиспользование опубликованного интерфейса #20, не новая политика production или реализованная auth #21.
 
 ## Локальная проверка
 
@@ -26,7 +26,7 @@ Builder создаётся отдельно, существующий не за�
 
 Открыть `https://localhost:8443/`, `/docs`, `/healthz`, `/readyz`. Локальный Caddy выпускает сертификат от своего CA; `local-root.crt` — публичный корень только этого синтетического test. `curl --cacert /tmp/judeos-test/local-root.crt https://localhost:8443/readyz` проверяет цепочку и hostname. Для просмотра в браузере импортировать этот корень в отдельный тестовый профиль; без доверия браузер предупредит. Не использовать `-k`, отключение TLS verification или глобальное доверие неизвестному CA. Это локальная HTTPS-проверка, не публичный сертификат. В локальном режиме HTTP redirect отключён, чтобы нестандартный host-порт 8443 не подменялся 443.
 
-`up` запускает БД → миграции → явный seed → API → edge. Ошибка migrator/seed не позволяет стартовать API. Два fixtures вымышлены, повторный seed не размножает записи. `check` проверяет фактическое отсутствие DB port bindings и внутреннюю сеть через Docker inspect, затем ответы через HTTPS. `exercise` останавливает DB и проверяет health 200/readiness 503, возвращает DB и ждёт readiness 200; только в собственной disposable среде.
+`up` ждёт final TCP readiness PostgreSQL: временный Unix-socket server initdb не считается готовностью к bootstrap. Затем запускает БД → bootstrap-local → миграции → явный seed → API → edge. Ошибка bootstrap/migrator/seed не позволяет стартовать API. Fixtures двух клубов/объектов вымышлены, повторный seed не размножает записи. `check` проверяет фактическое отсутствие DB port bindings и внутреннюю сеть через Docker inspect, затем ответы через HTTPS. `exercise` останавливает DB и проверяет health 200/readiness 503, возвращает DB и ждёт readiness 200; только в собственной disposable среде.
 
 ```sh
 python3 ops/test-stack.py --config /tmp/judeos-test/test.env status
@@ -41,7 +41,9 @@ python3 ops/test-stack.py --config /tmp/judeos-test/test.env down
 |---|---|---|
 | `test.env` | project/image/domain/ports/пути; без пароля | Compose/operator |
 | `db-password` | случайный пароль только этой synthetic БД | PostgreSQL через secret file |
-| `api-secrets.env` | DATABASE_URL с тем же synthetic credential | migrator, seed, API через env_file |
+| `bootstrap-secrets.env` | BOOTSTRAP_DATABASE_URL, отдельные MIGRATION_PASSWORD/RUNTIME_PASSWORD | только завершающийся bootstrap-local |
+| `migration-secrets.env` | MIGRATION_DATABASE_URL роли judeos_migrator | migrator и seed |
+| `api-secrets.env` | DATABASE_URL роли judeos_runtime | только API |
 | `local-root.crt` | публичный локальный CA | только клиент локальной проверки |
 
 API main принимает DATABASE_URL через environment. Docker administrator может прочитать process/container environment; отдельный secret-file API-интерфейс не выдумывается. Не публиковать `docker compose config`, inspect Environment, config-каталог, dump или credentials в CI logs/Issue/PR. TLS защищает внешний HTTP; внутреннее DB-соединение пока `sslmode=disable` внутри изолированной сети одного host. Для разделённых host/production нужен отдельный защищённый DB-канал.

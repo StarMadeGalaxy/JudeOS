@@ -10,18 +10,29 @@ services:
     volumes: [postgres-data:/var/lib/postgresql]
     networks: [private]
     healthcheck:
-      test: [CMD-SHELL, pg_isready -U judeos_test -d judeos_test]
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U judeos_test -d judeos_test]
       interval: 2s
       timeout: 2s
       retries: 30
+  bootstrap:
+    image: ${TEST_IMAGE:?Set TEST_IMAGE in external test.env}
+    entrypoint: [/app/db]
+    command: [bootstrap-local]
+    env_file: ["${TEST_CONFIG_DIR:?Set external TEST_CONFIG_DIR}/bootstrap-secrets.env"]
+    networks: [private]
+    depends_on:
+      db: {condition: service_healthy}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
   migrate:
     image: ${TEST_IMAGE:?Set TEST_IMAGE in external test.env}
     entrypoint: [/app/db]
     command: [migrate]
-    env_file: ["${TEST_CONFIG_DIR:?Set external TEST_CONFIG_DIR}/api-secrets.env"]
+    env_file: ["${TEST_CONFIG_DIR}/migration-secrets.env"]
     networks: [private]
     depends_on:
-      db: {condition: service_healthy}
+      bootstrap: {condition: service_completed_successfully}
     read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
@@ -29,7 +40,7 @@ services:
     image: ${TEST_IMAGE}
     entrypoint: [/app/db]
     command: [seed-synthetic]
-    env_file: ["${TEST_CONFIG_DIR}/api-secrets.env"]
+    env_file: ["${TEST_CONFIG_DIR}/migration-secrets.env"]
     networks: [private]
     depends_on:
       migrate: {condition: service_completed_successfully}

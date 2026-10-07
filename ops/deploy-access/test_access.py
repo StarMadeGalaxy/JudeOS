@@ -34,9 +34,11 @@ class Validation(unittest.TestCase):
     def test_command_boundary(self):
         self.assertEqual(entry.arguments("check"), ["check"])
         self.assertEqual(entry.arguments("deploy " + DIGEST), ["deploy", DIGEST])
+        self.assertEqual(entry.arguments("deploy v0.1.0-test " + DIGEST), ["deploy", "v0.1.0-test", DIGEST])
         for value in ["", "sh", "check; id", "check\nid", "check ", "sftp", "scp -t /tmp",
                       "deploy latest", "deploy " + DIGEST.upper(), "deploy " + DIGEST + " x",
-                      "deploy $(id)", "deploy '" + DIGEST + "'"]:
+                      "deploy $(id)", "deploy '" + DIGEST + "'", "deploy v0.1.0;id " + DIGEST,
+                      "deploy v0.1.0 " + DIGEST + "\ncheck"]:
             with self.subTest(value=value), self.assertRaises(ValueError):
                 entry.arguments(value)
 
@@ -136,6 +138,40 @@ class Policy(unittest.TestCase):
                 self.assertEqual(controller.main(args), 2)
             self.assertFalse(json.loads(output.getvalue())["ok"])
 
+    def test_adapter_keeps_lock_after_controller_is_killed(self):
+        ready, done = self.base / "ready", self.base / "done"
+        self.configure(f'#!/bin/sh\ntouch {ready}\nsleep 2\ntouch {done}\n')
+        harness = self.base / "harness.py"
+        harness.write_text(f'''import sys
+sys.path.insert(0, {str(HERE)!r})
+import controller
+from pathlib import Path
+controller.POLICY = Path({str(self.policy)!r})
+controller.ADAPTER = Path({str(self.adapter)!r})
+controller.LOCK = Path({str(controller.LOCK)!r})
+controller.main(["deploy", {DIGEST!r}])
+''')
+        process = subprocess.Popen(["python3", str(harness)], stdout=subprocess.DEVNULL)
+        try:
+            for _ in range(100):
+                if ready.exists():
+                    break
+                time.sleep(0.02)
+            self.assertTrue(ready.exists())
+            process.kill()
+            process.wait(timeout=5)
+            with self.assertRaisesRegex(controller.Denied, "deployment_busy"):
+                controller.apply(DIGEST)
+            for _ in range(150):
+                if done.exists():
+                    break
+                time.sleep(0.02)
+            self.assertTrue(done.exists())
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=5)
+
 
 @unittest.skipUnless(os.geteuid() == 0 and Path("/usr/sbin/sshd").exists(), "real SSH needs test image")
 class OpenSSH(unittest.TestCase):
@@ -208,6 +244,24 @@ class OpenSSH(unittest.TestCase):
         p = subprocess.run(["runuser", "-u", "judeos-deploy", "--", "/bin/sh", "-c",
                             "echo replaced >> /var/lib/judeos-deploy/.ssh/authorized_keys"], capture_output=True)
         self.assertNotEqual(p.returncode, 0)
+
+    def test_tagged_request_reaches_root_adapter_without_shell_expansion(self):
+        policy, adapter = controller.POLICY, controller.ADAPTER
+        self.assertFalse(policy.exists())
+        self.assertFalse(adapter.exists())
+        output = self.base / "tagged-arguments"
+        try:
+            policy.write_text(json.dumps({"repository": "registry.example.invalid/synthetic/app"}))
+            policy.chmod(0o600)
+            adapter.write_text(f'#!/bin/sh\nprintf "%s\\n" "$#" "$1" "$2" > {output}\n')
+            adapter.chmod(0o755)
+            result = self.ssh("deploy v0.1.0-test " + DIGEST)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(output.read_text().splitlines(),
+                             ["2", "registry.example.invalid/synthetic/app@" + DIGEST, "v0.1.0-test"])
+        finally:
+            policy.unlink(missing_ok=True)
+            adapter.unlink(missing_ok=True)
 
     def test_key_revocation_blocks_new_connections(self):
         path = Path("/var/lib/judeos-deploy/.ssh/authorized_keys")

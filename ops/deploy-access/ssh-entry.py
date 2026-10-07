@@ -13,6 +13,8 @@ def arguments(command):
         return ["check"]
     if re.fullmatch(r"deploy sha256:[0-9a-f]{64}", command):
         return command.split(" ")
+    if re.fullmatch(r"deploy v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)? sha256:[0-9a-f]{64}", command):
+        return command.split(" ")
     raise ValueError("command_denied")
 
 

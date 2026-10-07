@@ -1,10 +1,10 @@
 # Доступ к VPS и автоматизация синтетического test
 
-Обновлено 7 октября 2026. Задача [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), техническое предложение — [ADR 0010](../../planning/adr/0010-restricted-vps-deployment-access.md). [Inventory VPS](hostinger-vps.md) и #88/PR #90 уже в main. Контейнеры, первый релиз и реальное размещение остаются [#22 / draft PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89).
+Обновлено 7 октября 2026. Задача [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), техническое предложение — [ADR 0010](../../planning/adr/0010-restricted-vps-deployment-access.md). [Inventory VPS](hostinger-vps.md) и #88/PR #90 уже в main. Контейнеры, первый релиз и реальное размещение остаются [#22 / подготовительный PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89).
 
 ## Проверенные пользователем вводные
 
-Через консоль Hostinger пользователь предоставил: Ubuntu 24.04 LTS, Docker 29.8.2, Compose v5.6.0. `ss -lntp` для TCP 80/443 показал пустой список на момент проверки. Это не подтверждает работающий HTTPS на VPS. Домен `judopride.tech` назначен IP `187.7.69.230`; пользователь сообщил об автоматическом выпуске SSL, но текущие issuer, TLS termination и renewal неизвестны. Новый Nginx/Angie/Envoy не требуется для установки SSH-доступа. Выбор и установка прокси — #22 после preflight; существующий сертификат нельзя считать автоматически подключённым к будущему контейнеру.
+Через консоль Hostinger пользователь предоставил: Ubuntu 24.04 LTS, Docker 29.8.2, Compose v5.6.0. `ss -lntp` для TCP 80/443 показал пустой список на момент проверки. Это не подтверждает работающий HTTPS на VPS. Домен `judopride.tech` назначен IP `187.7.69.230`; пользователь сообщил об автоматическом выпуске SSL, но текущие issuer, TLS termination и renewal неизвестны. Новый Nginx/Angie/Envoy для выбранного запуска не требуется: в #22 пользователь выбрал Caddy/public ACME после preflight; существующий сертификат нельзя считать автоматически подключённым к будущему контейнеру.
 
 Публичный SSH ED25519 fingerprint, полученный пользователем из `/etc/ssh/ssh_host_ed25519_key.pub`:
 
@@ -12,19 +12,15 @@
 SHA256:+eOshfW+q1dZVPC0oUvA5DJPEFJTDcPkOYQHpKvPrdA
 ```
 
-Это отпечаток SSH, а не SSL. Полный публичный host key ещё нужно получить и сверить. SSH-порт не предоставлен; в командах ниже 22 — пример, подтвердите фактический порт в консоли:
-
-```bash
-/usr/sbin/sshd -T | awk '$1 == "port" {print}'
-```
+Это отпечаток SSH, а не SSL. Позднее пользователь установил bootstrap, reload-нул SSH и проверил подключение с Mac: `ok:true`, Ubuntu 24.04/x86_64, Docker29.8.2/Compose5.6.0, TCP listener только22, adapter false. SSH-порт 22 подтверждён этой проверкой. Источник — DECISIONS U2026-10-07-VPS-04 / [комментарий #91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6045440734). Это не подключение агента или работающий HTTPS. Полный host key закреплён пользователем на Mac; в GitHub его ещё нужно сохранить напрямую.
 
 ## Что получит ключ
 
 [install.py](../../ops/deploy-access/install.py) создаёт `judeos-deploy`, корневую собственность его home/authorized_keys, отдельный OpenSSH Match и единственное sudo-разрешение на root-owned [controller.py](../../ops/deploy-access/controller.py). Пользователь не состоит в Docker/sudo, не может менять ключи/контроллер и не получает обычную оболочку, SFTP/SCP, TTY или forwarding. Другие SSH-пользователи и firewall не изменяются. Root/admin-доступ пользователя сохраняется для установки и восстановления.
 
-Контроллер принимает только `check` либо `deploy sha256:<64 lowercase hex>`. `check` возвращает разрешённые поля ОС/архитектуры, версии Docker/Compose и наличие TCP-слушателей на 22/80/443/5432/8080. Порты в результате не говорят об их доступности извне. Переменные, raw errors, docker inspect/logs и секреты не выдаются.
+Контроллер принимает `check` либо точный tagged/digest `deploy` из раздела 6. `check` возвращает разрешённые поля ОС/архитектуры, версии Docker/Compose и наличие TCP-слушателей на 22/80/443/5432/8080. Порты в результате не говорят об их доступности извне. Переменные, raw errors, docker inspect/logs и секреты не выдаются.
 
-`deploy` пока закрыт с `release_adapter_unconfigured`: адаптер приложения и release policy установщик не создаёт. Будущий root-owned адаптер запускает приложение с полномочиями Docker/root; это существенная административная capability, даже при ограниченной оболочке. Её включение требует ревью интеграции #22, а не просто установки ключа. Не выдавайте аккаунту членство Docker или произвольный sudo для обхода этого ограничения.
+`deploy` без активации закрыт с `release_adapter_unconfigured`: SSH установщик не создаёт policy, адаптер активирует оператор отдельно после release gate. Подготовленный root-owned адаптер запускает приложение с полномочиями Docker/root; это существенная административная capability, даже при ограниченной оболочке. Её включение требует ревью интеграции #22, а не просто установки ключа. Не выдавайте аккаунту членство Docker или произвольный sudo для обхода этого ограничения.
 
 ## 1. Создать ключ на своей машине
 
@@ -43,7 +39,7 @@ cat "$access_dir/id_ed25519.pub"
 
 ## 2. Установить ограниченный аккаунт на VPS
 
-Сначала ревью PR #91; до merge используйте его опубликованную ветку `feat/91-vps-deploy-access`. Здесь root выполняет только настройку доступа, приложение не запускается:
+Сначала ревью PR #92 (Issue #91); до merge используйте его опубликованную ветку `feat/91-vps-deploy-access`. Здесь root выполняет только настройку доступа, приложение не запускается:
 
 ```bash
 apt-get update
@@ -83,48 +79,90 @@ Firewall Hostinger/Ubuntu должен разрешать фактический
 
 ## 4. Подключить GitHub Actions
 
-Создать Environment **test-vps** в [настройках репозитория](https://github.com/StarMadeGalaxy/JudeOS/settings/environments), ограничить deployment branch `main`, настроить required reviewers, если доступно на используемом тарифе. Если protection недоступен, не считать ручной approval настроенным. Включение первого workflow выполнять после ревью кода на main.
+Environment **test-vps** уже обнаружен GitHub REST. На момент проверки deployment branch policy отсутствует. Чтение Secrets/Variables и изменение policy этим агентом запрещены HTTP 403 `Resource not accessible by integration`; наличие ключа/переменных не подтверждено. Пользователь сообщил, что пока проверил только Mac. Настройте Environment в [Settings → Environments](https://github.com/StarMadeGalaxy/JudeOS/settings/environments): Deployment branches and tags → Selected branches and tags → branch `main`. Для выбранных автоматических обновлений required reviewer не обязателен; ручное ревью изменений кода остаётся обычным PR-процессом.
 
-В Environment Variables установить:
-
-| Имя | Значение |
-|---|---|
-| `JUDEOS_VPS_HOST` | `187.7.69.230` |
-| `JUDEOS_VPS_PORT` | Проверенный SSH-порт |
-| `JUDEOS_VPS_KNOWN_HOSTS` | Содержимое проверенного `known_hosts` из шага 3, публичный ключ |
-
-Из своей машины передать private key напрямую в Environment Secret, не выводя его:
+На Mac со своим авторизованным `gh` передайте ключ прямо в GitHub, не выводя содержимое:
 
 ```bash
+set -euo pipefail
+gh api user --jq .login
+access_dir="$HOME/.ssh/judeos-test"
+test -f "$access_dir/id_ed25519"
+test -f "$access_dir/known_hosts"
 gh secret set JUDEOS_VPS_SSH_KEY --repo StarMadeGalaxy/JudeOS --env test-vps \
-  < "$HOME/.ssh/judeos-test/id_ed25519"
+  < "$access_dir/id_ed25519"
+gh variable set JUDEOS_VPS_HOST --repo StarMadeGalaxy/JudeOS --env test-vps --body '187.7.69.230'
+gh variable set JUDEOS_VPS_PORT --repo StarMadeGalaxy/JudeOS --env test-vps --body '22'
+gh variable set JUDEOS_VPS_KNOWN_HOSTS --repo StarMadeGalaxy/JudeOS --env test-vps \
+  < "$access_dir/known_hosts"
 ```
 
-Готовый [github-preflight.yml](../../ops/deploy-access/github-preflight.yml) — шаблон workflow **проверки доступа**, а не релиза. После согласования он копируется в `.github/workflows/vps-preflight.yml` через обычную ветку/PR. Пока лежит вне `.github`, Actions его не запускает. Он допускает только ручной запуск на main, читает клиент из конкретного main commit, получает secret только в Environment job, проверяет pinned host и удаляет временные файлы ключа. События PR и произвольная shell-команда не поддерживаются. Секреты в runner не означают, что они доступны этому чату.
+Используйте ранее проверенный pin: не создавайте новый через непроверенный `ssh-keyscan`. Private key не передавать в чат. Если `gh` на Mac ещё не авторизован, `gh auth login --web` использует браузер; агенту токен не нужен.
+
+[#91 workflow preflight](../../.github/workflows/vps-preflight.yml) получает Environment credentials только при ручном запуске на `main`. После ревью/merge #92:
+
+```bash
+gh workflow run vps-preflight.yml --repo StarMadeGalaxy/JudeOS --ref main
+gh run list --repo StarMadeGalaxy/JudeOS --workflow vps-preflight.yml --limit 3
+```
+
+Этот check подтверждает канал Actions → VPS и ничего не запускает. [Шаблон](../../ops/deploy-access/github-preflight.yml) сохранён для чтения; активный файл уже подготовлен в `.github/workflows`, но до merge на default branch ручной запуск недоступен. Environment Secrets не становятся доступными этому чату.
 
 ## 5. Как дать прямой доступ агенту
 
-Сейчас среда этого агента имеет restricted network, VPS отсутствует в разрешённых направлениях, SSH credential не подключена. Изменение настроек GitHub Secrets это не меняет. Для прямого `client.py check` потребуется:
+Сейчас среда этого агента имеет restricted network, VPS отсутствует в разрешённых направлениях, SSH credential не подключена. Проверка с Mac и GitHub Secrets это не меняют. Прямому агенту нужны защищённо подключённый файл ключа, проверенный known_hosts и поддерживаемое разрешение TCP к `187.7.69.230:22`/HTTPS к `judopride.tech`. Не передавайте значения через чат/Git, не отключайте proxy/TLS/host-key verification и не обходите сетевую политику.
 
-1. В конфигурации среды агента предоставить секрет защищённым способом, например `JUDEOS_VPS_SSH_KEY`; значение не передавать через чат или репозиторий. Настроить read-only файл ключа или запись из секретной переменной в временный файл с mode 0600 без вывода значения.
-2. Через поддерживаемую настройку среды разрешить TCP к `187.7.69.230:<проверенный порт>`; для проверок приложения — HTTPS к `judopride.tech`. HTTP allowlist сама по себе не подтверждает доступ SSH/TCP. Если такой настройки нет, использовать GitHub Actions или отдельную согласованную среду со связностью; не обходить proxy/политику маршрутов.
-3. Подключить проверенный known_hosts и повторно проверить readiness credential/сетевую политику выбранной среды, затем выполнить тот же `client.py check`.
+Для этого workflow достаточно GitHub-hosted runner: после настройки Environment агент может инициировать согласованный workflow через GitHub API без чтения private key и без прямого SSH из облачной среды. Пользователь сохраняет root-консоль Hostinger как административный канал восстановления.
 
-Ключ Environment Actions остаётся в GitHub; агент может инициировать согласованный workflow через GitHub API, когда шаблон установлен на main, без чтения private key. Для этого не требуется прямое SSH-соединение из облачной среды агента. Полный deployment job добавляется после согласования #22; preflight не запускает приложение.
+## 6. Включить release adapter после интеграции #22
 
-## 6. Завершение автоматического деплоя вместе с #22
+Пользователь выбрал автоматические обновления **после успешного CI и публикации релиза, если миграции не изменились** (DECISIONS U2026-10-07-VPS-AUTO). Подготовительный [PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89) стал ready for review с `Refs #22`; его merge не закрывает #22. Он предоставляет CI/tag/GHCR/manifest и public Caddy/test-stack. #92 добавляет транспорт, root adapter и workflow; оба PR объединяются вручную после ревью. До этого и до первого реального published release приложение не объявляется развёрнутым. На момент проверки GitHub Releases пусты; выпускать первый тег и выбирать номер версии следует после интеграции кода, по release runbook #22.
 
-Предложенный transport-контракт: root устанавливает `/etc/judeos-deploy/release.json` с фиксированным `repository` и `/usr/local/lib/judeos-deploy/apply-release`. Их файлы и каждый родитель должны принадлежать root и не быть доступны для записи группе/остальным; symlink отклоняется. SSH-пользователь не может загружать или менять адаптер/policy. Контроллер принимает digest и передаёт адаптеру ровно один аргумент `<repository>@sha256:<digest>`, выполняет его под чистым окружением с единой блокировкой. stdout/stderr адаптера скрыты; доступны нейтральные коды результата. Proxy и серверные credentials при необходимости загружает адаптер из администратором проверенной защищённой конфигурации, а не из среды SSH.
+Не нужен отдельный Nginx/Angie/Envoy: пользователь выбрал Caddy/public ACME в #22 после повторного preflight. Перед первым запуском оператор проверяет отсутствие чужих listeners/контейнеров на 80/443, DNS A/AAAA, доступность inbound 80/443, TLS ownership/renewal, свободный диск и ресурсы. SSH административный канал сохранить, PostgreSQL/API 5432/8080 публично не открывать. Docker-published ports требуют проверки Docker/firewall и снаружи, одной настройки UFW недостаточно. Чужие сервисы/сертификаты не удалять.
 
-До включения адаптера согласовать с #22:
+1. По [runbook #22 в подготовительном PR](https://github.com/StarMadeGalaxy/JudeOS/blob/feat/22-ci-test-release/docs/operations/hostinger-first-run.md) получить **реальный published release.json**, создать root-owned `/srv/judeos-test` на точном `source_commit` в актуальной `origin/main`, выполнить release identity check. В `/var/lib/judeos-test-release/release.json` хранится публичный manifest. На сервере используется готовый digest, приложение не собирается. Не подставлять вымышленный tag/digest.
+2. Получить в существующем root setup checkout принятый код #92. Каталог не сбрасывать при чужих/локальных изменениях:
 
-- источник разрешённого опубликованного release/digest и проверку его CI/происхождения; любой произвольный digest в нужном registry не становится одобренным релизом;
-- точные пути server-owned конфигурации, bootstrap/migrate/seed/runtime, расположение образа и проверку совместимости схемы; credentials остаются на сервере;
-- текущий proxy/HTTPS и renewal, внешний health/readiness по `https://judopride.tech`, закрытые API/БД-порты;
-- foreground completion/отмену и границы lock, нейтральную диагностику, действия при прерванном запуске; адаптер не должен отпускать блокировку до окончания операций;
-- триггер после успешного CI/публикации main release, Environment protection, concurrency `cancel-in-progress: false`; автоматическое применение допустимо только проверенного релиза и после согласованного включения.
+```bash
+set -euo pipefail
+test -z "$(git -C /root/judeos-deploy-setup status --porcelain)"
+git -C /root/judeos-deploy-setup fetch origin main
+git -C /root/judeos-deploy-setup checkout --detach origin/main
+python3 /root/judeos-deploy-setup/ops/deploy-access/enable-release.py \
+  --checkout /srv/judeos-test \
+  --manifest /var/lib/judeos-test-release/release.json
+```
 
-Адаптер и deployment job здесь не установлены: #22 пока draft. Первый запуск может выполнить администратор по её проверенным командам; #91 не требует закрыть #22 прежде, чем дать SSH preflight. Не использовать dev `make up` как публичный deploy. Нет обещания автоматического rollback БД/первого предыдущего совместимого релиза. По [передаче #22](https://github.com/StarMadeGalaxy/JudeOS/issues/22#issuecomment-6044650020) пользователь назначил @NikishGum оператором test в её чате; production-ответственность, реальные права/сроки/копии/RPO/RTO не согласованы; только синтетические данные до #18/#24.
+[enable-release.py](../../ops/deploy-access/enable-release.py) — root-команда оператора. Она повторяет published/tag/CI gate, проверяет accepted clean checkout, запрещает доступные для записи не-root файлы/родителей (включая Git config/hooks), фиксирует SQL/schema baseline и копирует reviewed controller/entry/gate/adapter. Новый `/srv/judeos-test-config` создаётся через #22 `test-env.py`: public Caddy, проект `judeos-hostinger-test`, domain `judopride.tech`, ports 80/443, secrets 0600/каталог 0700. Уже существующие secrets/config не перегенерируются; их соответствие проверяется при deploy. Policy `/etc/judeos-deploy/release.json` root 0600 записывается последней. Команда не запускает приложение, не меняет ключ/SSH rule, повтор при уже включённой policy отказывает. Новый SSH reload не нужен: ForceCommand использует тот же путь обновлённого entry.
+
+3. С Mac повторить `client.py check`: теперь ожидается `release_adapter_installed:true` (этот флаг означает наличие файлов, а успешный deploy — их фактическую проверку). Выполнить первый dispatch с настоящим опубликованным тегом:
+
+```bash
+read -r -p 'Опубликованный CI-verified release tag: ' RELEASE_TAG
+gh workflow run vps-deploy.yml --repo StarMadeGalaxy/JudeOS --ref main \
+  -f "release_tag=$RELEASE_TAG"
+gh run list --repo StarMadeGalaxy/JudeOS --workflow vps-deploy.yml --limit 3
+```
+
+Первый автоматический CI event может прийти до установки adapter/credentials и безопасно завершиться ошибкой; после настройки используйте этот manual dispatch. Зафиксировать run URL, release tag/commit/digest/schema, безопасные результаты в #91/#22. Только фактический successful deploy с внешним check подтверждает размещение. После него следующие опубликованные CI-релизы обновляются автоматически.
+
+### Что проверяет автоматический workflow
+
+[workflow](../../.github/workflows/vps-deploy.yml) использует `workflow_run: CI completed`: публикация через `GITHUB_TOKEN` обычно не запускает новый `release` workflow. Job допускает successful tag push из этого репозитория либо ручной dispatch на `main`; код транспорта берётся из main commit, не из недоверенного PR. [release-gate.py](../../ops/deploy-access/release-gate.py) требует опубликованный release.json, tag→manifest commit, ancestry в main, именно workflow `ci.yml` и успешные jobs текущей попытки `Go`, `Web and contract`, `Migrations`, `Image and HTTPS`, `Publish tagged release`. Проверяется fixed repository/digest/platform/rebuild/schema/hash metadata; skipped publish, fork/PR CI и заменённый tag отвергаются. Это сверка GitHub/OCI identity, не криптографически подписанная provenance.
+
+SSH grammar — `deploy vMAJOR.MINOR.PATCH[-prerelease] sha256:<64 hex>`, без shell evaluation/paths/commands. Старый `deploy sha256:...` сохранён для первоначального baseline tag; для нового релиза требуется явный tag. [apply-release](../../ops/deploy-access/apply-release) на сервере повторяет gate, сравнивает schema version и **полный набор SQL-хешей** с root-owned policy до pull/config update. Изменённые миграции, неизвестный текущий image, dirty/изменённый baseline checkout, неподходящий public config, writable secrets, чужой image identity или более старый/diverged source прекращают операцию.
+
+При неизменной схеме adapter меняет только `TEST_IMAGE`, сохраняет server credentials/config/volumes/Caddy material и вызывает **замороженный baseline** `test-stack.py up`, затем HTTPS `check`. Автообновление не скачивает/не исполняет новые server-side скрипты из очередного tag. Изменение ops baseline/SQL требует отдельного рассмотрения оператором; policy не переписывается автоматически. Отсутствие SQL-изменений ограничивает rollout, но не доказывает полной совместимости бизнес-поведения; readiness/внешний check обязательны, предыдущий совместимый релиз пока не установлен.
+
+Environment job и root `flock` сериализованы; `cancel-in-progress:false`, adapter в отдельной session удерживает lock fd при потере SSH/controller. Повторное подключение не запускает второй deploy, пока первый работает. Actions timeout/ошибка SSH не означает остановленный серверный процесс: сначала оператор проверяет state/процессы, затем повторяет. Raw stdout/stderr root adapter скрыты. `/var/lib/judeos-deploy/status.json` root 0600 хранит allowlisted attempted/successful image/source/tag и phase; при сбое после update остаётся `applying`, а не ложный success. Не очищать volume, не выполнять автоматический downgrade/rollback БД. Для диагностики оператор использует status и runbook #22 через отдельный admin channel; перед публикацией logs исключает credentials.
+
+[public-check.py](../../ops/deploy-access/public-check.py) из внешнего runner требует DNS только на предоставленный IPv4 (неожиданный AAAA требует проверки), HTTP→HTTPS redirect, TLS/hostname verification, 200 web/health/readiness/OpenAPI/Swagger и корректные health/readiness bodies. TCP контрольные 80/443 доступны, 5432/8080 недоступны с этого runner; это сопоставляется с Docker network/bindings/firewall на сервере и не доказывает закрытие всех маршрутов.
+
+### Proxy, TLS и registry credentials на сервере
+
+Controller не принимает среду SSH. Если VPS использует proxy/дополнительную CA/приватный registry, оператор отдельно создаёт root-owned `/etc/judeos-deploy/server.env` mode 0600. Разрешены только `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, lowercase варианты, `SSL_CERT_FILE`, `SSL_CERT_DIR`, `DOCKER_CONFIG`, `GH_TOKEN`; формат `NAME=value`, без shell evaluation. GH_TOKEN необязателен для публичных GitHub API и не передаётся Compose. Не хранить секреты в policy/Git. Docker daemon proxy/TLS и registry login конфигурируются оператором отдельно: env клиента не меняет daemon. Не отключать verification; дополнительная public CA подключается явно к нужному клиенту/daemon. Обычный `make up` не требует host CA, дополнительный build CA остаётся опциональным `BUILD_CA_PATH`.
+
+#91 остаётся открытой до Actions access/deploy и внешнего результата. #22 отдельно завершает реальный release/VPS/protection/эксплуатационные проверки. Оператор test — @NikishGum по источнику #22; реальные данные/production/сроки/RPO/RTO этим не согласованы, до #18/#24 используется только synthetic.
 
 ## Отзыв и проверки
 
@@ -143,4 +181,4 @@ docker build -f ops/deploy-access/test.Dockerfile -t judeos-deploy-access:test .
 docker run --rm --network none judeos-deploy-access:test
 ```
 
-Для облачного HTTPS-прокси build допускает явный публичный CA `--secret id=build_ca,src=/etc/ssl/certs/ca-certificates.crt`; proxy/TLS verification сохраняются. Локальный тест проверяет настоящий OpenSSH и sudo, host-key mismatch, отказ оболочки/TTY/forwarding/SFTP, повтор bootstrap, грамматику команды, root ownership/policy, lock и скрытие raw errors. Успех этих тестов не означает установленного доступа, TLS, release или deployment на Hostinger.
+Для облачного HTTPS-прокси build допускает явный публичный CA `--secret id=build_ca,src=/etc/ssl/certs/ca-certificates.crt`; proxy/TLS verification сохраняются. Локальные тесты проверяют настоящий OpenSSH и sudo, tag grammar/lock после потери controller, gate и adapter на synthetic API/command fixtures (без реального GHCR/VPS), host-key mismatch, отказ оболочки/TTY/forwarding/SFTP, повтор bootstrap, грамматику команды, root ownership/policy, lock и скрытие raw errors. Успех этих тестов не означает установленного доступа, TLS, release или deployment на Hostinger.

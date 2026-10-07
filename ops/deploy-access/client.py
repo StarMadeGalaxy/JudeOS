@@ -8,13 +8,17 @@ import subprocess
 import sys
 
 
-def command(host, port, identity, known_hosts, action, digest=None):
+def command(host, port, identity, known_hosts, action, digest=None, tag=None):
     if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9.-]{0,252}", host) or not 1 <= port <= 65535:
         raise ValueError("invalid_destination")
     remote = "check"
     if action == "deploy" and digest and re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
         remote = "deploy " + digest
-    elif action != "check" or digest:
+        if tag:
+            if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", tag):
+                raise ValueError("invalid_tag")
+            remote = "deploy " + tag + " " + digest
+    elif action != "check" or digest or tag:
         raise ValueError("invalid_command")
     return ["/usr/bin/ssh", "-F", "/dev/null", "-T", "-p", str(port),
             "-i", str(identity.resolve()), "-o", "IdentitiesOnly=yes",
@@ -34,13 +38,14 @@ def main():
     p.add_argument("--port", type=int, default=22)
     p.add_argument("--identity", type=Path, required=True)
     p.add_argument("--known-hosts", type=Path, required=True)
+    p.add_argument("--tag")
     p.add_argument("action", choices=["check", "deploy"])
     p.add_argument("digest", nargs="?")
     a = p.parse_args()
     try:
         if not a.identity.is_file() or not a.known_hosts.is_file():
             raise ValueError("credential_files_missing")
-        args = command(a.host, a.port, a.identity, a.known_hosts, a.action, a.digest)
+        args = command(a.host, a.port, a.identity, a.known_hosts, a.action, a.digest, a.tag)
         result = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL, text=True, check=False)
         output = json.loads(result.stdout)

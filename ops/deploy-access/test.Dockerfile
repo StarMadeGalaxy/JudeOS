@@ -7,10 +7,10 @@ RUN --mount=type=secret,id=build_ca,mode=0444 \
         sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources; \
         set -- -o Acquire::https::CaInfo=/run/secrets/build_ca; \
     else set --; fi; \
-    apt-get "$@" -o Acquire::Retries=0 -o Acquire::https::Timeout=20 update && \
-    DEBIAN_FRONTEND=noninteractive apt-get "$@" -o Acquire::Retries=0 -o Acquire::https::Timeout=20 \
-        install -y --no-install-recommends python3 sudo openssh-server iproute2 ca-certificates && \
+    apt-get "$@" -o Acquire::Retries=2 -o Acquire::https::Timeout=20 update && \
+    DEBIAN_FRONTEND=noninteractive apt-get "$@" -o Acquire::Retries=2 -o Acquire::https::Timeout=20 \
+        install -y --no-install-recommends python3 sudo openssh-server iproute2 ca-certificates git && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/access
 COPY ops/deploy-access/ .
-CMD ["python3", "test_access.py"]
+CMD ["python3", "-m", "unittest", "discover", "-s", "/opt/access", "-p", "test_*.py", "-v"]

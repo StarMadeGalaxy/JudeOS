@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import stat
 import subprocess
 import sys
@@ -43,6 +44,18 @@ def capture(command):
         return None
 
 
+def trusted_tree(directory):
+    """Git config/hooks/index and imported helpers must also be root-owned."""
+    for root, dirs, files in os.walk(directory, followlinks=False):
+        for name in dirs:
+            path = Path(root) / name
+            info = path.lstat()
+            if info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISDIR(info.st_mode):
+                raise Denied("unsafe_checkout")
+        for name in files:
+            trusted(Path(root) / name)
+
+
 def preflight():
     # Only allowlisted fields; never docker inspect/logs, env, server config,
     # process arguments, certificates/private keys, or raw command errors.
@@ -67,7 +80,7 @@ def preflight():
             "release_adapter_installed": POLICY.exists() and ADAPTER.exists()}
 
 
-def apply(digest):
+def apply(digest, tag=None):
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
         raise Denied("command_denied")
     if not POLICY.exists() or not ADAPTER.exists():
@@ -78,6 +91,11 @@ def apply(digest):
     if not isinstance(policy, dict):
         raise Denied("invalid_release_policy")
     repository = policy.get("repository", "")
+    if tag is None:
+        tag = policy.get("release_tag")
+    if tag is not None and (not isinstance(tag, str) or not re.fullmatch(
+            r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", tag)):
+        raise Denied("command_denied")
     if not isinstance(repository, str) or not re.fullmatch(
             r"[a-z0-9][a-z0-9.-]*(?::[1-9][0-9]{0,4})?/[a-z0-9][a-z0-9._/-]*", repository):
         raise Denied("invalid_release_policy")
@@ -100,10 +118,10 @@ def apply(digest):
         # never uploaded/selected by the SSH caller. Suppress its logs, which
         # could contain DB credentials. No automatic rollback or DB downgrade.
         try:
-            subprocess.run([str(ADAPTER), repository + "@" + digest],
+            subprocess.run([str(ADAPTER), repository + "@" + digest, *([tag] if tag else [])],
                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                            stderr=subprocess.DEVNULL, env=BASE_ENV, cwd="/", check=True,
-                           pass_fds=(lock.fileno(),))
+                           pass_fds=(lock.fileno(),), start_new_session=True)
         except (OSError, subprocess.CalledProcessError):
             raise Denied("release_failed") from None
     return {"digest": digest}
@@ -113,10 +131,15 @@ def main(args):
     try:
         if os.geteuid() != 0:
             raise Denied("root_controller_required")
+        # A lost SSH connection must not interrupt an in-flight Compose/DB
+        # operation. Adapter runs in its own session and keeps the lock fd.
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
         if args == ["check"]:
             result = preflight()
         elif len(args) == 2 and args[0] == "deploy":
             result = apply(args[1])
+        elif len(args) == 3 and args[0] == "deploy":
+            result = apply(args[2], args[1])
         else:
             raise Denied("command_denied")
         print(json.dumps({"ok": True, "code": "completed", **result}))

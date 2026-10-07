@@ -1,0 +1,7 @@
+{
+	admin off
+}
+{$TEST_DOMAIN} {
+	# Public ACME only after DNS, firewall and host access have been supplied.
+	reverse_proxy api:8080
+}

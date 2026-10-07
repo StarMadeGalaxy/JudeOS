@@ -1,0 +1,6 @@
+{
+  "GET /": "Web shell, documented as static delivery in API README",
+  "GET /assets/*": "Vite build assets, one file per path; no directory listing or SPA fallback",
+  "GET /docs/assets/swagger-ui.css": "Pinned local Swagger stylesheet",
+  "GET /docs/assets/swagger-ui-bundle.js": "Pinned local Swagger bundle"
+}

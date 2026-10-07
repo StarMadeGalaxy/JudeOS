@@ -1,0 +1,53 @@
+name: judeos-synthetic
+services:
+  db:
+    image: postgres:18.3@sha256:7e32e9833a6fb1c92c32552794cb6ed569d51b445a54907d35fc112ef39684db
+    environment:
+      POSTGRES_USER: judeos_dev
+      POSTGRES_DB: judeos_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make env first}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-54329}:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judeos_dev -d judeos_dev"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  migrate:
+    image: judeos-scaffold:local
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+      secrets: [build_ca]
+    entrypoint: ["/app/db"]
+    command: ["migrate"]
+    environment:
+      DATABASE_URL: postgres://judeos_dev:${POSTGRES_PASSWORD}@db:5432/judeos_dev?sslmode=disable
+    depends_on:
+      db: {condition: service_healthy}
+  seed:
+    image: judeos-scaffold:local
+    entrypoint: ["/app/db"]
+    command: ["seed-synthetic"]
+    environment:
+      DATABASE_URL: postgres://judeos_dev:${POSTGRES_PASSWORD}@db:5432/judeos_dev?sslmode=disable
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  api:
+    image: judeos-scaffold:local
+    environment:
+      HTTP_ADDR: 0.0.0.0:8080
+      DATABASE_URL: postgres://judeos_dev:${POSTGRES_PASSWORD}@db:5432/judeos_dev?sslmode=disable
+      WEB_DIR: /app/web
+      API_DIR: /app/contract
+    ports: ["127.0.0.1:${HTTP_PORT:-8080}:8080"]
+    depends_on:
+      seed: {condition: service_completed_successfully}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+volumes:
+  postgres-data:
+secrets:
+  build_ca:
+    file: ${BUILD_CA_PATH:-/etc/ssl/certs/ca-certificates.crt}

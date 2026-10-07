@@ -1,7 +1,7 @@
 # Optional build trust for a managed/corporate HTTPS proxy.
 # Use together with compose.yaml; normal Docker Desktop needs no host CA file.
 services:
-  migrate:
+  bootstrap:
     build:
       secrets: [build_ca]
 secrets:

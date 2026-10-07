@@ -38,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-	r := httpapi.New(httpapi.Options{Ready: func(ctx context.Context) error { return database.Ready(ctx, db) }, WebDir: c.WebDir, APIDir: c.APIDir})
+	r := httpapi.New(httpapi.Options{Ready: func(ctx context.Context) error { return database.ReadyRuntime(ctx, db) }, WebDir: c.WebDir, APIDir: c.APIDir})
 	server := &http.Server{Addr: c.HTTPAddr, Handler: r, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

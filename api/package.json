@@ -3,12 +3,15 @@
   "private": true,
   "scripts": {
     "lint": "redocly lint openapi/openapi.yaml",
-    "bundle": "redocly bundle openapi/openapi.yaml -o dist/openapi.json",
+    "bundle": "redocly bundle openapi/openapi.yaml -o dist/openapi.json && node checks/runtime-build.cjs",
     "generate": "openapi-typescript openapi/openapi.yaml -o dist/schema.d.ts",
     "typecheck": "tsc --strict --noEmit --skipLibCheck --module nodenext --moduleResolution nodenext checks/client.ts",
     "check": "npm run lint && npm run bundle && npm run generate && npm run typecheck && node checks/contract.cjs",
     "preview": "node checks/preview.cjs",
-    "check:swagger": "playwright test -c checks/playwright.config.cjs"
+    "check:swagger": "playwright test -c checks/playwright.config.cjs",
+    "check:routes": "node checks/routes.cjs",
+    "check:runtime": "node checks/runtime.cjs",
+    "check:browser": "playwright test -c checks/runtime-browser.config.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

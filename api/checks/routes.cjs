@@ -1,0 +1,10 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
+const path = require('node:path');
+const spec = JSON.parse(fs.readFileSync('dist/runtime-openapi.json'));
+const exceptions = Object.keys(JSON.parse(fs.readFileSync('static-routes.json')));
+const routes = JSON.parse(execFileSync(process.env.JUDEOS_API_BINARY || path.join(__dirname, '../../bin/api'), ['-routes'], { encoding: 'utf8' }));
+const expected = Object.entries(spec.paths).flatMap(([route, item]) => Object.keys(item).map(method => `${method.toUpperCase()} ${route}`));
+assert.deepEqual(routes.sort(), [...expected, ...exceptions].sort());
+console.log(`chi.Walk: ${expected.length} implemented operations + ${exceptions.length} explicit static routes; planned operations are absent.`);

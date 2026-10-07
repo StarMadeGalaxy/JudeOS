@@ -1,0 +1,10 @@
+.git
+.env*
+**/node_modules
+**/dist
+bin
+**/test-results
+**/playwright-report
+planning
+design-system/reference
+JudeOS-onboarding

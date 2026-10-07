@@ -1,6 +1,6 @@
 # Словарь идентичности и общих инвариантов
 
-Статус: предложение контракта [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16), [ADR 0006](../planning/adr/0006-first-online-contract.md). Источник предметной модели — [DATA-MODEL](../planning/DATA-MODEL.md) и архитектура §§3–7. Это словарь ближайшего среза, не финальная схема таблиц и не реконструкция D54. Схемы wire DTO находятся только в [OpenAPI](openapi/openapi.yaml).
+Статус: принятый контракт (DECISIONS U2026-10-07-S0-01, PR #78 merged) [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16), [ADR 0006](../planning/adr/0006-first-online-contract.md). Источник предметной модели — [DATA-MODEL](../planning/DATA-MODEL.md) и архитектура §§3–7. Это словарь ближайшего среза, не финальная схема таблиц и не реконструкция D54. Схемы wire DTO находятся только в [OpenAPI](openapi/openapi.yaml).
 
 | Понятие / ID | Владелец | Область и смысл | В первом HTTP-сценарии |
 |---|---|---|---|

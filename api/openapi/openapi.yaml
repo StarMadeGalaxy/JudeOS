@@ -1,12 +1,8 @@
 openapi: 3.0.3
 info:
-  title: JudeOS — первый онлайн-сценарий (предложено)
-  version: 0.1.0-proposed
-  description: 'S0-01 / Issue #16. Контракт на ревью, ни одна операция ещё не реализована.
-    ADR 0006 имеет статус предложено. Все примеры синтетические. До согласования двумя
-    разработчиками и merge не начинать зависимую реализацию. Account не Athlete; Household
-    не право доступа. Все ответы Cache-Control: no-store. Same-origin HTTPS, нет CORS.
-    Общая политика 404/405, слешей и служебных маршрутов описана в api/README.md.'
+  title: JudeOS — принятый онлайн-контракт и каркас
+  version: 0.1.0
+  description: 'Контракт #16 принят пользователем (DECISIONS U2026-10-07-S0-01, PR #78 merged). Семь бизнес-операций запланированы; #19 реализует только служебные операции каркаса. Все данные синтетические. Источник контрактов — этот файл; runtime /openapi.json содержит только x-status implemented. Правила — api/README.md.'
   contact:
     url: https://github.com/StarMadeGalaxy/JudeOS/issues/16
 servers:
@@ -19,6 +15,8 @@ tags:
   description: Разрешённые занятия и сохранённый roster.
 - name: attendance
   description: Отметки с версией, историей и безопасным повтором.
+- name: operations
+  description: Служебные проверки и локальная документация каркаса.
 security:
 - staffSession: []
 paths:
@@ -625,6 +623,189 @@ paths:
               operation_id: 00000000-0000-4000-8000-000000000701
               base_version: 0
               status: present
+  /healthz:
+    get:
+      operationId: getHealth
+      tags:
+      - operations
+      summary: Проверить жизнеспособность API
+      description: 'Публичная проверка процесса, без БД/tenant/сессий. Повтор безопасен, CSRF/тела/параметров
+        нет. Возвращает 200 даже при недоступной БД. Внутренний synthetic/dev запуск; production/HTTPS —
+        #22. Таймаут HTTP-записи 10 секунд.'
+      x-status: implemented
+      x-issue: 19
+      security: []
+      responses:
+        '200':
+          description: Проверить жизнеспособность API
+          headers: &scaffoldid001
+            Cache-Control: &scaffoldid002
+              schema:
+                type: string
+                enum:
+                - no-store
+              description: Ответ не кэшируется.
+            X-Request-ID: &scaffoldid003
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              description: Случайный серверный ID запроса.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                - status
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - ok
+              example:
+                status: ok
+        '404':
+          description: Путь не найден
+          headers: *scaffoldid001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOT_FOUND
+                message: Путь не найден
+                request_id: '00000000000000000000000000000001'
+  /readyz:
+    get:
+      operationId: getReadiness
+      tags:
+      - operations
+      summary: Проверить готовность API
+      description: 'Чтение БД и версии goose (ровно 2); таймаут 2 секунды. Недоступная БД/старая/новая схема
+        — 503 и Retry-After: 2 без подробностей БД. Не проверяет auth/RLS/финансы/реальные данные. Публичный
+        внутренний dev маршрут, без CSRF/tenant/мутаций; повтор безопасен.'
+      x-status: implemented
+      x-issue: 19
+      security: []
+      responses:
+        '200':
+          description: Проверить готовность API
+          headers: *scaffoldid001
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                - status
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - ready
+              example:
+                status: ready
+        '404':
+          description: Путь не найден
+          headers: *scaffoldid001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOT_FOUND
+                message: Путь не найден
+                request_id: '00000000000000000000000000000001'
+        '503':
+          description: Сервис временно недоступен
+          headers:
+            Cache-Control: *scaffoldid002
+            X-Request-ID: *scaffoldid003
+            Retry-After:
+              schema:
+                type: integer
+                enum:
+                - 2
+              description: Повторить через две секунды.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: SERVICE_UNAVAILABLE
+                message: Сервис временно недоступен
+                request_id: '00000000000000000000000000000001'
+  /openapi.json:
+    get:
+      operationId: getRuntimeOpenAPI
+      tags:
+      - operations
+      summary: Получить контракт работающего каркаса
+      description: Bundled OpenAPI 3.0.3 только реализованных операций. Семь запланированных бизнес-операций
+        отсутствуют в выдаче; полный принятый контракт в репозитории. Публичный dev/synthetic маршрут, без
+        CSRF/tenant/мутаций.
+      x-status: implemented
+      x-issue: 19
+      security: []
+      responses:
+        '200':
+          description: Получить контракт работающего каркаса
+          headers: *scaffoldid001
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                openapi: 3.0.3
+                info:
+                  title: JudeOS scaffold
+                  version: 0.1.0
+                paths: {}
+        '404':
+          description: Путь не найден
+          headers: *scaffoldid001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOT_FOUND
+                message: Путь не найден
+                request_id: '00000000000000000000000000000001'
+  /docs:
+    get:
+      operationId: getSwaggerUI
+      tags:
+      - operations
+      summary: Открыть Swagger UI каркаса
+      description: 'Локальные CSS/JS и /openapi.json, Try it out отключён. Только dev/synthetic; production-доступ
+        — #22. Публичный маршрут, без CSRF/tenant/мутаций. /docs/ с завершающим слешем — 404, редиректов
+        нет.'
+      x-status: implemented
+      x-issue: 19
+      security: []
+      responses:
+        '200':
+          description: Открыть Swagger UI каркаса
+          headers: *scaffoldid001
+          content:
+            text/html:
+              schema:
+                type: string
+              example: <!doctype html><html lang="ru"><title>JudeOS API</title><body>Swagger UI</body></html>
+        '404':
+          description: Путь не найден
+          headers: *scaffoldid001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOT_FOUND
+                message: Путь не найден
+                request_id: '00000000000000000000000000000001'
 components:
   securitySchemes:
     staffSession:

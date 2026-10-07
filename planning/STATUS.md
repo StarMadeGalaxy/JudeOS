@@ -8,7 +8,7 @@
 
 [#19](https://github.com/StarMadeGalaxy/JudeOS/issues/19) принята после запуска `make up`: «принято, выбери следующий логичный issue». Источник — передача пользователя в текущем чате 7 октября 2026, DECISIONS U2026-10-07-S0-02. [PR #83](https://github.com/StarMadeGalaxy/JudeOS/pull/83) merged, Issue закрыта. Fetch main при старте #20 подтвердил `d9162a4f24c2615c79826d01bf4b7445a5e8f38f`. Приёмка каркаса не утверждает будущие рекомендации ADR 0007 или готовность MVP.
 
-[#20](https://github.com/StarMadeGalaxy/JudeOS/issues/20), исполнитель NikishGum; ветка `feat/20-tenant-isolation`, run `tenant-20-20261007T162818Z`, [claim](https://github.com/StarMadeGalaxy/JudeOS/issues/20#issuecomment-6042202052). До назначения: нет assignees/комментариев/конкурирующей ветки или открытого связанного PR; REST подтвердил единственного assignee. Пользователь ответил «in progress установлен» на конкретный блок #20/NikishGum/Project #1; источник ручного статуса — этот чат/DECISIONS S0-20-CLAIM. API read-back недоступен и повторно не блокирует. Реализация проверена, готовится commit/push/PR для ревью.
+[#20](https://github.com/StarMadeGalaxy/JudeOS/issues/20), исполнитель NikishGum; ветка `feat/20-tenant-isolation`, run `tenant-20-20261007T162818Z`, [claim](https://github.com/StarMadeGalaxy/JudeOS/issues/20#issuecomment-6042202052). До назначения: нет assignees/комментариев/конкурирующей ветки или открытого связанного PR; REST подтвердил единственного assignee. Пользователь ответил «in progress установлен» на конкретный блок #20/NikishGum/Project #1; источник ручного статуса — этот чат/DECISIONS S0-20-CLAIM. API read-back недоступен и повторно не блокирует. Реализация опубликована: [PR #85](https://github.com/StarMadeGalaxy/JudeOS/pull/85) готов к ревью, коммит кода `1b6d437`; последующий коммит фиксирует ссылку/передачу. Issue открыта до приёмки/merge, автоматического merge нет.
 
 ## Реализованная синтетическая основа
 
@@ -32,4 +32,4 @@ Projects GraphQL по-прежнему возвращает Resource not accessi
 
 ## Следующий шаг
 
-Открыть PR #20, передать на ревью второго разработчика/приёмку и ручной Review; автоматического merge нет. #21 (auth) начинается после приёмки/merge #20 и собственного резервирования. После merge обоим получить актуальную main; агент #22 повторно проверяет CI/команды с новым bootstrap/ролью/схемой 3. Реальные данные/пилот остаются заблокированы условиями #18/#24.
+Ревью/приёмка [PR #85](https://github.com/StarMadeGalaxy/JudeOS/pull/85) вторым разработчиком; нужен ручной Review для [#20](https://github.com/StarMadeGalaxy/JudeOS/issues/20) в [Project #1](https://github.com/users/StarMadeGalaxy/projects/1); автоматического merge нет. #21 (auth) начинается после приёмки/merge #20 и собственного резервирования. После merge обоим получить актуальную main; агент #22 повторно проверяет CI/команды с новым bootstrap/ролью/схемой 3. Реальные данные/пилот остаются заблокированы условиями #18/#24.

@@ -41,11 +41,13 @@ jobs:
           cache-dependency-path: |
             api/package-lock.json
             apps/web/package-lock.json
+      - name: Pin npm
+        run: npm install --global npm@11.9.0
       - run: |
           make install
+          make build
           npm --prefix api run check
           npm --prefix api run check:routes
-          npm --prefix apps/web run build
   migrations:
     name: Migrations
     runs-on: ubuntu-24.04
@@ -75,6 +77,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24.19.0
+      - name: Pin npm
+        run: npm install --global npm@11.9.0
       - name: Prepare runtime contract checker
         run: |
           npm --prefix api ci

@@ -7,7 +7,7 @@
 | Check name | Проверка |
 |---|---|
 | `Go` | module hashes, race tests, vet, readonly build API/db |
-| `Web and contract` | npm ci по lockfiles, lint/bundle/$ref/operationId/fixtures/TS client, chi.Walk routes, TS/Vite build |
+| `Web and contract` | npm 11.9.0/ci по lockfiles, make build (включая bin/api для chi.Walk), lint/bundle/$ref/operationId/fixtures/TS client, chi.Walk routes, TS/Vite build |
 | `Migrations` | существующие make db-up/check-db на реальном PostgreSQL: upgrade/bootstrap/seed/роли/RLS/FK/audit/версия readiness, собственная случайная DB |
 | `Image and HTTPS` | два build одного source (второй no-cache), равенство image ID, metadata, локальный TLS с проверкой CA/hostname, закрытая DB network/ports, failure/recovery readiness, существующий HTTP contract checker через HTTPS, synthetic backup/restore |
 

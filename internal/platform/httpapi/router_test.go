@@ -1,14 +1,19 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/StarMadeGalaxy/JudeOS/internal/platform/requestmeta"
 )
 
 func TestReadinessDoesNotLeakDatabaseErrors(t *testing.T) {
@@ -77,3 +82,33 @@ func TestMethodAndStaticBoundaries(t *testing.T) {
 }
 
 var _ http.Handler = New(Options{})
+
+func TestLogsAndPanicUseServerRequestIDWithoutSensitiveInput(t *testing.T) {
+	var logs bytes.Buffer
+	secret := "synthetic-contact-password@example.invalid"
+	var seenID string
+	r := New(Options{Logger: slog.New(slog.NewJSONHandler(&logs, nil)), Ready: func(ctx context.Context) error {
+		seenID = requestmeta.ID(ctx)
+		panic(secret)
+	}})
+	for _, path := range []string{"/readyz?password=" + secret, "/assets/" + secret, "/" + secret} {
+		req := httptest.NewRequest("GET", path, strings.NewReader(secret))
+		req.Header.Set("Authorization", "Bearer "+secret)
+		req.Header.Set("Cookie", "session="+secret)
+		req.Header.Set("X-Request-ID", secret)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		id := w.Header().Get("X-Request-ID")
+		if len(id) != 32 || id == secret || !strings.Contains(logs.String(), id) {
+			t.Fatal("server correlation missing")
+		}
+		if strings.HasPrefix(path, "/readyz") {
+			if w.Code != 500 || seenID != id || !strings.Contains(w.Body.String(), id) {
+				t.Fatal("panic correlation failed")
+			}
+		}
+		if strings.Contains(w.Body.String(), secret) || strings.Contains(logs.String(), secret) {
+			t.Fatal("sensitive request/panic logged")
+		}
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"os"
@@ -15,28 +16,52 @@ import (
 	"strings"
 	"time"
 
+	"github.com/StarMadeGalaxy/JudeOS/internal/platform/requestmeta"
 	"github.com/go-chi/chi/v5"
 )
 
 type Options struct {
 	Ready          func(context.Context) error
 	WebDir, APIDir string
+	Logger         *slog.Logger
 }
 
 func New(o Options) *chi.Mux {
+	logger := o.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			var id [16]byte
 			_, _ = rand.Read(id[:])
-			w.Header().Set("X-Request-ID", hex.EncodeToString(id[:]))
+			requestID := hex.EncodeToString(id[:])
+			req = req.WithContext(requestmeta.WithID(req.Context(), requestID))
+			w.Header().Set("X-Request-ID", requestID)
 			w.Header().Set("Cache-Control", "no-store")
+			response := &statusWriter{ResponseWriter: w}
+			started := time.Now()
 			defer func() {
 				if recover() != nil {
-					failure(w, 500, "INTERNAL_ERROR", "Внутренняя ошибка")
+					logger.Error("request failed", "request_id", requestID, "code", "INTERNAL_ERROR")
+					if response.status == 0 {
+						failure(response, 500, "INTERNAL_ERROR", "Внутренняя ошибка")
+					}
 				}
+				// Only registered route patterns are logged: never URL/query, headers,
+				// body, arbitrary method, actor/contact data, raw error or panic value.
+				route := chi.RouteContext(req.Context()).RoutePattern()
+				if route == "" {
+					route = "unmatched"
+				}
+				status := response.status
+				if status == 0 {
+					status = 200
+				}
+				logger.Info("request completed", "request_id", requestID, "route", route, "status", status, "duration_ms", time.Since(started).Milliseconds())
 			}()
-			next.ServeHTTP(w, req)
+			next.ServeHTTP(response, req)
 		})
 	})
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
@@ -73,6 +98,26 @@ func New(o Options) *chi.Mux {
 	})
 	return r
 }
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	if w.status != 0 {
+		return
+	}
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if w.status == 0 {
+		w.WriteHeader(200)
+	}
+	return w.ResponseWriter.Write(b)
+}
+func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 func file(path, contentType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {

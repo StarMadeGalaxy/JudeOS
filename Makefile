@@ -1,7 +1,7 @@
 GO ?= go
 # A host CA bundle is opt-in; Docker images otherwise use their own trust stores.
 COMPOSE = docker compose --env-file .env -f ops/compose.yaml $(if $(BUILD_CA_PATH),-f ops/compose.ca.yaml)
-.PHONY: env install build db-up migrate seed run check check-db up down
+.PHONY: env install build db-up bootstrap migrate seed run check check-db up down
 env:
 	python3 ops/dev-env.py
 install:
@@ -14,6 +14,8 @@ build:
 	$(GO) build -mod=readonly -trimpath -o bin/db ./cmd/db
 db-up: env
 	$(COMPOSE) up -d --wait db
+bootstrap:
+	@set -a; . ./.env; set +a; ./bin/db bootstrap-local
 migrate:
 	@set -a; . ./.env; set +a; ./bin/db migrate
 seed:
@@ -28,7 +30,7 @@ check:
 check-db:
 	JUDEOS_GO=$(GO) python3 ops/check-db.py
 up: env
-	$(COMPOSE) build migrate
+	$(COMPOSE) build bootstrap
 	$(COMPOSE) up -d api
 down:
 	$(COMPOSE) down

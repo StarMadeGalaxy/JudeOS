@@ -28,3 +28,13 @@
 ## Следующий шаг
 
 Ревью/приёмка PR реализации #19 вторым разработчиком; нужен ручной Status Review, автоматическое обновление недоступно. Issue не закрывается до merge/приёмки. После интеграции обоим получить актуальную main; затем выбрать свободную #20 (изоляция/роли/RLS/FK) или #22 (CI/размещение) по живой занятости и зависимостям. #21 (auth) зависит от #20. Реальные данные/пилот остаются заблокированы условиями #18/#24, каркас использует только синтетические fixtures.
+
+## #22 — CI, релизы и синтетический HTTPS test
+
+Исполнитель NikishGum; run `ci-22-20261007T170927Z`, ветка `feat/22-ci-test-release` от проверенной main `d9162a4`. #19 принята пользователем («принято, выбери следующий логичный issue»), PR #83 merged, Issue закрыта — это актуализирует прежний следующий шаг выше. Assignee подтверждён REST; пользователь ответил «установил» на блок #22/NikishGum/In progress. Projects API недоступен, источник ручного подтверждения сохранён в claim.
+
+Добавлены отдельные CI/ops/test/release и [операционные инструкции](../docs/operations/README.md), INFRASTRUCTURE/предложенный ADR 0009. Общие файлы #20 не изменялись, её передача сохраняется: #20/run `tenant-20-20261007T162818Z`, ветка `feat/20-tenant-isolation`, [PR #85](https://github.com/StarMadeGalaxy/JudeOS/pull/85) открыт; ADR 0008 занят. #23/PR #81 ведётся отдельно; #21 ждёт приёмки/merge #20. После merge #20 повторить CI и согласовать адаптацию самостоятельного test к её принятым ролям/bootstrap/seed, не копировать незавершённую реализацию.
+
+Локально прошли Go/web build, race/vet/module verify, OpenAPI/fixtures/TS/chi.Walk, PostgreSQL check-db; standalone HTTPS с проверкой CA/hostname, runtime HTTP contract и DB ports/internal network, health/readiness 200→503→200 при остановке/старте БД; synthetic dump/изолированный restore и probe диска/свежести. Actionlint, config/Caddy validation и отрицательные TLS/config/probe/publish проверки прошли. Rebuild-проверка образа ещё выполняется; первые попытки выявили необходимость нормализации timestamp-ов и ограничение диска VFS, cache очищается только явным выбором в собственном builder.
+
+Публичные host/домен/DNS/защищённый доступ/оператор запрошены, пока не предоставлены; внешнее размещение/HTTPS не проверены. GHCR/tag release, предыдущий runtime-совместимый digest и защита main ещё не подтверждены (main protected=false); production/retention/RPO/RTO не заявлены. PR будет draft до закрытия оставшихся критериев #22; карточка остаётся In progress. Следующий шаг: закончить reproducibility/checks, push/PR и предоставить параметры реального test через поддерживаемые credentials без секретов в чате.

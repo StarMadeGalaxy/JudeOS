@@ -1,0 +1,132 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+jobs:
+  go:
+    name: Go
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - run: |
+          go mod verify
+          go test -mod=readonly -race ./...
+          go vet -mod=readonly ./...
+          go build -mod=readonly -trimpath ./cmd/api ./cmd/db
+  web-contract:
+    name: Web and contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            apps/web/package-lock.json
+      - run: |
+          make install
+          npm --prefix api run check
+          npm --prefix api run check:routes
+          npm --prefix apps/web run build
+  migrations:
+    name: Migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: judeos-ci-db
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - run: |
+          make db-up
+          make check-db
+      - if: always()
+        run: docker compose --env-file .env -f ops/compose.yaml down --volumes
+  image-https:
+    name: Image and HTTPS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+      - name: Prepare runtime contract checker
+        run: |
+          npm --prefix api ci
+          npm --prefix api run bundle
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        id: builder
+        with:
+          driver: docker-container
+          driver-opts: image=moby/buildkit:v0.24.0@sha256:6eceb8971ce4fceb3daca562832642706238b7eea72941fcf9896c93c3c4a53e
+      - name: Clean rebuild and release metadata
+        env:
+          RELEASE_BUILDER: ${{ steps.builder.outputs.name }}
+        run: python3 ops/release-build.py --builder "$RELEASE_BUILDER" --output "$RUNNER_TEMP/release" --verify-rebuild
+      - name: Synthetic HTTPS and database isolation
+        run: |
+          python3 ops/test-env.py --directory "$RUNNER_TEMP/judeos-test" --project judeos-ci-https
+          python3 ops/test-stack.py --config "$RUNNER_TEMP/judeos-test/test.env" up
+          python3 ops/test-stack.py --config "$RUNNER_TEMP/judeos-test/test.env" export-ca
+          python3 ops/test-stack.py --config "$RUNNER_TEMP/judeos-test/test.env" --ca "$RUNNER_TEMP/judeos-test/local-root.crt" exercise
+          NODE_EXTRA_CA_CERTS="$RUNNER_TEMP/judeos-test/local-root.crt" JUDEOS_BASE_URL=https://localhost:8443 npm --prefix api run check:runtime
+          python3 ops/test-backup.py --config "$RUNNER_TEMP/judeos-test/test.env" --output "$RUNNER_TEMP/synthetic.dump"
+          python3 ops/test-probe.py --url https://localhost:8443 --ca "$RUNNER_TEMP/judeos-test/local-root.crt" --backup "$RUNNER_TEMP/synthetic.dump" --max-backup-age-seconds 300
+      - if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/judeos-test/test.env"; then
+            python3 ops/test-stack.py --config "$RUNNER_TEMP/judeos-test/test.env" down
+            docker compose --env-file "$RUNNER_TEMP/judeos-test/test.env" -f ops/test-compose.yaml down --volumes
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-image
+          path: ${{ runner.temp }}/release/
+          if-no-files-found: error
+  publish:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [go, web-contract, migrations, image-https]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Require tag from integrated main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-image
+          path: ${{ runner.temp }}/release/
+      - name: Publish verified image and manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 ops/release-publish.py --directory "$RUNNER_TEMP/release" --tag "$RELEASE_TAG"

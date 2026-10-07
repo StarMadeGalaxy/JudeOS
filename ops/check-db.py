@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test migrations on a new disposable database in the local synthetic Compose DB."""
+"""Run real role/RLS/audit/upgrade checks in a disposable synthetic database."""
 import os
 from pathlib import Path
 import subprocess
@@ -16,12 +16,17 @@ def sql(statement):
     subprocess.run(compose + ['exec', '-T', 'db', 'psql', '-U', 'judeos_dev', '-d', 'postgres',
                               '-v', 'ON_ERROR_STOP=1', '-c', statement], cwd=root, check=True)
 
-url = urlsplit(values['DATABASE_URL'])
 env = os.environ.copy()
-env['JUDEOS_TEST_DATABASE_URL'] = urlunsplit(url._replace(path='/' + name))
+for key, source in [('JUDEOS_TEST_DATABASE_URL', 'BOOTSTRAP_DATABASE_URL'),
+                    ('JUDEOS_TEST_MIGRATION_URL', 'MIGRATION_DATABASE_URL'),
+                    ('JUDEOS_TEST_RUNTIME_URL', 'DATABASE_URL')]:
+    url = urlsplit(values[source])
+    env[key] = urlunsplit(url._replace(path='/' + name))
+env['JUDEOS_TEST_MIGRATION_PASSWORD'] = values['MIGRATION_PASSWORD']
+env['JUDEOS_TEST_RUNTIME_PASSWORD'] = values['RUNTIME_PASSWORD']
 sql(f'CREATE DATABASE {name}')
 try:
-    subprocess.run([os.environ.get('JUDEOS_GO', 'go'), 'test', '-race', '-count=1',
+    subprocess.run([os.environ.get('JUDEOS_GO', 'go'), 'test', '-race', '-count=1', '-v',
                     './internal/platform/database'], cwd=root, env=env, check=True)
 finally:
     sql(f'DROP DATABASE {name} WITH (FORCE)')

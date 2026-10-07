@@ -54,5 +54,23 @@ func Seed(ctx context.Context, db *sql.DB) error {
 	ON CONFLICT (id) DO NOTHING`); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return safeError(err)
+	}
+	for _, club := range []struct{ id, name, object string }{
+		{"00000000-0000-4000-8000-000000000101", "Синтетический клуб А", "00000000-0000-4000-8000-000000000201"},
+		{"00000000-0000-4000-8000-000000000102", "Синтетический клуб Б", "00000000-0000-4000-8000-000000000202"},
+	} {
+		err = WithinTenant(ctx, db, TenantContext{club.id, "00000000-0000-4000-8000-000000000301", "00000000000000000000000000000001"}, func(tx *sql.Tx) error {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO core.clubs(tenant_id,name) VALUES($1,$2) ON CONFLICT DO NOTHING`, club.id, club.name); err != nil {
+				return err
+			}
+			_, err := tx.ExecContext(ctx, `INSERT INTO development.sample_objects(tenant_id,id,label) VALUES($1,$2,'Синтетический объект') ON CONFLICT DO NOTHING`, club.id, club.object)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

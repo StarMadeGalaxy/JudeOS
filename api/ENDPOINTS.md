@@ -13,8 +13,10 @@
 | PUT | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/attendance/{athlete_id}` | `setAttendance` | attendance | REST тренера | Coach/назначение/roster/состояние + CSRF + Origin | запланирован |
 
 | GET | `/healthz` | `getHealth` | platform | служебный | Public, dev/synthetic | реализован #19 |
-| GET | `/readyz` | `getReadiness` | platform | служебный | Public, dev/synthetic | реализован #19 |
+| GET | `/readyz` | `getReadiness` | platform | служебный | Public, dev/synthetic; проверка runtime роли | реализован #19, усилен #20 |
 | GET | `/openapi.json` | `getRuntimeOpenAPI` | platform | служебный | Public, dev/synthetic | реализован #19 |
 | GET | `/docs` | `getSwaggerUI` | platform | служебный | Public, dev/synthetic | реализован #19 |
 
 Входящие iPay/Telegram, метрики, приглашения/восстановление и предметные команды появляются в своих задачах. Статические исключения chi.Walk заданы в [static-routes.json](static-routes.json): web `/` и `/assets/*`, два локальных файла Swagger UI. [Общая политика](README.md#http-политика-каркаса-19) описывает HEAD/OPTIONS/404/405, слеши и отсутствие SPA catch-all. Runtime `/openapi.json` и Swagger UI показывают только реализованные операции.
+
+#20 усиливает readiness проверкой безопасной runtime роли и текущей схемы (3), не добавляя предметных endpoint'ов. Серверный request_id связывает HTTP/context/логи и будущий tenant-аудит; права сотрудников/auth остаются #21.

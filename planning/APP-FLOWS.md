@@ -228,3 +228,5 @@ Backend использует Go + net/http + chi v5 ([ADR 0004](adr/0004-chi-and
 ## Работающий вход сотрудников #21
 
 Оператор выдаёт первое pending owner приглашение через migrator CLI; далее active administrator создаёт staff invite в браузере. Получатель открывает fragment link/вводит код → preauth CSRF → redeem → отдельный login → session metadata/current role union. Anonymous login/redeem и все команды проверяют exact HTTPS Origin; password/token/CSRF только в памяти. Administrator выбирает клуб из собственных memberships, выдаёт reset, меняет роли или отзывает доступ. Last-owner removal возвращает 409; session revoke/expiry возвращает 401 и требует нового входа. Parent/athlete не активируются. [Реализация/технические границы](../docs/access/README.md). Журнал остаётся следующим предметным срезом, не рабочей функцией #21.
+
+Для #21 приглашение показывает логин, роли, срок и инструкции рядом со ссылкой. Активная сессия требует явного выхода перед redeem; после установки пароля получатель входит отдельно. Список различает ожидание пароля, активный и отозванный доступ. Технический readiness не входит в рабочий пользовательский сценарий.

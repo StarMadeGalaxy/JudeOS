@@ -935,6 +935,7 @@ paths:
                   account_id: 00000000-0000-4000-8000-000000000001
                   login: synthetic.coach
                   active: true
+                  state: active
                   grants: &id010
                   - role: coach
                     scope: assigned_sessions
@@ -1785,6 +1786,7 @@ components:
       - account_id
       - login
       - active
+      - state
       - grants
       properties:
         membership_id:
@@ -1797,6 +1799,10 @@ components:
           type: string
         active:
           type: boolean
+        state:
+          type: string
+          enum: [pending, active, revoked]
+          description: Состояние membership для интерфейса. Pending ожидает установки пароля, active разрешён, revoked отозван. active остаётся совместимым признаком разрешения membership.
         grants:
           type: array
           items:

@@ -149,12 +149,28 @@ func TestStaffAccessPostgresHTTP(t *testing.T) {
 		t.Fatal("missing tenant RLS")
 	}
 	gs := []map[string]string{{"role": "coach", "scope": "assigned_sessions"}, {"role": "manager", "scope": "club"}}
+	assertStaffState := func(want string) {
+		t.Helper()
+		page := a.call("GET", staffPath, nil, 200)
+		for _, item := range page["items"].([]any) {
+			member := item.(map[string]any)
+			if member["login"] == "synthetic.coach" {
+				if member["state"] != want {
+					t.Fatalf("staff state: got %v, want %s", member["state"], want)
+				}
+				return
+			}
+		}
+		t.Fatal("synthetic coach missing")
+	}
 	invitation := a.call("POST", staffPath+"/invitations", map[string]any{"login": "synthetic.coach", "grants": gs}, 201)
+	assertStaffState("pending")
 	token := invitation["token"].(string)
 	coach := fresh()
 	coach.bootstrap()
 	coach.call("POST", "/api/v1/access/redeem", map[string]any{"token": token, "password": "short"}, 400)
 	coach.call("POST", "/api/v1/access/redeem", map[string]any{"token": token, "password": password}, 204)
+	assertStaffState("active")
 	coach.login("synthetic.coach", password)
 	cs := coach.call("GET", "/api/v1/access/session", nil, 200)
 	if len(cs["memberships"].([]any)[0].(map[string]any)["grants"].([]any)) != 2 {
@@ -236,6 +252,7 @@ func TestStaffAccessPostgresHTTP(t *testing.T) {
 	resetter.call("POST", "/api/v1/access/redeem", map[string]any{"token": reset3, "password": password}, 400)
 	coach.login("synthetic.coach", "synthetic-new-password-5678")
 	a.call("PUT", staffPath+"/"+coachID, map[string]any{"active": false, "grants": gs}, 204)
+	assertStaffState("revoked")
 	coach.call("GET", "/api/v1/access/session", nil, 401)
 	// Last-owner protection also holds under two competing admin removals.
 	secondToken := a.call("POST", staffPath+"/invitations", map[string]any{"login": "synthetic.owner.second", "grants": adminGrant}, 201)["token"].(string)

@@ -51,6 +51,7 @@ type Staff struct {
 	Account string  `json:"account_id"`
 	Login   string  `json:"login"`
 	Active  bool    `json:"active"`
+	State   string  `json:"state"`
 	Grants  []Grant `json:"grants"`
 }
 type Service struct {
@@ -334,7 +335,7 @@ func (s *Service) within(ctx context.Context, token, csrf, tenant, request strin
 func (s *Service) List(ctx context.Context, token, tenant, request string) ([]Staff, error) {
 	items := []Staff{}
 	e := s.within(ctx, token, "", tenant, request, func(tx *sql.Tx, _ Session) error {
-		rows, e := tx.QueryContext(ctx, `SELECT m.id,m.account_id,a.login,m.active,coalesce((SELECT jsonb_agg(jsonb_build_object('role',role,'scope',scope) ORDER BY role) FROM core.role_grants g WHERE (g.tenant_id,g.membership_id)=(m.tenant_id,m.id)),'[]'::jsonb) FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id ORDER BY m.id`)
+		rows, e := tx.QueryContext(ctx, `SELECT m.id,m.account_id,a.login,m.active,CASE WHEN m.active THEN 'active' WHEN a.password_hash IS NULL THEN 'pending' ELSE 'revoked' END,coalesce((SELECT jsonb_agg(jsonb_build_object('role',role,'scope',scope) ORDER BY role) FROM core.role_grants g WHERE (g.tenant_id,g.membership_id)=(m.tenant_id,m.id)),'[]'::jsonb) FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id ORDER BY m.id`)
 		if e != nil {
 			return e
 		}
@@ -342,7 +343,7 @@ func (s *Service) List(ctx context.Context, token, tenant, request string) ([]St
 		for rows.Next() {
 			var v Staff
 			var raw []byte
-			if e = rows.Scan(&v.ID, &v.Account, &v.Login, &v.Active, &raw); e != nil {
+			if e = rows.Scan(&v.ID, &v.Account, &v.Login, &v.Active, &v.State, &raw); e != nil {
 				return e
 			}
 			if e = json.Unmarshal(raw, &v.Grants); e != nil {

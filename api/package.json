@@ -12,7 +12,8 @@
     "check:routes": "node checks/routes.cjs",
     "check:runtime": "node checks/runtime.cjs",
     "check:browser": "playwright test -c checks/runtime-browser.config.cjs",
-    "check:access-browser": "playwright test -c checks/access-browser.config.cjs"
+    "check:access-browser": "playwright test -c checks/access-browser.config.cjs",
+    "check:access-ui": "playwright test -c checks/access-ui.config.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

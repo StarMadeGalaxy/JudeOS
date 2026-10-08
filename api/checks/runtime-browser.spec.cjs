@@ -5,16 +5,18 @@ test('built web shell works with live API at mobile and desktop widths', async (
     await page.setViewportSize({width,height:850});
     await page.goto('/');
     await expect(page.getByRole('heading',{name:'Вход в клуб'})).toBeVisible();
-    await page.getByRole('button',{name:'Проверить готовность'}).click();
-    await expect(page.getByRole('status')).toHaveText('Тестовая среда готова.');
+    await expect(page.getByRole('button',{name:'Проверить готовность'})).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
-  await page.route('**/readyz',route=>route.fulfill({status:503,contentType:'application/json',body:'{"code":"SERVICE_UNAVAILABLE"}'}));
-  await page.getByRole('button',{name:'Проверить готовность'}).click();
+  await page.getByLabel('Логин',{exact:true}).fill('synthetic.unavailable');
+  await page.getByLabel('Пароль',{exact:true}).fill('Synthetic-password-21');
+  await page.route('**/api/v1/access/login',route=>route.fulfill({status:503,contentType:'application/json',body:'{"code":"SERVICE_UNAVAILABLE"}'}));
+  await page.getByRole('button',{name:'Войти',exact:true}).click();
   await expect(page.getByRole('status')).toContainText('Не удалось выполнить');
-  await page.unroute('**/readyz');
-  await page.route('**/readyz',route=>route.abort());
-  await page.getByRole('button',{name:'Проверить готовность'}).click();
+  await page.unroute('**/api/v1/access/login');
+  await page.route('**/api/v1/access/login',route=>route.abort());
+  await page.getByLabel('Пароль',{exact:true}).fill('Synthetic-password-21');
+  await page.getByRole('button',{name:'Войти',exact:true}).click();
   await expect(page.getByRole('status')).toContainText('Не удалось связаться');
   expect(errors).toEqual([]);
   await page.screenshot({path:'dist/web-scaffold.png',fullPage:true});

@@ -1,6 +1,7 @@
 {
   "source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984",
   "contract_status": "proposed",
+  "role_decision_source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
   "ids": {
     "tenant": "00000000-0000-4000-8000-000000000101",
     "actor": "00000000-0000-4000-8000-000000000201",

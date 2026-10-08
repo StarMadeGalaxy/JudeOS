@@ -10,6 +10,8 @@ test('Swagger resolves the proposed operations and displays command and conflict
   await page.locator('#operations-training-closeSession .opblock-summary').click();
   await expect(page.locator('#operations-training-closeSession')).toContainText('base_version');
   await expect(page.locator('#operations-training-closeSession')).toContainText('ПРЕДЛОЖЕНИЕ');
+  await expect(page.locator('#operations-training-closeSession')).toContainText('текущий назначенный coach');
+  await expect(page.locator('#operations-training-closeSession')).toContainText('назначенном ему клубе');
   await page.locator('#operations-training-closeSession').screenshot({ path: 'dist/swagger-s1-close.png' });
   await page.locator('#operations-people-createPerson .opblock-summary').click();
   await expect(page.locator('#operations-people-createPerson')).toContainText('display_name');

@@ -1,6 +1,6 @@
 # Первый запуск synthetic test на Hostinger
 
-Площадка: `187.7.69.230`, `judopride.tech`, Ubuntu 24.04 LTS, 1 CPU / 4 GB RAM / 50 GB disk, Docker 29.8.2 и Compose v5.6.0. Эти сведения и отсутствие TCP-слушателей 80/443 получены от пользователя; работающий HTTPS ими не доказан. Оператор **[@NikishGum](https://github.com/NikishGum)** назначен пользователем в чате #22 7 октября 2026; источник и интерфейс переданы в [комментарии #22](https://github.com/StarMadeGalaxy/JudeOS/issues/22#issuecomment-6044650020). [Inventory](../environments/hostinger-vps.md) отражает более раннюю передачу #88; актуальные уточнения запуска находятся здесь.
+Площадка: `187.7.69.230`, `judopride.tech`, Ubuntu 24.04 LTS, 1 CPU / 4 GB RAM / 50 GB disk, Docker 29.8.2 и Compose v5.6.0. Оператор **[@NikishGum](https://github.com/NikishGum)** назначен пользователем 7 октября 2026. **Первый запуск уже выполнен**: [release2/Apply/public evidence](second-synthetic-release.md) подтверждают работающий HTTPS, redirect и закрытые DB/API ports. Ранний preflight без слушателей из [inventory #88](../environments/hostinger-vps.md) — исторический. Для существующей VPS перейти к [эксплуатационной приёмке](hostinger-operations.md); блоки первого получения/enable не повторять.
 
 Доступ/SSH/автоматизация принадлежат [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), run `vps-access-20261007T183906Z`. Эта инструкция готовит контейнерный запуск #22; она не устанавливает SSH-права и не подтверждает доступ агента. В облачной среде #22 домен/IP отсутствуют в разрешённой сети, SSH credentials не подключены. Не отключать proxy/TLS/SSH host-key verification; сеть и credentials подключаются поддерживаемым способом через #91, без ключей в чате.
 
@@ -8,7 +8,7 @@
 
 ## Условия перед первым запуском
 
-- #95/#96 вручную merged; [v0.1.0-test.2](second-synthetic-release.md) опубликован из принятой main `0c22445`: все пять tag CI jobs/Publish, manifest gate и GHCR/checker на Docker 29 в облаке success. На VPS ранее получен release1/source `a546194` со старым checker. Существующий checkout/manifest сохраняется; новый baseline сначала отдельно получает и проверяет оператор по согласованным #91 root-командам, затем явно подтверждает enable. До этого dispatch остановлен.
+- #95/#96 вручную merged; [v0.1.0-test.2](second-synthetic-release.md) опубликован из принятой main `0c22445`, получен/проверен на VPS, enable подтверждён, первый Apply выполнен. Старый release1/source `a546194` и новый release2 checkout/manifest сохраняются. Для нового host следующие preflight-условия остаются обязательными; для текущего нет повторного bootstrap/dispatch.
 - PR artifact/local image ID не заменяют опубликованный registry digest. Новый manifest проверяется полным SHA256 из передачи release2; доступность GHCR в облаке не заменяет pull/check с целевой VPS.
 - Пользователь разрешил Caddy из test-compose с публичным ACME после preflight; оператор повторно проверяет владельцев портов 80/443 и существующий TLS service. Сообщение «SSL выпущен автоматически, вероятно Hostinger» не устанавливает issuer, termination или renewal. Проверить существующие сервисы и hPanel до включения Caddy; сертификаты/ключи и чужую конфигурацию не удалять. Если уже существует другой TLS proxy, сначала согласовать интеграцию в #22 вместо запуска второго.
 - Реальные DNS A/AAAA соответствуют VPS. Не оставлять AAAA, указывающий на другой/неподготовленный сервер; не удалять чужую DNS запись автоматически. Провайдерский и host firewall разрешают inbound TCP 80/443, ограничивают управление по правилам #91 и не открывают 5432/8080. Docker published ports требуют проверки Docker/nftables, одного вывода UFW недостаточно. Outbound DNS, registry/GitHub и ACME доступны.
@@ -79,11 +79,11 @@ python3 ops/test-release-check.py --manifest /var/lib/judeos-test-release/releas
 
 Enable генерирует новые bootstrap/migrator/runtime credentials локально (0700/0600) и фиксирует policy без старта приложения. Adapter выполняет bootstrap → migrate → synthetic seed → API → edge и HTTPS check под lock; DB/API/edge имеют restart unless-stopped. Public конфигурация публикует только Caddy 80/443; API/DB без host bindings, DB network internal, Caddy ACME материал остаётся в своём volume. Existing secrets/volumes не перегенерируются и не удаляются. Readiness/ACME/reboot/recovery и внешний результат требуют фактической проверки на VPS.
 
-Автоматический workflow_run первого tag уже завершился ошибкой Apply; это не успешный deploy. При ошибке или timeout сначала оператор/#91 проверяет состояние, lock и root status; после подтверждённого enable и отсутствия активного процесса #91 выполняет единственный manual dispatch. Диагностика/up/повторный запуск из административного канала требует согласования с #91, не запускается параллельно. Подробности новых identifiers/auto-run результата — [передача release2](second-synthetic-release.md); старый release1 сохраняется.
+Первый manual Apply теперь success, независимая внешняя проверка после удаления ошибочной AAAA success; [точные runs/ограничения](second-synthetic-release.md). Исторические tag Apply failure и manual workflow DNS failure сохраняются. Не повторять Apply ради зелёного старого workflow. После ошибки/timeout сначала проверить состояние, lock и root status; любое up/rollout требует нового согласования с оператором. Release1 и release2 сохраняются.
 
 ## Независимая внешняя проверка
 
-Выполнить на внешнем доверенном клиенте с разрешённым доступом к VPS, не только на VPS/через loopback. Пример ниже не запускался облачным агентом: его сеть пока не разрешает этот origin. Клиенту нужны Python 3/curl и проверенный checkout с ops/test-probe.py. Сохранять proxy и штатный CA trust.
+Независимая проверка уже прошла в hosted runner #91, см. [evidence](second-synthetic-release.md). Для повторного read-only check доступен принятый после #98 workflow `Public VPS checks`, ref main, без Apply/SSH/secrets. Примеры ниже выполнять на внешнем доверенном клиенте с разрешённой сетью; среда #22 origin/IP не разрешает. Сохранять proxy и штатный CA trust.
 
 ```sh
 python3 - <<'PY'
@@ -119,7 +119,7 @@ PY
 
 ## Копия и остановка
 
-На VPS оператор может вручную проверить synthetic dump/изолированный restore, не назначая этим расписание/retention/RPO/RTO:
+На существующей VPS backup/restore выполняется оператором только после согласования: [guarded блок с deploy lock и pinned release2](hostinger-operations.md#backup-и-изолированный-restore--после-согласования). Следующие общие примеры не заменяют его и не являются разрешением действий:
 
 ```bash
 install -d -m 0700 /var/lib/judeos-test-backups
@@ -137,7 +137,7 @@ python3 ops/test-stack.py --config /srv/judeos-test-config/test.env down
 
 ## Интерфейс для #91
 
-[Владелец #91 подтвердил технический интерфейс](https://github.com/StarMadeGalaxy/JudeOS/issues/22#issuecomment-6044771911); инструменты уже интегрированы через принятые #89/#92, но это не результат VPS deploy. Первый bootstrap выполняет оператор по командам выше. Будущий root-owned adapter фиксирует принятый source commit, config и одобренный manifest; transport не принимает paths/commands/refs, не загружает server-side code и не разрешает произвольный digest. Серверный lock удерживается до foreground completion; handling interruption и adapter ещё реализуются в #91.
+[Владелец #91 подтвердил технический интерфейс](https://github.com/StarMadeGalaxy/JudeOS/issues/22#issuecomment-6044771911); adapter/helper/transport приняты через #89/#92/#95/#96/#98. Первый bootstrap выполнен только adapter после operator enable. Root-owned adapter фиксирует source/config/manifest; transport не принимает paths/commands/refs, не загружает server-side code и не разрешает произвольный digest. Серверный lock удерживается до foreground completion; implementation/tests и live SSH/Apply результаты переданы в #91. #22 эти файлы не меняет.
 
 | Команда в принятом checkout | Вход/результат |
 |---|---|
@@ -146,8 +146,8 @@ python3 ops/test-stack.py --config /srv/judeos-test-config/test.env down
 | `test-stack.py --config /srv/judeos-test-config/test.env --url https://judopride.tech check` | Фактические Docker ports/network и HTTPS; stdout JSON результата при успехе, exit 0 / nonzero failure, ожидание до 60 s |
 | `test-probe.py --url https://judopride.tech` | Независимый разрешённый клиент, proxy/CA verification; stdout JSON HTTP timings/local client disk, exit 0 success / 1 failed check / 2 invalid input |
 
-`test-probe.py` disk result относится к host, где запущен probe: внешний probe не измеряет VPS диск. Manifest проверка не сверяет существующий test.env: adapter отдельно обязан подтвердить его image/config с одобренным manifest. Генератор создаёт только новый config; смена образа/миграций существующего test — отдельная операция. SSH transport и deploy adapter здесь не реализованы и не проверены; [PR #92](https://github.com/StarMadeGalaxy/JudeOS/pull/92) относится к независимому доступу, по передаче владельца #91 adapter ещё не установлен на VPS. Его пользовательский SSH preflight выполнен; это не доступ среды #22 и не deploy приложения.
+`test-probe.py` disk result относится к host, где запущен probe: внешний probe не измеряет VPS диск. Manifest проверка не сверяет существующий test.env: adapter отдельно подтверждает его image/config с одобренным manifest. Генератор создаёт только новый config; смена образа/миграций существующего test — отдельно согласуемая операция. SSH transport/adapter установлены и первый Apply подтверждён #91; это не предоставление SSH-доступа среде #22. Для действующего release2 пути из таблицы старого интерфейса заменяются на frozen `/var/lib/judeos-test-release-v0.1.0-test.2/release.json`, checkout `/srv/judeos-test-v0.1.0-test.2`; config остаётся `/srv/judeos-test-config/test.env`.
 
 ## Осталось подтвердить фактически
 
-Первый tag/registry digest уже проверен; root enable и фактическая активация адаптера #91; административный канал и разрешённая сеть; владение TLS/ACME и разрешения firewall; фактический VPS bootstrap, независимый HTTPS/closed-port результат и эксплуатационные проверки. Защиту main администратор включает по [появившимся четырём checks](releases.md#защита-main-после-появления-checks), с read-back/свидетельством настройки. Оператор назначен, но права/ключи/настройки и перечисленные результаты этим назначением не подтверждены. #89/#92 merged; #22 остаётся открытой, завершающий PR закрывает Issue только после фактических критериев. Автоматического merge нет.
+Release2/pinned VPS checker/enable/единственный Apply/trusted HTTPS/redirect/health/readiness/OpenAPI/docs/закрытые5432/8080 подтверждены в #91. [Оставшаяся эксплуатация](hostinger-operations.md): VPS disk/backup/restore, отдельно согласованный reboot и runtime compatibility кандидата release1; future ACME renewal, off-host storage/расписание/пороги не проверены и не выдумываются. Защиту main пользователь включил по [четырём реальным checks](releases.md#защита-main-после-появления-checks); branch API protected=true, остальные параметры подтверждены ответом пользователя при детальном API403. #22 open до фактических критериев, завершающий Closes PR позже; auto merge нет.

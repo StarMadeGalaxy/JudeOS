@@ -1,0 +1,34 @@
+name: PR dependency gate
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review, converted_to_draft, closed]
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+# Every run reconciles all open PRs, including after a dependency closes/merges.
+# Pending runs may be coalesced by GitHub; every surviving run reads current state.
+concurrency:
+  group: pr-dependency-gate
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    name: Reconcile dependency checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Privileged token: only execute the trusted default branch, NEVER PR head.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Update PR dependencies checks and integration table
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/pr_dependencies.py

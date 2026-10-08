@@ -64,7 +64,10 @@ def enable(checkout, manifest, config_dir):
                         "--public", "--domain", "judopride.tech", "--http-port", "80",
                         "--https-port", "443", "--image", data["registry_digest"]], check=True,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    install.safe_dir(STATE_DIR, 0o700)
+    # This is also the restricted SSH account's home. OpenSSH reads the
+    # root-owned public authorized_keys as that account, so preserve traversal.
+    # The directory remains root-only writable; private state files use 0600.
+    install.safe_dir(STATE_DIR, 0o755)
     for name in ["controller.py", "ssh-entry.py", "release-gate.py", "apply-release"]:
         install.write(install.LIB / name, (HERE / name).read_text(), 0o755)
     policy = {"repository": gate.IMAGE, "release_tag": data["release_tag"],

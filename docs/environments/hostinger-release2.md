@@ -3,10 +3,10 @@
 Оператор — NikishGum. PR #95/#96 приняты; source нового synthetic release —
 `0c224452ef4f060613b6838d8f787ce997043337`. [Передача #22](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6056635669),
 [пути и порядок #91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6057114004).
-Это получение и проверка, **не enable/bootstrap/deploy**. Старые
+Это staged получение, проверка и operator enable; отдельный deploy выполняет только run91 после явного разрешения. Старые
 `/srv/judeos-test`, `/var/lib/judeos-test-release/release.json` и
 `/root/judeos-deploy-setup` сохраняются. Новый checkout одновременно служит
-проверенным источником adapter code; config/secrets/volumes пока не создаются.
+проверенным источником adapter code. Config/secrets создаются на шаге3; контейнеры/volumes — только отдельным разрешённым dispatch.
 
 | Значение | Проверенный идентификатор |
 |---|---|
@@ -224,7 +224,7 @@ Pull/save не стартуют приложение. Сборки, registry log
 anonymous GHCR pull и полный checker verified=true на реальном VPS Docker29.8.2.
 Image/config/platform/OCI/schema3/SQL проверены; приложение ещё не запущено.
 
-Теперь оператор выполняет enable из **нового pinned checkout**. Это создаёт
+**На существующей VPS enable уже выполнен**, SSH восстановлен и первый dispatch сделан; повторять блок ниже нельзя. Он сохраняется как инструкция первого enable из **нового pinned checkout**. Это создаёт
 synthetic config `/srv/judeos-test-config`, устанавливает принятые entry/controller/
 adapter и пишет policy последней. Старый setup checkout не обновляется; SSH reload
 не требуется. Команда не запускает контейнеры и не печатает секреты. Блок первого
@@ -278,8 +278,45 @@ Hashes transport совпадают с accepted source0c224452 из таблиц
 Оператор передаёт этот безопасный вывод #91 и отдельно явно подтверждает
 **«operator enable выполнен»**. Файлы config/secrets/.env в чат не передаются.
 
+## 4. Восстановление SSH для опубликованного release2
+
+[Operator enable/разрешение и восстановление](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6057963764):
+enable из опубликованного source0c224452 ошибочно выставляет `0700` на
+`/var/lib/judeos-deploy` — одновременно HOME для restricted SSH account. Это
+закрывает чтение публичного authorized_keys при новом login. Ошибка воспроизведена
+real OpenSSH в isolated Ubuntu24; исправленный enable сохраняет root-owned `0755`.
+Private state/config остаются `0600`/`0700`, home root-only writable.
+
+**Оператор уже выполнил коррекцию на этой VPS; повторять не требуется.** При первой
+установке именно frozen release2 после enable восстановить исходные права (не
+меняя source/tag/manifest/key/policy):
+
+```bash
+set -euo pipefail
+test "$(id -u)" -eq 0
+test ! -L /var/lib/judeos-deploy
+test "$(stat -c '%U:%a' /var/lib/judeos-deploy)" = root:700
+test ! -e /var/lib/judeos-deploy/status.json
+chmod 0755 /var/lib/judeos-deploy
+stat -c '%a %U %G %n' /var/lib/judeos-deploy
+sudo -u judeos-deploy test -r /var/lib/judeos-deploy/.ssh/authorized_keys
+printf 'authorized_keys readable: yes\n'
+python3 -I /usr/local/lib/judeos-deploy/controller.py check
+```
+
+[SSH preflight37764172815](https://github.com/StarMadeGalaxy/JudeOS/actions/runs/37764172815)
+после коррекции success: actual pinned login, adapter=true, TCP22. Пользователь
+явно разрешил первый deploy: **«operator enable выполнен, разрешаю первый деплой»**.
+[Единственный manual dispatch37764403714](https://github.com/StarMadeGalaxy/JudeOS/actions/runs/37764403714)
+select и Apply success/root completed для exact digest release2. VPS HTTPS/readiness
+и private DB checks прошли в accepted adapter; независимый внешний checker отказал.
+[Передача результата](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6058030333).
+Нельзя повторять deploy/Apply job ради диагностики. Следующий probe выполняется
+[отдельным read-only workflow](../../.github/workflows/vps-public-check.yml), без SSH,
+Environment/секретов или запуска контейнеров; причина внешнего отказа ещё проверяется.
+
 После **явного пользовательского подтверждения operator enable** только run91
-делает один manual dispatch vps-deploy.yml/tag2. До него #91 проверяет отсутствие
+делает один manual dispatch vps-deploy.yml/tag2. Перед первым запуском #91 проверяет отсутствие
 незавершённого процесса/lock, actual preflight и отсутствие другого active workflow.
 Повторный deploy/ручной test-env/up/bootstrap до этого запрещены. #22 сохраняет
 проверки HTTPS/private ports/protection/эксплуатации/restore; production и реальные

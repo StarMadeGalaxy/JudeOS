@@ -1,6 +1,6 @@
 # Доступ к VPS и автоматизация синтетического test
 
-Обновлено 7 октября 2026. Задача [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), техническое предложение — [ADR 0010](../../planning/adr/0010-restricted-vps-deployment-access.md). [Inventory VPS](hostinger-vps.md) и #88/PR #90 уже в main. Контейнеры, первый релиз и реальное размещение остаются [#22 / подготовительный PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89).
+Обновлено 8 октября 2026. Задача [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), техническое предложение — [ADR 0010](../../planning/adr/0010-restricted-vps-deployment-access.md). [Inventory VPS](hostinger-vps.md) и #88/PR #90 уже в main. Контейнеры, первый релиз и реальное размещение остаются [#22 / подготовительный PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89).
 
 ## Проверенные пользователем вводные
 
@@ -17,6 +17,15 @@ SHA256:+eOshfW+q1dZVPC0oUvA5DJPEFJTDcPkOYQHpKvPrdA
 ## Что получит ключ
 
 [install.py](../../ops/deploy-access/install.py) создаёт `judeos-deploy`, корневую собственность его home/authorized_keys, отдельный OpenSSH Match и единственное sudo-разрешение на root-owned [controller.py](../../ops/deploy-access/controller.py). Пользователь не состоит в Docker/sudo, не может менять ключи/контроллер и не получает обычную оболочку, SFTP/SCP, TTY или forwarding. Другие SSH-пользователи и firewall не изменяются. Root/admin-доступ пользователя сохраняется для установки и восстановления.
+
+Home `/var/lib/judeos-deploy` остаётся root-owned `0755`: OpenSSH должен читать
+публичный `.ssh/authorized_keys` от имени ограниченного пользователя. Home и ключи
+для него недоступны на запись; private state files — `0600`, config/secrets —
+`0700`/`0600`. `0700` на самом home закрывает key login после активации; enable
+теперь сохраняет исходный режим установщика. Регрессионная проверка выполняет
+actual activation и новую real OpenSSH connection, затем проверяет запрет записи
+home и чтения private state. Для уже установленного release2 коррекция описана в
+[продолжении установки](hostinger-release2.md#4-восстановление-ssh-для-опубликованного-release2).
 
 Контроллер принимает `check` либо точный tagged/digest `deploy` из раздела 6. `check` возвращает разрешённые поля ОС/архитектуры, версии Docker/Compose и наличие TCP-слушателей на 22/80/443/5432/8080. Порты в результате не говорят об их доступности извне. Переменные, raw errors, docker inspect/logs и секреты не выдаются.
 
@@ -213,3 +222,19 @@ docker run --rm --network none judeos-deploy-access:test
 ```
 
 Для облачного HTTPS-прокси build допускает явный публичный CA `--secret id=build_ca,src=/etc/ssl/certs/ca-certificates.crt`; proxy/TLS verification сохраняются. Локальные тесты проверяют настоящий OpenSSH и sudo, tag grammar/lock после потери controller, gate и adapter на synthetic API/command fixtures (без реального GHCR/VPS), host-key mismatch, отказ оболочки/TTY/forwarding/SFTP, повтор bootstrap, грамматику команды, root ownership/policy, lock и скрытие raw errors. Успех этих тестов не означает установленного доступа, TLS, release или deployment на Hostinger.
+
+## Независимая публичная проверка без нового deploy
+
+[vps-public-check.yml](../../.github/workflows/vps-public-check.yml) выполняет только
+[public-check.py](../../ops/deploy-access/public-check.py) с фиксированными
+`187.7.69.230` / `judopride.tech`: DNS exact IP, HTTP→HTTPS redirect, TLS verification,
+HTTP200 для root/health/readiness/OpenAPI/docs и закрытые TCP5432/8080. Он не использует
+SSH, Environment test-vps, секреты, Docker или deploy. Проверка запускается на PR,
+затрагивающем checker/этот workflow, и вручную после появления workflow в main.
+Это позволяет повторить внешний probe после успешного Apply без повторного Apply.
+
+При ошибке checker выдаёт нейтральный code (DNS/TLS/HTTP/timeout/port), для DNS mismatch
+— публичные resolved addresses, для port mismatch — результаты соединения. Raw
+исключения, URL/headers/body и proxy errors не выводятся; критерии и TLS не ослаблены.
+Успешный Apply и неуспешный внешний probe записываются отдельно; app/volumes не
+удаляются, deploy-job не перезапускается ради проверки HTTPS.

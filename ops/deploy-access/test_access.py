@@ -229,6 +229,32 @@ class OpenSSH(unittest.TestCase):
         self.assertFalse(result["release_adapter_installed"])
         self.assertNotIn("docker", subprocess.check_output(["id", "-nG", "judeos-deploy"], text=True).split())
 
+    def test_operator_activation_preserves_real_ssh_and_private_state(self):
+        self.assertEqual(self.ssh().returncode, 0)
+        # Use the actual activation and home permissions with synthetic release
+        # boundaries; restore subprocess mocks before the real SSH connection.
+        fixture = module("test_release").Adapter("test_operator_activation_preserves_config_and_writes_policy_last")
+        fixture.setUp()
+        try:
+            fixture.activate(fixture.config_dir, state_dir=installer.HOME_DIR)
+        finally:
+            fixture.tearDown()
+        result = self.ssh()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)["ok"])
+        self.assertEqual(installer.HOME_DIR.stat().st_mode & 0o777, 0o755)
+        self.assertEqual(subprocess.run(["runuser", "-u", "judeos-deploy", "--", "test", "-r",
+                                       str(installer.HOME_DIR / ".ssh/authorized_keys")]).returncode, 0)
+        self.assertNotEqual(subprocess.run(["runuser", "-u", "judeos-deploy", "--", "test", "-w",
+                                          str(installer.HOME_DIR)]).returncode, 0)
+        state = installer.HOME_DIR / ".synthetic-activation-state"
+        try:
+            installer.write(state, "synthetic private state\n", 0o600)
+            self.assertNotEqual(subprocess.run(["runuser", "-u", "judeos-deploy", "--", "test", "-r",
+                                               str(state)]).returncode, 0)
+        finally:
+            state.unlink(missing_ok=True)
+
     def test_shell_sftp_and_injection_denied(self):
         for command in ["", "id", "check; id", "internal-sftp", "scp -t /tmp/x", "check\nid"]:
             p = self.ssh(command)

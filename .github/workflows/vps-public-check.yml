@@ -1,0 +1,17 @@
+name: Public VPS checks
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['ops/deploy-access/public-check.py', '.github/workflows/vps-public-check.yml']
+permissions:
+  contents: read
+jobs:
+  public:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check public DNS, HTTPS, redirect and closed private ports without deployment
+        run: python3 ops/deploy-access/public-check.py --host 187.7.69.230

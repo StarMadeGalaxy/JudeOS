@@ -1,5 +1,7 @@
 # Первый synthetic test release: v0.1.0-test.1
 
+**Исторический выпуск.** Для нового baseline после принятых исправлений #95/#96 используйте [v0.1.0-test.2](second-synthetic-release.md) и продолжение установки через #91. Старый tag/manifest/source сохранены; блок команд ниже не нужно повторять на уже подготовленной VPS.
+
 8 октября 2026 опубликован настоящий GitHub prerelease из принятой main после PR #89/#92. Это synthetic test, не production. [Передача #91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6053570291) фиксирует единственный порядок: получение/проверка → operator enable → первый запуск адаптером #91. #22 остаётся открытой для фактических результатов.
 
 | Идентификатор | Проверенное значение |
@@ -18,7 +20,7 @@
 
 ## Root-команды получения и проверки на VPS
 
-**Первый запуск остановлен до исправления Docker29.** Оператор уже получил этот manifest/checkout и успешно выполнил published gate и GHCR pull. Финальный checker исходного a546194 отказал: Docker29.8.2 возвращает registry digest в `.Id`, а checker и adapter #91 ожидают config digest. Platform/OCI source/version и clean HEAD совпали. Исправление #22 сохраняет проверку config hash; аналогичное изменение адаптера согласуется в [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6054914930). До review/merge обоих исправлений, принятого baseline и повторной проверки **не выполнять enable/dispatch**. Не редактировать source checkout или опубликованный manifest и не пересоздавать существующие каталоги. Следующие команды фиксируют получение первого выпуска; их старый checker на Docker29 пока ожидаемо отказывает.
+**Source первого выпуска содержит старые checker/adapter.** На Docker29.8.2 VPS финальный checker a546194 отказал после successful gate/pull: `.Id` — manifest digest, а старый код ожидает config digest. Platform/OCI source/version и clean HEAD совпали. Оба fixes #95/#96 вручную merged, [новый release](second-synthetic-release.md) опубликован; его получение и установка требуют нового отдельного baseline по #91. Source/manifest release1 не патчить, исторические команды здесь не использовать для обхода проверки. До successful new-release VPS check и явного operator enable dispatch остаётся остановлен.
 
 В доверенной **Bash root-консоли VPS**, после [preflight](hostinger-first-run.md#read-only-preflight-на-vps). Используются точные опубликованные значения. Блок рассчитан на первый запуск с новыми путями; при существующем checkout/manifest/config он останавливается, ничего не удаляет и не регенерирует пароли. Для уже начатой настройки сначала согласовать её состояние с #91, не обходить guards. Не отключать proxy, CA/TLS или SSH host verification.
 

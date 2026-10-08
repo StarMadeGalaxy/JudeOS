@@ -26,12 +26,17 @@ Gate #91, exact manifest SHA256/source/schema3/SQL и все пять
 ## 1. Причина failed Apply и безопасное состояние
 
 [Auto run37754469953](https://github.com/StarMadeGalaxy/JudeOS/actions/runs/37754469953):
-selection success, Apply failure, public check skipped. Raw logs среде #91
-недоступны (Forbidden), точный server error пока неизвестен. Если установлен
-первоначальный transport5368010, tagged request отвергается entry с
-`command_denied` ещё до controller. Если transport обновлён, но policy отсутствует,
-controller возвращает `release_adapter_unconfigured` **до lock/adapter/up**.
-Нельзя заменять tagged request legacy-командой для обхода этой остановки.
+selection success, Apply failure, public check skipped. [Операторская проверка 8 октября](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6057636728)
+подтвердила `command_denied` и точные hashes первоначального transport5368010:
+SSH entry отверг tagged request **до controller/lock/adapter/up**. Controller check
+успешен, установлен только TCP22; policy/state/config и lock отсутствуют, процессов,
+synthetic Compose containers/volumes и listeners80/443/5432/8080 нет. Старый source
+и manifest совпали с ожидаемыми. Разбор шага1 завершён, оператор продолжает шаг2.
+Обновление transport выполняется штатным enable только после нового release check.
+
+Ниже сохранены команды read-only проверки для повторного изменения состояния.
+Raw logs среде #91 недоступны (Forbidden), код получен оператором на Mac.
+Tagged request нельзя заменять legacy-командой для обхода остановки.
 
 На **Mac**, где работает gh, получить только нейтральный код из уже завершённого
 run (не запускает workflow и не печатает остальные logs):

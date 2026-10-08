@@ -3,10 +3,18 @@
 import argparse
 import json
 import socket
+import ssl
+import sys
 import urllib.error
 import urllib.request
 
 ORIGIN = "https://judopride.tech"
+
+
+class PublicCheckFailure(ValueError):
+    def __init__(self, code, details=None):
+        super().__init__(code)
+        self.details = details or {}
 
 
 class StopRedirect(urllib.request.HTTPRedirectHandler):
@@ -19,7 +27,7 @@ def check(host):
         raise ValueError("unexpected_vps")
     addresses = {r[4][0] for r in socket.getaddrinfo("judopride.tech", 443, type=socket.SOCK_STREAM)}
     if addresses != {host}:
-        raise ValueError("dns_mismatch")
+        raise PublicCheckFailure("dns_mismatch", {"resolved_addresses": sorted(addresses)})
     opener = urllib.request.build_opener(StopRedirect())
     try:
         with opener.open("http://judopride.tech/", timeout=15):
@@ -43,7 +51,7 @@ def check(host):
         except OSError:
             ports[port] = False
     if not (ports[80] and ports[443] and not ports[5432] and not ports[8080]):
-        raise ValueError("port_check_failed")
+        raise PublicCheckFailure("port_check_failed", {"tcp_connected": ports})
     return {"ok": True, "code": "public_checks_completed", "origin": ORIGIN, "tcp_connected": ports}
 
 
@@ -53,10 +61,31 @@ def main():
     a = p.parse_args()
     try:
         result = check(a.host)
-    except (OSError, ValueError):
-        p.exit(2, "Public check failed: inspect DNS/TLS/redirect/readiness/firewall via trusted operator channel.\n")
+    except (OSError, ValueError) as error:
+        # Fixed neutral codes only: no raw URLs, headers, bodies, proxy errors
+        # or exception messages, even when a remote response is unexpected.
+        known = {"unexpected_vps", "dns_mismatch", "http_redirect_missing", "http_redirect_mismatch",
+                 "https_check_failed", "https_body_mismatch", "port_check_failed"}
+        code, details = "public_connection_failed", {}
+        if isinstance(error, PublicCheckFailure):
+            code, details = str(error), error.details
+        elif isinstance(error, ValueError):
+            code = str(error) if str(error) in known else "invalid_public_response"
+        elif isinstance(error, urllib.error.HTTPError):
+            code, details = "public_http_error", {"http_status": error.code}
+        else:
+            reason = error.reason if isinstance(error, urllib.error.URLError) else error
+            if isinstance(reason, socket.gaierror):
+                code = "dns_lookup_failed"
+            elif isinstance(reason, ssl.SSLError):
+                code = "public_tls_failed"
+            elif isinstance(reason, TimeoutError):
+                code = "public_timeout"
+        print(json.dumps({"ok": False, "code": code, **details}))
+        return 2
     print(json.dumps(result))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

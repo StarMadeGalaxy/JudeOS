@@ -313,7 +313,7 @@ select и Apply success/root completed для exact digest release2. VPS HTTPS/r
 [Передача результата](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6058030333).
 Нельзя повторять deploy/Apply job ради диагностики. Следующий probe выполняется
 [отдельным read-only workflow](../../.github/workflows/vps-public-check.yml), без SSH,
-Environment/секретов или запуска контейнеров; причина внешнего отказа ещё проверяется.
+Environment/секретов или запуска контейнеров; причина внешнего отказа подтверждена: public DNS содержит дополнительную AAAA `2a02:4780:7e:f232::1`. Принадлежность этого IPv6 VPS не подтверждена; нужен IPv4-only ответ корня домена с A `187.7.69.230`, либо отдельное подтверждение/согласование IPv6. [DNS handoff](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6058149315). После изменения DNS повторяется только read-only public checker.
 
 После **явного пользовательского подтверждения operator enable** только run91
 делает один manual dispatch vps-deploy.yml/tag2. Перед первым запуском #91 проверяет отсутствие

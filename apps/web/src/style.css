@@ -13,3 +13,16 @@ button:hover { background: var(--jp-primary-hover); }
 button:focus-visible { outline: var(--jp-focus-width) solid var(--jp-primary); outline-offset: var(--jp-focus-offset); }
 button:disabled { cursor: wait; }
 .status { min-height: 3em; margin-bottom: 0; }
+form { max-width: 600px; }
+label { display: block; margin: 16px 0; }
+input:not([type="checkbox"]), select, textarea { display: block; width: 100%; margin-top: 6px; padding: 14px 16px; border: 1px solid var(--jp-border); border-radius: var(--jp-radius-field); background: var(--jp-white); color: var(--jp-text); font: inherit; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: var(--jp-focus-width) solid var(--jp-primary); outline-offset: var(--jp-focus-offset); }
+.secondary { background: var(--jp-surface); color: var(--jp-text); border: 1px solid var(--jp-border); }
+.secondary:hover { background: var(--jp-section); }
+fieldset { border: 1px solid var(--jp-border); border-radius: var(--jp-radius-field); padding: 12px 16px; margin-top: 16px; }
+.check { display: flex; align-items: center; gap: 12px; min-height: 44px; margin: 0; }
+.check input { width: 20px; height: 20px; }
+.staff { list-style: none; padding: 0; }
+.staff li { margin-top: 24px; padding: 20px; border: 1px solid var(--jp-border); border-radius: var(--jp-radius-card); overflow-wrap: anywhere; }
+textarea { min-height: 120px; overflow-wrap: anywhere; }
+button { min-height: 44px; }

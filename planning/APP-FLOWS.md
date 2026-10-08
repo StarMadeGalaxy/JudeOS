@@ -216,3 +216,7 @@ Tenant-изоляция проверяется в MVP на двух синтет
 ## Согласование с HTTP-контрактом
 
 Backend использует Go + net/http + chi v5 ([ADR 0004](adr/0004-chi-and-api-documentation.md)). Изменения описанных здесь данных, сценариев, прав и эксплуатационного поведения отражаются в соответствующих endpoint’ах OpenAPI и реестре в том же PR. Служебные и интеграционные маршруты также учитываются; Swagger UI отображает машиночитаемый контракт. Единые требования и проверки — [правила API](../docs/API-DOCUMENTATION.md).
+
+## Работающий вход сотрудников #21
+
+Оператор выдаёт первое pending owner приглашение через migrator CLI; далее active administrator создаёт staff invite в браузере. Получатель открывает fragment link/вводит код → preauth CSRF → redeem → отдельный login → session metadata/current role union. Anonymous login/redeem и все команды проверяют exact HTTPS Origin; password/token/CSRF только в памяти. Administrator выбирает клуб из собственных memberships, выдаёт reset, меняет роли или отзывает доступ. Last-owner removal возвращает 409; session revoke/expiry возвращает 401 и требует нового входа. Parent/athlete не активируются. [Реализация/технические границы](../docs/access/README.md). Журнал остаётся следующим предметным срезом, не рабочей функцией #21.

@@ -6,7 +6,7 @@ const spec = JSON.parse(fs.readFileSync('dist/runtime-openapi.json'));
 const ajv = new Ajv({ strict: false });
 addFormats(ajv);
 const base = process.env.JUDEOS_BASE_URL || 'http://127.0.0.1:8080';
-const cases = [['/healthz',200], ['/readyz',200], ['/openapi.json',200], ['/docs',200], ['/api/v1/access/session',404], ['/healthz/',404], ['/docs/',404], ['/healthz',405,'HEAD'], ['/readyz',405,'OPTIONS']];
+const cases = [['/healthz',200], ['/readyz',200], ['/openapi.json',200], ['/docs',200], ['/api/v1/access/session',401], ['/healthz/',404], ['/docs/',404], ['/healthz',405,'HEAD'], ['/readyz',405,'OPTIONS']];
 (async () => {
   for (const [route, status, method = 'GET'] of cases) {
     const res = await fetch(base + route, { method, redirect:'manual', headers:{'X-Request-ID':'untrusted-input'} });
@@ -23,5 +23,5 @@ const cases = [['/healthz',200], ['/readyz',200], ['/openapi.json',200], ['/docs
       if (status !== 200) assert.equal(body.request_id, res.headers.get('x-request-id'));
     }
   }
-  console.log('Live HTTP: readiness, health, runtime spec/docs, planned API 404, slash/method policy and response schemas passed.');
+  console.log('Live HTTP: readiness, health, runtime spec/docs, access session 401, slash/method policy and response schemas passed.');
 })().catch(e => { console.error(e); process.exitCode=1; });

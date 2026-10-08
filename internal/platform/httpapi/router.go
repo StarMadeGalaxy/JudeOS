@@ -12,15 +12,19 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/StarMadeGalaxy/JudeOS/internal/access"
 	"github.com/StarMadeGalaxy/JudeOS/internal/platform/requestmeta"
 	"github.com/go-chi/chi/v5"
 )
 
 type Options struct {
+	Access         *access.Service
+	Origin         string
 	Ready          func(context.Context) error
 	WebDir, APIDir string
 	Logger         *slog.Logger
@@ -68,8 +72,17 @@ func New(o Options) *chi.Mux {
 		failure(w, 404, "NOT_FOUND", "Путь не найден")
 	})
 	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
-		// Every currently implemented route is read-only. HEAD/OPTIONS are intentionally disabled.
-		w.Header().Set("Allow", "GET")
+		methods := []string{}
+		_ = chi.Walk(r, func(method, pattern string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+			matcher := chi.NewRouter()
+			matcher.Method(method, pattern, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+			if matcher.Match(chi.NewRouteContext(), method, req.URL.Path) {
+				methods = append(methods, method)
+			}
+			return nil
+		})
+		sort.Strings(methods)
+		w.Header().Set("Allow", strings.Join(methods, ", "))
 		failure(w, 405, "METHOD_NOT_ALLOWED", "Метод не разрешён")
 	})
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) { respond(w, 200, map[string]string{"status": "ok"}) })
@@ -96,6 +109,7 @@ func New(o Options) *chi.Mux {
 		}
 		file(filepath.Join(o.WebDir, "assets", name), "")(w, req)
 	})
+	accessRoutes(r, o)
 	return r
 }
 

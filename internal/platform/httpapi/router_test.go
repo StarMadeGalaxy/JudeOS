@@ -22,7 +22,7 @@ func TestReadinessDoesNotLeakDatabaseErrors(t *testing.T) {
 		path   string
 		status int
 		code   string
-	}{{"/healthz", 200, ""}, {"/readyz", 503, "SERVICE_UNAVAILABLE"}, {"/api/v1/access/session", 404, "NOT_FOUND"}, {"/healthz/", 404, "NOT_FOUND"}} {
+	}{{"/healthz", 200, ""}, {"/readyz", 503, "SERVICE_UNAVAILABLE"}, {"/api/v1/access/session", 403, "ACCESS_DENIED"}, {"/healthz/", 404, "NOT_FOUND"}} {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, httptest.NewRequest("GET", tc.path, nil))
 		if w.Code != tc.status {

@@ -12,6 +12,7 @@ build:
 	npm --prefix apps/web run build
 	$(GO) build -mod=readonly -trimpath -o bin/api ./cmd/api
 	$(GO) build -mod=readonly -trimpath -o bin/db ./cmd/db
+	$(GO) build -mod=readonly -trimpath -o bin/access-bootstrap ./cmd/access-bootstrap
 db-up: env
 	$(COMPOSE) up -d --wait db
 bootstrap:

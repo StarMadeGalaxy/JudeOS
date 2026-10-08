@@ -28,5 +28,7 @@ sql(f'CREATE DATABASE {name}')
 try:
     subprocess.run([os.environ.get('JUDEOS_GO', 'go'), 'test', '-race', '-count=1', '-v',
                     './internal/platform/database'], cwd=root, env=env, check=True)
+    subprocess.run([os.environ.get('JUDEOS_GO', 'go'), 'test', '-race', '-count=1', '-v',
+                    './internal/platform/httpapi'], cwd=root, env=env, check=True)
 finally:
     sql(f'DROP DATABASE {name} WITH (FORCE)')

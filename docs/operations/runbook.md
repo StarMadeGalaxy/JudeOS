@@ -43,3 +43,7 @@ CI задаёт 300 секунд только для проверки свеже
 ## Передача и rollout
 
 Перед rollout записать source commit, image digest, schema/migration hashes, config project/host/domain без secrets и результат readiness. Сохранить совместимый предыдущий digest или явное «не установлен». Перед миграцией при нужных данных сделать проверенную независимую копию. Ошибка readiness останавливает rollout. Смена image в external test.env не является подтверждением совместимости; применять порядок из [релизов](releases.md). Не применять SQL down и не менять принятую схему вручную для старого binary.
+
+## Восстановление доступа сотрудников (schema 4, #21)
+
+До возобновления API после восстановления отозвать все восстановленные `access.sessions`, удалить `access.preauth`, в каждом trusted tenant context пометить `core.access_tokens.used=true` (audit actor/request обязательны). Проверить актуальные memberships/grants независимо от старого backup. Не запускать operator bootstrap при восстановлении автоматически. Команды operator migration credential выполнять в закрытом контуре; синтетический rehearsal не доказывает production recovery. [Access runbook](../access/README.md) содержит TTL/CLI/bootstrap/границы; schema 3 API не совместим с migration 4.

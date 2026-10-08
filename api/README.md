@@ -1,8 +1,8 @@
 # Контракт входа и первого онлайн-журнала
 
-**Принят контракт S0-01 / [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16)**. Источник приёмки — DECISIONS U2026-10-07-S0-01, PR #78 merged. [ADR 0006](../planning/adr/0006-first-online-contract.md) синхронизирован с приёмкой; приёмка контракта не означает реализацию бизнес-операций. Каркас [#19](https://github.com/StarMadeGalaxy/JudeOS/issues/19) добавляет четыре служебные операции, web и синтетическую БД. Вход/журнал ещё не реализованы. Формат OpenAPI 3.0.3 и chi приняты в [ADR 0004](../planning/adr/0004-chi-and-api-documentation.md).
+**Принят контракт S0-01 / [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16)**. Источник приёмки — DECISIONS U2026-10-07-S0-01, PR #78 merged. [ADR 0006](../planning/adr/0006-first-online-contract.md) синхронизирован с приёмкой; приёмка контракта не означает реализацию бизнес-операций. Каркас [#19](https://github.com/StarMadeGalaxy/JudeOS/issues/19) добавляет четыре служебные операции, web и синтетическую БД. Вход реализован #21; журнал ещё запланирован. Формат OpenAPI 3.0.3 и chi приняты в [ADR 0004](../planning/adr/0004-chi-and-api-documentation.md).
 
-[OpenAPI](openapi/openapi.yaml) содержит семь запланированных и четыре реализованные операции, схемы, параметры и все предусмотренные ответы. [Реестр](ENDPOINTS.md) проверяет их полноту. [Словарь](DATA-DICTIONARY.md) различает предметные понятия без проектирования API финансов/чата; [открытые решения](OPEN-QUESTIONS.md) указывают источник, владельца решения и блокируемую функцию.
+[OpenAPI](openapi/openapi.yaml) содержит три запланированные и тринадцать реализованных операций, схемы, параметры и все предусмотренные ответы. [Реестр](ENDPOINTS.md) проверяет их полноту. [Словарь](DATA-DICTIONARY.md) различает предметные понятия без проектирования API финансов/чата; [открытые решения](OPEN-QUESTIONS.md) указывают источник, владельца решения и блокируемую функцию.
 
 ## Ближайший сценарий
 
@@ -86,6 +86,10 @@ Preview доступен только на `http://127.0.0.1:4173`, выдаёт
 
 Статические исключения сравнения [chi.Walk](checks/routes.cjs) перечислены в [static-routes.json](static-routes.json). `/` отдаёт только web index, `/assets/*` — только одиночные regular files сборки, без listing/traversal/SPA fallback. `/docs/assets/swagger-ui.css` и `/docs/assets/swagger-ui-bundle.js` — закреплённые локальные файлы Swagger UI. Вход/журнал и прототип PR #81 не подменяются этими маршрутами.
 
-`npm run bundle` создаёт полный `dist/openapi.json`, runtime-контракт только `x-status: implemented` и локальные Swagger assets. `npm run preview` показывает полный контракт для разработки; работающий `/docs` — только четыре служебные операции. Try it out отключён в обоих видах. OpenAPI остаётся единственным источником схем.
+`npm run bundle` создаёт полный `dist/openapi.json`, runtime-контракт только `x-status: implemented` и локальные Swagger assets. `npm run preview` показывает полный контракт для разработки; работающий `/docs` — тринадцать реализованных операций. Try it out отключён в обоих видах. OpenAPI остаётся единственным источником схем.
 
 После `make build`: `npm run check:routes` сравнивает настоящий chi tree и runtime OpenAPI. При запущенном API — `npm run check:runtime` проверяет HTTP/схемы/заголовки, `JUDEOS_CHROMIUM_PATH=/usr/bin/chromium npm run check:browser` проверяет построенную web-оболочку и настоящий Swagger UI. `npm run check:swagger` проверяет полный контракт. Команды выполняются в api; `JUDEOS_BASE_URL` задаёт origin живого API при другом порте.
+
+## Реализованный staff access #21
+
+Runtime контракт показывает 13 реализованных операций; полный контракт — 16, три операции training/attendance остаются planned. Access login/logout/session/CSRF из #16 реализованы, добавлены redeem/listStaff/inviteStaff/issueStaffReset/changeStaffAccess. TTL, CSRF/Origin, роли/последний владелец, ручная передача ссылок, запуск и ограничения — [access](../docs/access/README.md). Каждая операция содержит own security; runtime bundler сохраняет cookie security scheme. 405 Allow зависит от method/path, HEAD/OPTIONS выключены.

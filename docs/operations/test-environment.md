@@ -70,3 +70,7 @@ python3 ops/test-probe.py --url https://test.YOUR-DOMAIN
 Placeholder-команда требует настоящие lowercase DNS имя и 64-символьный digest. `--public` отвергает localhost/test/invalid domains, mutable image tags и другие порты. Это предохранитель, не проверка собственности домена. Оператор направляет DNS на host и разрешает внешние TCP 80/443 для ACME/redirect/HTTPS; 5432 и 8080 не открывает. Public Caddy использует обычный ACME и trust clients, без `tls internal`. Caddy data volume хранит сертификаты/ключи: доступ host ограничивается отдельно; не публиковать его содержимое.
 
 С независимого внешнего клиента подтвердить DNS/цепочку/hostname HTTPS, redirect HTTP→HTTPS, web/Swagger и 200 health/readiness; проверить недоступность TCP 5432/8080 и firewall host. Локальный Docker inspect доказывает отсутствие published DB ports у данной конфигурации, но не исключает чужой DB/listener на host. Записать host/domain/image digest/commit/schema, дату и результаты в #22/PR без credentials. До такой проверки реальное размещение/публичный HTTPS остаются открытыми.
+
+## Access schema 4 (#21)
+
+Новый образ #21 использует миграцию 00004 и exact HTTPS `PUBLIC_ORIGIN`. Генератор `test-env.py` записывает origin в закрытый api-secrets.env; старую операторскую конфигурацию обновлять явно вместе с принятым release. Первый owner invite создаётся operator CLI под migrator credential, не автоматически. [Access runbook](../access/README.md). Existing VPS release2/schema3 остаётся историческим accepted baseline; эта работа не redeploy/reset существующего сервера.

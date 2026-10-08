@@ -116,17 +116,24 @@ gh run list --repo StarMadeGalaxy/JudeOS --workflow vps-preflight.yml --limit 3
 
 ## 6. Включить release adapter после интеграции #22
 
-**Текущий первый запуск остановлен из-за Docker29.** Пользователь уже получил
+**Для уже начатой установки используйте [точное продолжение release2](hostinger-release2.md).**
+PR #95/#96 merged; v0.1.0-test.2 опубликован из source0c224452 с обоими fixes.
+Сначала разбирается failed auto Apply/state/lock/containers, затем оператор
+получает новый checkout/manifest в отдельных versioned paths. Старый setup,
+checkout и manifest не обновляются/не патчатся. Enable и первый dispatch остаются
+отдельными этапами; до успешного VPS checker и явного user operator-enable
+подтверждения запуск запрещён. Команды ниже — общий интерфейс для новой установки,
+**не команды продолжения существующей VPS**.
+
+Пользователь ранее получил
 `v0.1.0-test.1`, проверил manifest, чистый checkout `a546194` и GHCR pull.
 Docker29.8.2/containerd возвращает registry manifest digest в `.Id`; этот source
 содержит прежние checker/adapter. [PR #95](https://github.com/StarMadeGalaxy/JudeOS/pull/95)
 merged и предоставляет строгий helper; исправление adapter #91 использует его
 из принятого baseline. [Согласованный контракт и порядок](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6055948993).
-До ручного принятия adapter fix, **нового опубликованного релиза с обоими
-исправлениями** и его успешной проверки на VPS не выполнять следующие
-enable/dispatch команды. Старые tag/manifest и существующий `/srv/judeos-test`
-не патчить. После приёмки #91/#22 согласуют новые точные идентификаторы и пути
-получения без перезаписи существующей установки. Первый dispatch выполняет
+Исправленный release2 ещё требует фактической проверки на VPS; до неё не
+выполнять следующие enable/dispatch команды. Старые tag/manifest и существующий
+`/srv/judeos-test` не патчить. Первый dispatch выполняет
 только владелец #91 после явного подтверждения operator enable пользователем;
 #22 не запускает параллельный bootstrap. Ниже описан общий интерфейс установки.
 

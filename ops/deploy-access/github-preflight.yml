@@ -1,0 +1,47 @@
+# Template: same check is installed as .github/workflows/vps-preflight.yml.
+# Access check only; application activation remains a separate operator step.
+name: VPS access preflight
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: judeos-test-vps
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: test-vps
+    timeout-minutes: 5
+    steps:
+      - name: Fetch reviewed transport from this main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method GET "repos/${GITHUB_REPOSITORY}/contents/ops/deploy-access/client.py" \
+            -f "ref=${GITHUB_SHA}" --jq .content | base64 --decode > "$RUNNER_TEMP/judeos-client.py"
+      - name: Check pinned server using restricted deploy key
+        env:
+          JUDEOS_SSH_KEY: ${{ secrets.JUDEOS_VPS_SSH_KEY }}
+          JUDEOS_KNOWN_HOSTS: ${{ vars.JUDEOS_VPS_KNOWN_HOSTS }}
+          JUDEOS_SSH_HOST: ${{ vars.JUDEOS_VPS_HOST }}
+          JUDEOS_SSH_PORT: ${{ vars.JUDEOS_VPS_PORT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$JUDEOS_SSH_KEY"
+          test -n "$JUDEOS_KNOWN_HOSTS"
+          test -n "$JUDEOS_SSH_HOST"
+          test -n "$JUDEOS_SSH_PORT"
+          access_dir=$(mktemp -d "$RUNNER_TEMP/judeos-access.XXXXXX")
+          trap 'rm -rf -- "$access_dir"' EXIT
+          printf '%s\n' "$JUDEOS_SSH_KEY" > "$access_dir/key"
+          printf '%s\n' "$JUDEOS_KNOWN_HOSTS" > "$access_dir/known_hosts"
+          unset JUDEOS_SSH_KEY JUDEOS_KNOWN_HOSTS
+          python3 "$RUNNER_TEMP/judeos-client.py" \
+            --host "$JUDEOS_SSH_HOST" --port "$JUDEOS_SSH_PORT" \
+            --identity "$access_dir/key" --known-hosts "$access_dir/known_hosts" check

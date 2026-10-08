@@ -1,0 +1,93 @@
+name: Deploy synthetic VPS
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published, checked SemVer tag
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: judeos-test-vps
+  cancel-in-progress: false
+jobs:
+  select:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'v') &&
+      github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      digest: ${{ steps.release.outputs.digest }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Require published main tag and successful tag CI
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.release_tag || github.event.workflow_run.head_branch }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--tag "$REQUESTED_TAG")
+          if test -n "$CI_RUN_ID"; then args+=(--run-id "$CI_RUN_ID"); fi
+          python3 ops/deploy-access/release-gate.py "${args[@]}" > "$RUNNER_TEMP/release-selection.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          data = json.loads((Path(os.environ['RUNNER_TEMP']) / 'release-selection.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('tag=' + data['tag'] + '\ndigest=' + data['digest'] + '\n')
+          PY
+  deploy:
+    needs: select
+    runs-on: ubuntu-24.04
+    environment: test-vps
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Apply verified image on pinned VPS
+        env:
+          JUDEOS_SSH_KEY: ${{ secrets.JUDEOS_VPS_SSH_KEY }}
+          JUDEOS_KNOWN_HOSTS: ${{ vars.JUDEOS_VPS_KNOWN_HOSTS }}
+          JUDEOS_SSH_HOST: ${{ vars.JUDEOS_VPS_HOST }}
+          JUDEOS_SSH_PORT: ${{ vars.JUDEOS_VPS_PORT }}
+          RELEASE_TAG: ${{ needs.select.outputs.tag }}
+          RELEASE_DIGEST: ${{ needs.select.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$JUDEOS_SSH_KEY"
+          test -n "$JUDEOS_KNOWN_HOSTS"
+          test -n "$JUDEOS_SSH_HOST"
+          test -n "$JUDEOS_SSH_PORT"
+          access_dir=$(mktemp -d "$RUNNER_TEMP/judeos-access.XXXXXX")
+          trap 'rm -rf -- "$access_dir"' EXIT
+          printf '%s\n' "$JUDEOS_SSH_KEY" > "$access_dir/key"
+          printf '%s\n' "$JUDEOS_KNOWN_HOSTS" > "$access_dir/known_hosts"
+          unset JUDEOS_SSH_KEY JUDEOS_KNOWN_HOSTS
+          python3 ops/deploy-access/client.py --host "$JUDEOS_SSH_HOST" --port "$JUDEOS_SSH_PORT" \
+            --identity "$access_dir/key" --known-hosts "$access_dir/known_hosts" \
+            --tag "$RELEASE_TAG" deploy "$RELEASE_DIGEST"
+      - name: Independent public HTTPS and closed-port checks
+        env:
+          JUDEOS_SSH_HOST: ${{ vars.JUDEOS_VPS_HOST }}
+        run: python3 ops/deploy-access/public-check.py --host "$JUDEOS_SSH_HOST"

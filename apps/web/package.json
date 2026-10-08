@@ -1,0 +1,13 @@
+{
+  "name": "judeos-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": "24.19.x"},
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {"react": "19.3.0", "react-dom": "19.3.0", "@fontsource/rubik": "5.2.8"},
+  "devDependencies": {"vite": "8.3.3", "typescript": "5.9.3", "@types/react": "19.2.14", "@types/react-dom": "19.2.3"}
+}

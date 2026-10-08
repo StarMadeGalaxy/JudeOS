@@ -112,6 +112,15 @@ class PublicationTests(unittest.TestCase):
             self.assertFalse(gate.check_pull(api, 10)[2])
             self.assertEqual(api.calls[-1][2]['conclusion'], 'failure')
 
+    def test_shared_commit_cannot_publish_conflicting_success(self):
+        api = FakeAPI(pull())
+        api.open_pulls = lambda: [pull(), pull()]
+        summary, failed = gate.reconcile(api)
+        self.assertFalse(failed)
+        self.assertIn('Multiple open PRs share this head', summary)
+        self.assertTrue(all(call[2]['conclusion'] == 'failure'
+                            for call in api.calls if call[1] == 'PATCH'))
+
     def test_closed_pr_is_not_checked(self):
         pr = pull(); pr['state'] = 'closed'
         api = FakeAPI(pr)

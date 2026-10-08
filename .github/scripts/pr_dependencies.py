@@ -1,5 +1,6 @@
 """Trusted-base dependency gate. Never executes code or shell text from a PR."""
 import json
+from collections import Counter
 import os
 import re
 import sys
@@ -100,7 +101,7 @@ def snapshot(pr):
     return pr['head']['sha'], pr.get('body'), pr['base']['ref'], pr['state']
 
 
-def check_pull(api, number):
+def check_pull(api, number, blocked_reason=None):
     pr = api.pull(number)
     if pr['state'] != 'open' or pr['base']['ref'] != 'main':
         return None
@@ -113,6 +114,8 @@ def check_pull(api, number):
                    'summary': 'Checking the current declaration against merged PRs.'}})
     deps, passed = [], False
     try:
+        if blocked_reason:
+            raise GateError(blocked_reason)
         deps, passed, message = evaluate(pr, api.pull)
         if snapshot(api.pull(number)) != snapshot(pr):
             passed = False
@@ -129,9 +132,14 @@ def check_pull(api, number):
 def reconcile(api):
     rows = []
     failed = False
-    for pull in api.open_pulls():
+    pulls = api.open_pulls()
+    heads = Counter(pr['head']['sha'] for pr in pulls)
+    for pull in pulls:
         try:
-            row = check_pull(api, pull['number'])
+            # Checks attach to a commit; distinct PRs must not overwrite each other.
+            reason = ('Multiple open PRs share this head; commit a unique head before merging.'
+                      if heads[pull['head']['sha']] > 1 else None)
+            row = check_pull(api, pull['number'], reason)
             if row:
                 rows.append(row)
         except GateError:

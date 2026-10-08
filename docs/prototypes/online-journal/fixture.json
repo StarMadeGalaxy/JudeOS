@@ -1,0 +1,104 @@
+{
+  "session": {
+    "session_id": "00000000-0000-4000-8000-000000000501",
+    "tenant_id": "00000000-0000-4000-8000-000000000101",
+    "group": {
+      "id": "00000000-0000-4000-8000-000000000601",
+      "name": "Дзюдо · младшая группа"
+    },
+    "venue": {
+      "id": "00000000-0000-4000-8000-000000000602",
+      "name": "Зал «Центральный»"
+    },
+    "starts_at": "2026-10-07T15:00:00Z",
+    "ends_at": "2026-10-07T16:00:00Z",
+    "state": "in_progress",
+    "version": 1
+  },
+  "roster": [
+    {
+      "athlete_id": "00000000-0000-4000-8000-000000000401",
+      "person_id": "00000000-0000-4000-8000-000000000301",
+      "display_name": "Алексей Примеров",
+      "participation": "regular",
+      "trial": false,
+      "attendance": {
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "status": "unmarked",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "athlete_id": "00000000-0000-4000-8000-000000000402",
+      "person_id": "00000000-0000-4000-8000-000000000302",
+      "display_name": "Мария Тестовая",
+      "participation": "regular",
+      "trial": false,
+      "attendance": {
+        "athlete_id": "00000000-0000-4000-8000-000000000402",
+        "status": "unmarked",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "athlete_id": "00000000-0000-4000-8000-000000000403",
+      "person_id": "00000000-0000-4000-8000-000000000303",
+      "display_name": "Иван Демонстрационный",
+      "participation": "regular",
+      "trial": false,
+      "attendance": {
+        "athlete_id": "00000000-0000-4000-8000-000000000403",
+        "status": "unmarked",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "athlete_id": "00000000-0000-4000-8000-000000000404",
+      "person_id": "00000000-0000-4000-8000-000000000304",
+      "display_name": "София Примерова",
+      "participation": "regular",
+      "trial": false,
+      "attendance": {
+        "athlete_id": "00000000-0000-4000-8000-000000000404",
+        "status": "unmarked",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "athlete_id": "00000000-0000-4000-8000-000000000405",
+      "person_id": "00000000-0000-4000-8000-000000000305",
+      "display_name": "Максим Тестовый",
+      "participation": "visit",
+      "trial": false,
+      "attendance": {
+        "athlete_id": "00000000-0000-4000-8000-000000000405",
+        "status": "unmarked",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    },
+    {
+      "athlete_id": "00000000-0000-4000-8000-000000000406",
+      "person_id": "00000000-0000-4000-8000-000000000306",
+      "display_name": "Анна Демонстрационная",
+      "participation": "regular",
+      "trial": true,
+      "attendance": {
+        "athlete_id": "00000000-0000-4000-8000-000000000406",
+        "status": "unmarked",
+        "version": 0,
+        "recorded_at": null,
+        "recorded_by_account_id": null
+      }
+    }
+  ]
+}

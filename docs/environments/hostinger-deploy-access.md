@@ -1,6 +1,6 @@
 # Доступ к VPS и автоматизация синтетического test
 
-Обновлено 8 октября 2026. Задача [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), техническое предложение — [ADR 0010](../../planning/adr/0010-restricted-vps-deployment-access.md). [Inventory VPS](hostinger-vps.md) и #88/PR #90 уже в main. Контейнеры, первый релиз и реальное размещение остаются [#22 / подготовительный PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89).
+Обновлено 8 октября 2026. Задача [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91), техническое предложение — [ADR 0010](../../planning/adr/0010-restricted-vps-deployment-access.md). [Inventory VPS](hostinger-vps.md) и #88/PR #90 уже в main. Release/test-инструменты и эксплуатация остаются [#22](https://github.com/StarMadeGalaxy/JudeOS/issues/22); [первый actual rollout](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6058208908) выполнен #91 после принятия #22/95 и #91/96. HTTPS, redirect и внешние закрытые порты БД подтверждены; оставшиеся protection/ops/restore ведёт #22.
 
 ## Проверенные пользователем вводные
 
@@ -12,7 +12,7 @@
 SHA256:+eOshfW+q1dZVPC0oUvA5DJPEFJTDcPkOYQHpKvPrdA
 ```
 
-Это отпечаток SSH, а не SSL. Позднее пользователь установил bootstrap, reload-нул SSH и проверил подключение с Mac: `ok:true`, Ubuntu 24.04/x86_64, Docker29.8.2/Compose5.6.0, TCP listener только22, adapter false. SSH-порт 22 подтверждён этой проверкой. Источник — DECISIONS U2026-10-07-VPS-04 / [комментарий #91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6045440734). Это не подключение агента или работающий HTTPS. Полный host key закреплён пользователем на Mac; в GitHub его ещё нужно сохранить напрямую.
+Это отпечаток SSH, а не SSL. Позднее пользователь установил bootstrap, reload-нул SSH и проверил подключение с Mac: `ok:true`, Ubuntu 24.04/x86_64, Docker29.8.2/Compose5.6.0, TCP listener только22, adapter false. SSH-порт 22 подтверждён этой проверкой. Источник — DECISIONS U2026-10-07-VPS-04 / [комментарий #91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6045440734). Это не подключение агента или работающий HTTPS. Полный host key закреплён пользователем на Mac и передан в GitHub Environment test-vps; actual pinned Actions preflight37764172815 прошёл. SSH key/Variables уже настроены; их значения не выводятся. Последующий внешний public check37765696629 подтвердил первый HTTPS test, подробности — в [runbook](hostinger-release2.md).
 
 ## Что получит ключ
 

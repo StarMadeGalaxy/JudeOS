@@ -1,0 +1,69 @@
+{
+  "source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984",
+  "contract_status": "proposed",
+  "operations": [
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/people",
+      "operationId": "createPerson",
+      "tag": "people",
+      "rule": "management"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/athletes",
+      "operationId": "createAthlete",
+      "tag": "people",
+      "rule": "management"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}",
+      "operationId": "getAthleteProfile",
+      "tag": "people",
+      "rule": "management"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/guardian-links",
+      "operationId": "verifyGuardianLink",
+      "tag": "people",
+      "rule": "management"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/primary-contact",
+      "operationId": "setPrimaryContact",
+      "tag": "people",
+      "rule": "management"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sessions/{session_id}/close",
+      "operationId": "closeSession",
+      "tag": "training",
+      "rule": "close"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sessions/{session_id}/roster",
+      "operationId": "addKnownRosterAthlete",
+      "tag": "training",
+      "rule": "add"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sessions/{session_id}/guests",
+      "operationId": "createSessionGuest",
+      "tag": "training",
+      "rule": "add"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sessions/{session_id}/roster/{athlete_id}/exclude",
+      "operationId": "excludeRosterAthlete",
+      "tag": "training",
+      "rule": "exclude"
+    }
+  ]
+}

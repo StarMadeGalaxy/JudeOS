@@ -4,6 +4,7 @@
 
 - [Синтетический HTTPS test](test-environment.md): внешний config, БД без host-порта, локальная проверка, параметры реального размещения.
 - [Первый запуск на Hostinger](hostinger-first-run.md): точные команды для judopride.tech, опубликованный digest, preflight и внешние проверки.
+- [Первый опубликованный release](first-synthetic-release.md): v0.1.0-test.1, точный manifest/digest и root-команды до enable адаптера #91.
 - [CI и релизы](releases.md): checks, commit/digest/schema, совместимость, защита main.
 - [Диагностика и копии](runbook.md): health/readiness, время ответа, диск, проверка восстановления.
 - [ADR 0009, предложено](../../planning/adr/0009-ci-test-releases.md) и [инфраструктура](../../planning/INFRASTRUCTURE.md).

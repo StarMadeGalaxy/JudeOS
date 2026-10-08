@@ -580,6 +580,43 @@
         "warning": "UNMARKED_REMAIN"
       },
       "valid": false
+    },
+    {
+      "name": "temporary known add cannot enroll permanently",
+      "schema": "AddKnownRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "trial": false,
+        "enroll_permanently": true
+      },
+      "valid": false
+    },
+    {
+      "name": "temporary known add cannot change group",
+      "schema": "AddKnownRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "trial": false,
+        "group_id": "00000000-0000-4000-8000-000000000601"
+      },
+      "valid": false
+    },
+    {
+      "name": "temporary guest cannot change group",
+      "schema": "CreateSessionGuestRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "display_name": "Синтетический гость",
+        "trial": true,
+        "group_id": "00000000-0000-4000-8000-000000000601"
+      },
+      "valid": false
     }
-  ]
+  ],
+  "business_decision_source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281"
 }

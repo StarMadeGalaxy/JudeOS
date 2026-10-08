@@ -8,7 +8,7 @@ const assets = {
   '/openapi.json': [path.join(__dirname, '../dist/openapi.json'), 'application/json'],
 };
 const html = `<!doctype html><html lang="ru"><meta charset="utf-8"><title>JudeOS contract</title>
-<link rel="stylesheet" href="/swagger-ui.css"><body><p>Принятый #16 и каркас #19; S1 #26 — wire-предложение для ревью. Область ролей и закрытие подтверждены владельцем; остальные поля/детали предложены. Бизнес-операции planned.</p>
+<link rel="stylesheet" href="/swagger-ui.css"><body><p>Принятый #16 и каркас #19; S1 #26 — wire-предложение для ревью. Область ролей, закрытие, минимум полей/контактов и временное добавление тренером подтверждены владельцем; технический wire для ревью. Бизнес-операции planned.</p>
 <div id="swagger-ui"></div><script src="/swagger-ui-bundle.js"></script><script>
 window.ui = SwaggerUIBundle({url:'/openapi.json',dom_id:'#swagger-ui',supportedSubmitMethods:[],deepLinking:true});
 </script></body></html>`;

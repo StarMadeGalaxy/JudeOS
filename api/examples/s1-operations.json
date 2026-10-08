@@ -66,5 +66,6 @@
       "tag": "training",
       "rule": "exclude"
     }
-  ]
+  ],
+  "business_decision_source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281"
 }

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: JudeOS — принятый онлайн-контракт и каркас
   version: 0.1.0
-  description: 'Расширение wire S1 по #26 — предложение для ревью. Область ролей и закрытие подтверждены владельцем; остальные поля/детали предложены. Tenant — конкретный клуб, auth-представление сетевой области согласуется с #21. Контракт #16 принят пользователем (DECISIONS U2026-10-07-S0-01, PR #78 merged). Семь бизнес-операций запланированы; #19 реализует только служебные операции каркаса. Все данные синтетические. Источник контрактов — этот файл; runtime /openapi.json содержит только x-status implemented. Правила — api/README.md.'
+  description: 'Расширение wire S1 по #26 — предложение для ревью. Область ролей и закрытие подтверждены владельцем; минимум полей/контактов и временное добавление coach также подтверждены; технический wire проходит ревью. Tenant — конкретный клуб, auth-представление сетевой области согласуется с #21. Контракт #16 принят пользователем (DECISIONS U2026-10-07-S0-01, PR #78 merged). Семь бизнес-операций запланированы; #19 реализует только служебные операции каркаса. Все данные синтетические. Источник контрактов — этот файл; runtime /openapi.json содержит только x-status implemented. Правила — api/README.md.'
   contact:
     url: https://github.com/StarMadeGalaxy/JudeOS/issues/16
 servers:
@@ -312,6 +312,7 @@ paths:
         связан с actor/tenant/date; каждая страница проверяет актуальные grants. Бывшее назначение само по себе не
         даёт историю. Wire-расширение ожидает приёмки; представление сетевого разрешения согласуется с #21.'
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-issue: 26
       x-s1-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984
@@ -422,6 +423,7 @@ paths:
         участник сохраняет допустимые факты, но контакт/admission не выдаются. История не создаёт бессрочного доступа.
         Область ролей подтверждена; wire и новые поля — предложение для ревью, сетевое разрешение согласуется с #21.'
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-issue: 26
       x-s1-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984
@@ -510,6 +512,7 @@ paths:
         кодам. Снятие coach не снимает отдельную административную роль. Wire-расширение требует приёмки и не является
         действующим API; сетевое разрешение согласуется с #21.'
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-issue: 26
       x-s1-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984
@@ -823,13 +826,14 @@ paths:
       tags:
       - people
       summary: Создать профиль человека
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Только active administrator клуба своей сети / manager назначенного клуба. Имя не уникально;
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Только active administrator клуба своей сети / manager назначенного клуба. Имя не уникально;
         не объединять по имени/телефону. Авторство/ID/клуб серверные. Account/семья/дата рождения не создаются.
         Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации.
         Правила/атомарность/повтор — api/S1-CONTRACT.md.'
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: management
       parameters:
@@ -960,13 +964,14 @@ paths:
       tags:
       - people
       summary: Создать спортивное участие
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Только administrator клуба своей сети / manager назначенного клуба; существующий неархивный
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба; существующий неархивный
         Person того же клуба. Один Athlete на Person, без автоматического Account/семьи. Конфликт повторного
         участия разбирается без нового дубля. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
         Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: management
       parameters:
@@ -1106,13 +1111,14 @@ paths:
       tags:
       - people
       summary: Прочитать карточку спортсмена
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Только administrator клуба своей сети / manager назначенного клуба, включая сохранённую
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба, включая сохранённую
         допустимую историю архива. Coach получает минимум через журнал, а не эту карточку; архив не даёт новые
         права. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации.
         Правила/атомарность/повтор — api/S1-CONTRACT.md.'
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: management
       parameters:
@@ -1219,7 +1225,7 @@ paths:
       tags:
       - people
       summary: Зафиксировать проверенную связь представителя
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Только administrator клуба своей сети / manager назначенного клуба; проверка относится к конкретному
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба; проверка относится к конкретному
         Athlete и существующему Person клуба. valid_until null или строго позже valid_from. base_version — Athlete;
         проверивший Account/ID берётся сервером. Не создаёт кабинет/основной контакт/семью. Изменение повышает
         Athlete.version. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
@@ -1227,6 +1233,7 @@ paths:
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: management
       parameters:
@@ -1372,7 +1379,7 @@ paths:
       tags:
       - people
       summary: Выбрать или снять основной контакт
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Только administrator клуба своей сети / manager назначенного клуба. base_version — Athlete.
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба. base_version — Athlete.
         Связь должна быть verified, действовать сейчас и принадлежать этому Athlete/клубу. null снимает выбор.
         Не более одного выбора; атомарная замена. Отзыв/истечение скрывает контакт немедленно, без fallback.
         Меняется Athlete.version. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
@@ -1380,6 +1387,7 @@ paths:
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: management
       parameters:
@@ -1546,6 +1554,7 @@ paths:
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: close
       parameters:
@@ -1688,15 +1697,15 @@ paths:
       tags:
       - training
       summary: Добавить известного участника
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Active administrator клуба своей сети / manager назначенного клуба или текущий назначенный
-        coach. Только planned/in_progress и неархивный Athlete. base_version — Session. Добавление не переводит
-        группу; trial отдельный флаг, participation=visit для разового визита. Уже активный roster не дублируется;
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Active administrator клуба своей сети / manager назначенного клуба или текущий назначенный
+        coach. Только planned/in_progress и неархивный Athlete. base_version — Session. Временное добавление меняет только указанное занятие, без Enrollment/постоянного состава/шаблона/будущих занятий. Постоянную группу составляет manager; trial отдельный флаг, participation=visit для разового визита. Уже активный roster не дублируется;
         новый ID без эффекта не повышает версию. Исключённая строка без отдельного правила повторного включения
         даёт 409 ROSTER_EXCLUDED. Отметка не записывается этой командой. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
         Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: add
       parameters:
@@ -1856,7 +1865,7 @@ paths:
       tags:
       - training
       summary: Создать онлайн-гостя и добавить в занятие
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Те же права add; только planned/in_progress. Атомарно
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Те же права временного add только в указанное занятие; planned/in_progress. Без постоянного зачисления/шаблона/будущего состава. Атомарно
         Person + Athlete(guest) + SessionRoster без Account/семьи/обязательного контакта. base_version — Session.
         Телефон необязателен; похожее имя не означает дубль. Стабильные ID сохраняются при переходе в regular;
         нет offline временных профилей. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
@@ -1864,6 +1873,7 @@ paths:
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: add
       parameters:
@@ -2023,7 +2033,7 @@ paths:
       tags:
       - training
       summary: Исключить из активного состава с сохранением истории
-      description: 'ПРЕДЛОЖЕНИЕ #26, ожидает принятия: Только administrator клуба своей сети / manager назначенного клуба; только planned/in_progress.
+      description: 'ПРЕДЛОЖЕНИЕ wire #26 для ревью; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба; только planned/in_progress.
         base_version — Session. Сохранённая строка становится excluded=true, остаются отметка/автор/история,
         физического DELETE нет. Уже excluded новый ID даёт результат без нового эффекта. В closed/cancelled изменение
         состава запрещено. Coach-only не исключает/не заменяет состав. Исключённая строка доступна разрешённой
@@ -2032,6 +2042,7 @@ paths:
       x-status: planned
       x-issue: 26
       x-contract-status: proposed
+      x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-rule: exclude
       parameters:

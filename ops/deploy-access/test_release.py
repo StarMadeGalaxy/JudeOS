@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Release authorization and fixed adapter tests; no public network or real data."""
 import copy
+import contextlib
 import hashlib
 import importlib.machinery
 import importlib.util
@@ -8,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import ssl
 import subprocess
 import tempfile
 import tarfile
@@ -137,6 +139,25 @@ class PublicChecks(unittest.TestCase):
         with patch.object(public.socket, "getaddrinfo", return_value=[(None,None,None,None,("::1",443))]):
             with self.assertRaisesRegex(ValueError,"dns_mismatch"):public.check("187.7.69.230")
         self.assertEqual(self.requests,[])
+
+    def test_cli_reports_neutral_failure_without_remote_details(self):
+        cases = [(ValueError("http_redirect_mismatch"), "http_redirect_mismatch", {}),
+                 (ValueError("synthetic secret response"), "invalid_public_response", {}),
+                 (public.PublicCheckFailure("dns_mismatch", {"resolved_addresses": ["::1"]}),
+                  "dns_mismatch", {"resolved_addresses": ["::1"]}),
+                 (public.urllib.error.URLError(ssl.SSLCertVerificationError("synthetic secret certificate")),
+                  "public_tls_failed", {}),
+                 (public.socket.gaierror("synthetic secret resolver"), "dns_lookup_failed", {}),
+                 (TimeoutError("synthetic secret timeout"), "public_timeout", {}),
+                 (public.urllib.error.HTTPError("https://synthetic-secret.invalid", 503,
+                  "synthetic secret response", {}, None), "public_http_error", {"http_status": 503})]
+        for error, code, details in cases:
+            with self.subTest(code=code), patch.object(public, "check", side_effect=error), \
+                 patch.object(public.sys, "argv", ["public-check.py", "--host", "187.7.69.230"]), \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(public.main(), 2)
+                self.assertEqual(json.loads(output.getvalue()), {"ok": False, "code": code, **details})
+                self.assertNotIn("synthetic secret", output.getvalue())
 
 
 @unittest.skipUnless(os.geteuid() == 0, "root-owned adapter checks need disposable container")
@@ -317,14 +338,14 @@ class Adapter(unittest.TestCase):
         with self.assertRaisesRegex(Exception,"unsafe_adapter"):self.apply()
         self.assertEqual(self.calls,[])
 
-    def activate(self, config_dir):
+    def activate(self, config_dir, state_dir=None):
         self.real_run(["git","-C",str(self.checkout),"update-ref","refs/remotes/origin/main",self.sha],check=True)
         self.data["source_commit"]=self.sha
         m=self.root/"release.json";m.write_text(json.dumps(self.data))
         managed=self.root/"managed-config";managed.mkdir();(managed/"managed").write_text("managed-v1\n")
         fake_install=types.SimpleNamespace(CONFIG=managed,LIB=self.lib,safe_dir=installer.safe_dir,write=installer.write)
         original_load=enable.load
-        with patch.object(enable,"STATE_DIR",self.root/"state"), patch.object(enable,"load",side_effect=lambda name,p: fake_install if name=="install" else self.fake_gate if name=="gate" else original_load(name,p)):
+        with patch.object(enable,"STATE_DIR",state_dir or self.root/"state"), patch.object(enable,"load",side_effect=lambda name,p: fake_install if name=="install" else self.fake_gate if name=="gate" else original_load(name,p)):
             enable.enable(self.checkout,m,config_dir)
             self.assertEqual(json.loads((managed/"release.json").read_text())["source_commit"],self.sha)
             self.assertEqual((managed/"release.json").stat().st_mode & 0o777,0o600)

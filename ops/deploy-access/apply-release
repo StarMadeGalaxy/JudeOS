@@ -1,0 +1,155 @@
+#!/usr/bin/python3 -I
+"""Root-owned adapter: checked main release, unchanged SQL, fixed stack code."""
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+LIB = Path("/usr/local/lib/judeos-deploy")
+POLICY = Path("/etc/judeos-deploy/release.json")
+STATUS = Path("/var/lib/judeos-deploy/status.json")
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    result = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(result)
+    return result
+
+
+def atomic(path, content):
+    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=".judeos-")
+    try:
+        with os.fdopen(fd, "w") as f:
+            os.fchmod(f.fileno(), 0o600)
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def root_environment(boundary):
+    result = dict(boundary.BASE_ENV)
+    file = Path("/etc/judeos-deploy/server.env")
+    if file.exists():
+        boundary.trusted(file)
+        if file.stat().st_mode & 0o077:
+            raise ValueError("unsafe_environment")
+        allowed = {"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy",
+                   "SSL_CERT_FILE", "SSL_CERT_DIR", "DOCKER_CONFIG", "GH_TOKEN"}
+        for row in file.read_text().splitlines():
+            if not row or row.startswith("#"):
+                continue
+            key, sep, value = row.partition("=")
+            if not sep or key not in allowed:
+                raise ValueError("invalid_environment")
+            result[key] = value
+    return result
+
+
+def execute(image, tag):
+    boundary = load("boundary", LIB / "controller.py")
+    boundary.trusted(LIB / "release-gate.py")
+    gate = load("gate", LIB / "release-gate.py")
+    boundary.trusted(POLICY)
+    policy = json.loads(POLICY.read_text())
+    if image.split("@", 1)[0] != gate.IMAGE or policy.get("repository") != gate.IMAGE:
+        raise ValueError("wrong_repository")
+    checkout = Path(policy["checkout"])
+    config = Path(policy["config"])
+    boundary.trusted_tree(checkout)
+    for file in [config, checkout / "ops/test-stack.py", checkout / "ops/test-release-check.py",
+                 checkout / "ops/test-probe.py", checkout / "ops/test-compose.yaml",
+                 checkout / "ops/test-public.Caddyfile", checkout / "db/migrations/migrations.go"]:
+        boundary.trusted(file)
+    for file in (checkout / "db/migrations").glob("*.sql"):
+        boundary.trusted(file)
+    environment = root_environment(boundary)
+    os.environ.clear()
+    os.environ.update(environment)
+    def command(args, capture=False):
+        return subprocess.run(args, cwd=checkout, env=environment, stdin=subprocess.DEVNULL,
+                              stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, text=True, check=True).stdout
+    if (command(["/usr/bin/git", "rev-parse", "HEAD"], True).strip() != policy["source_commit"]
+            or command(["/usr/bin/git", "status", "--porcelain"], True).strip()):
+        raise ValueError("baseline_checkout_changed")
+    data = gate.verify(tag, image.split("@", 1)[1])
+    if data["schema_version"] != policy["schema_version"] or data["migrations"] != policy["migrations"]:
+        raise ValueError("schema_changed")
+    verifier = load("release_check", checkout / "ops/test-release-check.py")
+    # Reuse #22 manifest/schema validation against frozen, accepted SQL. No new
+    # server-side code is downloaded or executed for automatic image updates.
+    verifier.validate_manifest(data, data["source_commit"], checkout)
+    baseline = policy["source_commit"]
+    previous = {}
+    if STATUS.exists():
+        boundary.trusted(STATUS)
+        previous = json.loads(STATUS.read_text())
+    current = previous.get("successful_source_commit", baseline)
+    if gate.api("compare/" + current + "..." + data["source_commit"]).get("status") not in {"ahead", "identical"}:
+        raise ValueError("release_out_of_order")
+    rows = config.read_text().splitlines()
+    values = {}
+    for row in rows:
+        if not row or row.startswith("#"):
+            continue
+        key, sep, value = row.partition("=")
+        if not sep or key in values:
+            raise ValueError("invalid_config")
+        values[key] = value
+    expected = {"COMPOSE_PROJECT_NAME": "judeos-hostinger-test", "TEST_DOMAIN": "judopride.tech",
+                "TEST_CONFIG_DIR": str(config.parent), "TEST_BIND_ADDR": "0.0.0.0",
+                "TEST_HTTP_PORT": "80", "TEST_HTTPS_PORT": "443",
+                "TEST_CADDYFILE": str(checkout / "ops/test-public.Caddyfile")}
+    if any(values.get(k) != v for k, v in expected.items()):
+        raise ValueError("config_mismatch")
+    approved = {policy["registry_digest"], previous.get("attempted_image"), previous.get("successful_image")}
+    if values.get("TEST_IMAGE") not in approved:
+        raise ValueError("unrecognized_current_image")
+    for name in ["db-password", "bootstrap-secrets.env", "migration-secrets.env", "api-secrets.env"]:
+        file = config.parent / name
+        boundary.trusted(file)
+        if file.stat().st_mode & 0o077:
+            raise ValueError("unsafe_credentials")
+    if config.stat().st_mode & 0o077:
+        raise ValueError("unsafe_config")
+    command(["/usr/bin/docker", "pull", image])
+    # The accepted baseline helper distinguishes Docker classic config IDs from
+    # containerd manifest IDs and hashes the exported config in the latter case.
+    # It inherits only the root-approved environment installed above; never load
+    # a verifier from the candidate release or relax the expected config hash.
+    verifier.verify_image_identity(data, docker="/usr/bin/docker")
+    # Persist attempted image before changing test.env, so interruption can be
+    # diagnosed/retried; no password regeneration, DB downgrade or volume reset.
+    state = {**previous, "code": "applying", "attempted_image": image, "tag": tag}
+    atomic(STATUS, json.dumps(state) + "\n")
+    atomic(config, "\n".join("TEST_IMAGE=" + image if r.startswith("TEST_IMAGE=") else r for r in rows) + "\n")
+    environment.pop("GH_TOKEN", None)
+    for args in [["up"], ["--url", "https://judopride.tech", "check"]]:
+        command(["/usr/bin/python3", "-I", str(checkout / "ops/test-stack.py"), "--config", str(config), *args])
+    state.update(code="completed", successful_source_commit=data["source_commit"], successful_image=image)
+    atomic(STATUS, json.dumps(state) + "\n")
+
+
+def main():
+    try:
+        if os.geteuid() != 0 or len(sys.argv) != 3:
+            raise ValueError("invalid_adapter_request")
+        execute(sys.argv[1], sys.argv[2])
+    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+        # Details remain absent from SSH/CI logs. Preserve state/config/volumes
+        # after failure and require diagnosis instead of attempting DB rollback.
+        print('{"ok":false,"code":"release_failed"}')
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

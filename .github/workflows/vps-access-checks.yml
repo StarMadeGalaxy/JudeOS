@@ -1,0 +1,22 @@
+name: VPS access checks
+on:
+  pull_request:
+    paths: ['ops/deploy-access/**', '.github/workflows/vps-*.yml']
+  push:
+    branches: [main]
+    paths: ['ops/deploy-access/**', '.github/workflows/vps-*.yml']
+permissions:
+  contents: read
+jobs:
+  access:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Real SSH and release-adapter checks in disposable Ubuntu
+        run: |
+          docker build --secret id=build_ca,src=/etc/ssl/certs/ca-certificates.crt \
+            -f ops/deploy-access/test.Dockerfile -t judeos-deploy-access:test .
+          docker run --rm --network none judeos-deploy-access:test

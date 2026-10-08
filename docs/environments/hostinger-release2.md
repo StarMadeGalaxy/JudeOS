@@ -219,12 +219,64 @@ Pull/save не стартуют приложение. Сборки, registry log
 
 ## 3. Operator enable и единственный запуск
 
-После успешного шага2 оператор передаёт безопасный вывод #91. Только затем #91
-выдаёт отдельную команду `enable-release.py` **из нового pinned checkout** с новым
-manifest и config `/srv/judeos-test-config`. Старый setup checkout не обновляется;
-SSH entry/controller будут обновлены принятым enable вместе с adapter. Enable
-создаёт config/policy, сам не запускает приложение, reload SSH не требуется.
-Если policy уже существует, нельзя удалять/переписывать её для повторного enable.
+[Операторский результат шага2](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6057730600)
+подтвердил old/new manifest SHA256, exact clean source0c224452, gate verified=true,
+anonymous GHCR pull и полный checker verified=true на реальном VPS Docker29.8.2.
+Image/config/platform/OCI/schema3/SQL проверены; приложение ещё не запущено.
+
+Теперь оператор выполняет enable из **нового pinned checkout**. Это создаёт
+synthetic config `/srv/judeos-test-config`, устанавливает принятые entry/controller/
+adapter и пишет policy последней. Старый setup checkout не обновляется; SSH reload
+не требуется. Команда не запускает контейнеры и не печатает секреты. Блок первого
+enable отказывает при уже существующей policy/state/config; при частичном отказе
+не удалять их и не повторять установку без разбора.
+
+```bash
+set -euo pipefail
+test "$(id -u)" -eq 0
+umask 077
+JUDEOS_CHECKOUT=/srv/judeos-test-v0.1.0-test.2
+JUDEOS_MANIFEST=/var/lib/judeos-test-release-v0.1.0-test.2/release.json
+for task_path in /etc/judeos-deploy/release.json \
+  /var/lib/judeos-deploy/status.json /srv/judeos-test-config; do
+  if test -e "$task_path" || test -L "$task_path"; then
+    printf 'Первый enable остановлен: путь существует: %s\n' "$task_path" >&2
+    exit 1
+  fi
+done
+test "$(git -C "$JUDEOS_CHECKOUT" rev-parse HEAD)" = 0c224452ef4f060613b6838d8f787ce997043337
+test -z "$(git -C "$JUDEOS_CHECKOUT" status --porcelain)"
+git -C "$JUDEOS_CHECKOUT" merge-base --is-ancestor \
+  0c224452ef4f060613b6838d8f787ce997043337 origin/main
+printf '%s  %s\n' \
+  c9067f38b4aa7f0b8d709c8c74cc473a1181d7c73c62adadb442edd892ef85d6 \
+  "$JUDEOS_MANIFEST" | sha256sum --check -
+printf '%s  %s\n' \
+  f658092c03f25408b1f69e178e288a76e87c5e718169cc88d5caa34338393bd3 \
+  "$JUDEOS_CHECKOUT/ops/deploy-access/enable-release.py" | sha256sum --check -
+test -z "$(docker ps -aq --filter label=com.docker.compose.project=judeos-hostinger-test)"
+test -z "$(docker volume ls -q --filter label=com.docker.compose.project=judeos-hostinger-test)"
+if test -e /run/judeos-deploy/deploy.lock || test -L /run/judeos-deploy/deploy.lock; then
+  test ! -L /run/judeos-deploy/deploy.lock
+  exec 9< /run/judeos-deploy/deploy.lock
+  flock --nonblock 9
+fi
+python3 -I "$JUDEOS_CHECKOUT/ops/deploy-access/enable-release.py" \
+  --checkout "$JUDEOS_CHECKOUT" --manifest "$JUDEOS_MANIFEST" \
+  --config-directory /srv/judeos-test-config
+python3 -I /usr/local/lib/judeos-deploy/controller.py check
+sha256sum /usr/local/lib/judeos-deploy/ssh-entry.py \
+  /usr/local/lib/judeos-deploy/controller.py
+test ! -e /var/lib/judeos-deploy/status.json
+test -z "$(docker ps -aq --filter label=com.docker.compose.project=judeos-hostinger-test)"
+ss -lntp '( sport = :80 or sport = :443 or sport = :5432 or sport = :8080 )'
+```
+
+Ожидается `Enabled checked release adapter; configuration preserved, app not started.`,
+затем controller check `ok: true`, `release_adapter_installed: true`, TCP22.
+Hashes transport совпадают с accepted source0c224452 из таблицы шага1.
+Оператор передаёт этот безопасный вывод #91 и отдельно явно подтверждает
+**«operator enable выполнен»**. Файлы config/secrets/.env в чат не передаются.
 
 После **явного пользовательского подтверждения operator enable** только run91
 делает один manual dispatch vps-deploy.yml/tag2. До него #91 проверяет отсутствие

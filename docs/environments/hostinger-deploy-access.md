@@ -116,6 +116,20 @@ gh run list --repo StarMadeGalaxy/JudeOS --workflow vps-preflight.yml --limit 3
 
 ## 6. Включить release adapter после интеграции #22
 
+**Текущий первый запуск остановлен из-за Docker29.** Пользователь уже получил
+`v0.1.0-test.1`, проверил manifest, чистый checkout `a546194` и GHCR pull.
+Docker29.8.2/containerd возвращает registry manifest digest в `.Id`; этот source
+содержит прежние checker/adapter. [PR #95](https://github.com/StarMadeGalaxy/JudeOS/pull/95)
+merged и предоставляет строгий helper; исправление adapter #91 использует его
+из принятого baseline. [Согласованный контракт и порядок](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6055948993).
+До ручного принятия adapter fix, **нового опубликованного релиза с обоими
+исправлениями** и его успешной проверки на VPS не выполнять следующие
+enable/dispatch команды. Старые tag/manifest и существующий `/srv/judeos-test`
+не патчить. После приёмки #91/#22 согласуют новые точные идентификаторы и пути
+получения без перезаписи существующей установки. Первый dispatch выполняет
+только владелец #91 после явного подтверждения operator enable пользователем;
+#22 не запускает параллельный bootstrap. Ниже описан общий интерфейс установки.
+
 Пользователь выбрал автоматические обновления **после успешного CI и публикации релиза, если миграции не изменились** (DECISIONS U2026-10-07-VPS-AUTO). Подготовительный [PR #89](https://github.com/StarMadeGalaxy/JudeOS/pull/89) merged в main `b091312` с `Refs #22`; #22 остаётся открытой до фактических результатов. Он предоставляет CI/tag/GHCR/manifest и public Caddy/test-stack. #92 добавляет транспорт, root adapter и workflow; PR #92 объединяется вручную после ревью. До интеграции #92 и первого реального published release приложение не объявляется развёрнутым. На момент проверки GitHub Releases пусты; выпускать первый тег и выбирать номер версии следует после интеграции кода, по release runbook #22.
 
 Не нужен отдельный Nginx/Angie/Envoy: пользователь выбрал Caddy/public ACME в #22 после повторного preflight. Перед первым запуском оператор проверяет отсутствие чужих listeners/контейнеров на 80/443, DNS A/AAAA, доступность inbound 80/443, TLS ownership/renewal, свободный диск и ресурсы. SSH административный канал сохранить, PostgreSQL/API 5432/8080 публично не открывать. Docker-published ports требуют проверки Docker/firewall и снаружи, одной настройки UFW недостаточно. Чужие сервисы/сертификаты не удалять.
@@ -151,6 +165,16 @@ gh run list --repo StarMadeGalaxy/JudeOS --workflow vps-deploy.yml --limit 3
 [workflow](../../.github/workflows/vps-deploy.yml) использует `workflow_run: CI completed`: публикация через `GITHUB_TOKEN` обычно не запускает новый `release` workflow. Job допускает successful tag push из этого репозитория либо ручной dispatch на `main`; код транспорта берётся из main commit, не из недоверенного PR. [release-gate.py](../../ops/deploy-access/release-gate.py) требует опубликованный release.json, tag→manifest commit, ancestry в main, именно workflow `ci.yml` и успешные jobs текущей попытки `Go`, `Web and contract`, `Migrations`, `Image and HTTPS`, `Publish tagged release`. Проверяется fixed repository/digest/platform/rebuild/schema/hash metadata; skipped publish, fork/PR CI и заменённый tag отвергаются. Это сверка GitHub/OCI identity, не криптографически подписанная provenance.
 
 SSH grammar — `deploy vMAJOR.MINOR.PATCH[-prerelease] sha256:<64 hex>`, без shell evaluation/paths/commands. Старый `deploy sha256:...` сохранён для первоначального baseline tag; для нового релиза требуется явный tag. [apply-release](../../ops/deploy-access/apply-release) на сервере повторяет gate, сравнивает schema version и **полный набор SQL-хешей** с root-owned policy до pull/config update. Изменённые миграции, неизвестный текущий image, dirty/изменённый baseline checkout, неподходящий public config, writable secrets, чужой image identity или более старый/diverged source прекращают операцию.
+
+После pull adapter вызывает `verifier.verify_image_identity(data, docker='/usr/bin/docker')`
+из проверенного root-owned **baseline** `ops/test-release-check.py`. Docker classic
+проверяет config ID прямо; containerd принимает только exact registry manifest ID
+и SHA256 фактического config blob из локального `docker image save`. Manifest
+digest не заменяет ожидаемый `local_image_id`; несовпадение config hash, platform
+или OCI source/version останавливает операцию до записи state/config и `up`.
+Helper наследует очищенное root-approved окружение (proxy/CA сохраняются),
+не получает код из candidate release и не выводит config/layers или raw errors.
+Root lock и сериализация продолжают охватывать всю проверку и запуск.
 
 При неизменной схеме adapter меняет только `TEST_IMAGE`, сохраняет server credentials/config/volumes/Caddy material и вызывает **замороженный baseline** `test-stack.py up`, затем HTTPS `check`. Автообновление не скачивает/не исполняет новые server-side скрипты из очередного tag. Изменение ops baseline/SQL требует отдельного рассмотрения оператором; policy не переписывается автоматически. Отсутствие SQL-изменений ограничивает rollout, но не доказывает полной совместимости бизнес-поведения; readiness/внешний check обязательны, предыдущий совместимый релиз пока не установлен.
 

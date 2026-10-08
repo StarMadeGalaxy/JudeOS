@@ -121,10 +121,11 @@ def execute(image, tag):
     if config.stat().st_mode & 0o077:
         raise ValueError("unsafe_config")
     command(["/usr/bin/docker", "pull", image])
-    fmt = '{{.Id}}\n{{.Os}}/{{.Architecture}}\n{{index .Config.Labels "org.opencontainers.image.revision"}}\n{{index .Config.Labels "org.opencontainers.image.version"}}'
-    identity = command(["/usr/bin/docker", "image", "inspect", image, "--format", fmt], True).splitlines()
-    if identity != [data["local_image_id"], "linux/amd64", data["source_commit"], "sha-" + data["source_commit"]]:
-        raise ValueError("image_identity_mismatch")
+    # The accepted baseline helper distinguishes Docker classic config IDs from
+    # containerd manifest IDs and hashes the exported config in the latter case.
+    # It inherits only the root-approved environment installed above; never load
+    # a verifier from the candidate release or relax the expected config hash.
+    verifier.verify_image_identity(data, docker="/usr/bin/docker")
     # Persist attempted image before changing test.env, so interruption can be
     # diagnosed/retried; no password regeneration, DB downgrade or volume reset.
     state = {**previous, "code": "applying", "attempted_image": image, "tag": tag}

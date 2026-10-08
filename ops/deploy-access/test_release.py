@@ -10,6 +10,8 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import tarfile
+import io
 import types
 import unittest
 import urllib.error
@@ -172,6 +174,9 @@ class Adapter(unittest.TestCase):
         for name in ["db-password", "bootstrap-secrets.env", "migration-secrets.env", "api-secrets.env"]:
             p=self.config_dir/name;p.write_text("synthetic-secret\n");p.chmod(0o600)
         self.data = manifest()
+        self.image_config = b'{"synthetic":"image config fixture"}'
+        self.config_id = "sha256:" + hashlib.sha256(self.image_config).hexdigest()
+        self.data["local_image_id"] = self.config_id
         self.policy = self.root / "policy.json"
         self.policy.write_text(json.dumps({"checkout": str(self.checkout), "config": str(self.config),
                                           "source_commit": self.sha, "repository": gate.IMAGE,
@@ -179,6 +184,8 @@ class Adapter(unittest.TestCase):
                                           "schema_version": 3, "migrations": self.data["migrations"]}))
         self.status = self.root / "status.json"
         self.calls = []
+        self.environments = []
+        self.containerd = False
         self.bad_image = self.fail_ready = False
         self.fake_gate = types.SimpleNamespace(IMAGE=gate.IMAGE, verify=lambda *_: self.data,
                                               api=lambda _: {"status": "ahead"})
@@ -196,9 +203,19 @@ class Adapter(unittest.TestCase):
         if args[:2] == ["/usr/bin/python3", "-I"] and args[2].endswith("/ops/test-env.py"):
             return self.real_run(args, **kwargs)
         self.calls.append(args)
+        self.environments.append((args, dict(kwargs.get("env", os.environ))))
         if args[:4] == ["/usr/bin/docker", "image", "inspect", self.data["registry_digest"]]:
-            identity = [self.data["local_image_id"], "linux/amd64", self.data["source_commit"], "sha-" + self.data["source_commit"]]
+            image_id = DIGEST if self.containerd else self.config_id
+            identity = [image_id, "linux/amd64", self.data["source_commit"], "sha-" + self.data["source_commit"]]
             return subprocess.CompletedProcess(args, 0, "invalid" if self.bad_image else "\n".join(identity))
+        if args[:3] == ["/usr/bin/docker", "image", "save"]:
+            # A local Docker export, consumed by the real accepted #22 helper.
+            with tarfile.open(fileobj=kwargs["stdout"], mode="w") as archive:
+                for name, content in [("manifest.json", b'[{"Config":"config.json","Layers":[]}]'),
+                                      ("config.json", self.image_config)]:
+                    entry = tarfile.TarInfo(name);entry.size = len(content)
+                    archive.addfile(entry, io.BytesIO(content))
+            return subprocess.CompletedProcess(args, 0)
         if self.fail_ready and args[-1] == "check":raise subprocess.CalledProcessError(9,args)
         return subprocess.CompletedProcess(args,0,"")
 
@@ -214,6 +231,54 @@ class Adapter(unittest.TestCase):
         self.assertEqual(json.loads(self.status.read_text())["code"],"completed")
         self.assertEqual([c[-1] for c in self.calls if c[0] == "/usr/bin/python3"],["up","check"])
         self.assertEqual((self.config_dir/"api-secrets.env").read_text(),"synthetic-secret\n")
+        self.assertFalse(any(c[:3] == ["/usr/bin/docker", "image", "save"] for c in self.calls))
+
+    def test_containerd_manifest_id_requires_actual_config_hash_before_up(self):
+        self.containerd = True
+        self.apply()
+        export = ["/usr/bin/docker", "image", "save", self.data["registry_digest"]]
+        self.assertIn(export, self.calls)
+        up = next(c for c in self.calls if c[0] == "/usr/bin/python3")
+        self.assertLess(self.calls.index(export), self.calls.index(up))
+        self.assertEqual(json.loads(self.status.read_text())["code"], "completed")
+        self.assertEqual((self.config_dir/"api-secrets.env").read_text(), "synthetic-secret\n")
+
+    def test_wrong_config_digest_rejected_in_both_image_stores(self):
+        before = self.config.read_bytes()
+        self.data["local_image_id"] = "sha256:" + "e" * 64
+        for containerd in [False, True]:
+            with self.subTest(containerd=containerd):
+                self.calls.clear();self.containerd = containerd
+                with self.assertRaises(ValueError):self.apply()
+                self.assertEqual(self.config.read_bytes(), before)
+                self.assertFalse(self.status.exists())
+                self.assertFalse(any(c[0] == "/usr/bin/python3" for c in self.calls))
+
+    def test_manifest_digest_cannot_replace_expected_config_digest(self):
+        self.containerd = True
+        self.data["local_image_id"] = DIGEST
+        before = self.config.read_bytes()
+        with self.assertRaisesRegex(ValueError, "config digest"):self.apply()
+        self.assertEqual(self.config.read_bytes(), before)
+        self.assertFalse(self.status.exists())
+        self.assertFalse(any(c[0] == "/usr/bin/python3" for c in self.calls))
+
+    def test_helper_inherits_root_environment_and_fixed_docker_path(self):
+        self.containerd = True
+        os.environ["PYTHONPATH"] = "/untrusted"
+        os.environ["DOCKER_HOST"] = "tcp://untrusted.invalid:2375"
+        environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8",
+                       "HTTPS_PROXY": "https://synthetic-proxy.invalid",
+                       "SSL_CERT_FILE": "/synthetic-ca.pem", "GH_TOKEN": "synthetic-token"}
+        with patch.object(adapter, "root_environment", return_value=environment.copy()):self.apply()
+        for command, observed in self.environments:
+            with self.subTest(command=command[:3]):
+                self.assertNotIn("PYTHONPATH", observed)
+                self.assertNotIn("DOCKER_HOST", observed)
+                self.assertEqual(observed["HTTPS_PROXY"], environment["HTTPS_PROXY"])
+                self.assertEqual(observed["SSL_CERT_FILE"], environment["SSL_CERT_FILE"])
+                if command[0] == "/usr/bin/python3":self.assertNotIn("GH_TOKEN", observed)
+                else:self.assertEqual(observed["GH_TOKEN"], environment["GH_TOKEN"])
 
     def test_schema_change_fails_before_pull_or_config_change(self):
         before=self.config.read_text();self.data["migrations"]["00001.sql"]="e"*64
@@ -222,7 +287,7 @@ class Adapter(unittest.TestCase):
 
     def test_image_identity_rejected_before_application_update(self):
         self.bad_image=True;before=self.config.read_text()
-        with self.assertRaisesRegex(ValueError,"image_identity_mismatch"):self.apply()
+        with self.assertRaisesRegex(ValueError,"platform/source labels"):self.apply()
         self.assertEqual(self.config.read_text(),before)
         self.assertFalse(any(c[0] == "/usr/bin/python3" for c in self.calls))
 

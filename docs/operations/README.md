@@ -4,9 +4,10 @@
 
 - [Синтетический HTTPS test](test-environment.md): внешний config, БД без host-порта, локальная проверка, параметры реального размещения.
 - [Первый запуск на Hostinger](hostinger-first-run.md): точные команды для judopride.tech, опубликованный digest, preflight и внешние проверки.
-- [Первый опубликованный release](first-synthetic-release.md): v0.1.0-test.1, точный manifest/digest и root-команды до enable адаптера #91.
+- [Новый baseline](second-synthetic-release.md): v0.1.0-test.2 после #95/#96, проверенные manifest/GHCR/Docker29 и передача установки #91.
+- [Первый опубликованный release](first-synthetic-release.md): v0.1.0-test.1, исторические identifiers/команды; старый VPS checkout сохраняется.
 - [CI и релизы](releases.md): checks, commit/digest/schema, совместимость, защита main.
 - [Диагностика и копии](runbook.md): health/readiness, время ответа, диск, проверка восстановления.
 - [ADR 0009, предложено](../../planning/adr/0009-ci-test-releases.md) и [инфраструктура](../../planning/INFRASTRUCTURE.md).
 
-Проверенная локальная конфигурация не подтверждает существование публичного test. Hostinger VPS 187.7.69.230 / judopride.tech предоставлены пользователем, оператор test — NikishGum; защищённый доступ готовит #91. Автоматически выпущенный SSL сообщён пользователем, но по его preflight TCP 80/443 без слушателей; работающий HTTPS ещё не подтверждён. GHCR/release workflow не означает выпуск образа до реального tag run. #20/PR #85 merged во время работы; свежая main после #88/PR #90 `9524bc4` интегрирована, test использует опубликованные bootstrap-local, раздельные migrator/runtime credentials и схему 3. Будущие изменения интерфейсов требуют повторной проверки.
+Проверенная локальная конфигурация не подтверждает существование публичного test. Hostinger VPS 187.7.69.230 / judopride.tech предоставлены пользователем, оператор test — NikishGum; Actions → VPS access проверен в #91; первый app deploy ещё не подтверждён. Автоматически выпущенный SSL сообщён пользователем, но по его preflight TCP 80/443 без слушателей; работающий HTTPS ещё не подтверждён. Реальные tags v0.1.0-test.1/.2 опубликованы; успешный release/GHCR check не означает успешный VPS deploy. #20/PR #85 merged во время работы; свежая main после #88/PR #90 `9524bc4` интегрирована, test использует опубликованные bootstrap-local, раздельные migrator/runtime credentials и схему 3. Будущие изменения интерфейсов требуют повторной проверки.

@@ -25,6 +25,11 @@ def main():
     output = a.output.resolve()
     if output == ROOT or ROOT in output.parents:
         p.error('Output must be outside checkout')
+    # Build/publish still address artifacts by config ID. Containerd's .Id is
+    # a manifest digest; stop before building or writing mislabeled metadata.
+    store = json.loads(run(['docker', 'info', '--format', '{{json .DriverStatus}}'])) or []
+    if ['driver-type', 'io.containerd.snapshotter.v1'] in store:
+        p.error('Release build requires the classic Docker image store (config image IDs)')
     builder = run(['docker', 'buildx', 'inspect', a.builder])
     if not re.search(r'^Driver:\s+docker-container\s*$', builder, re.MULTILINE):
         p.error('Use a dedicated docker-container builder; Docker driver cannot normalize layer timestamps')

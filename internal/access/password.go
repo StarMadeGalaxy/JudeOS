@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/argon2"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 var ErrInvalid = errors.New("invalid input")
@@ -26,7 +27,7 @@ func NormalizeLogin(s string) (string, error) {
 
 // Fixed, bounded parameters avoid attacker-controlled memory/CPU during verification.
 func HashPassword(password string) (string, error) {
-	if len(password) < 12 || len(password) > 1024 {
+	if !utf8.ValidString(password) || utf8.RuneCountInString(password) < 12 || len(password) > 1024 {
 		return "", ErrInvalid
 	}
 	salt := make([]byte, 16)

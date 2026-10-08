@@ -100,7 +100,7 @@ paths:
       - access
       summary: Войти как сотрудник
       description: 'Логин: trim + lowercase ASCII, 1–254 символа [a-z0-9._@+-], первый alphanumeric. Argon2id
-        v19, 64 MiB, t=2,p=1; пароль до 1024 bytes, новый от 12 bytes. Preauth CSRF + точный Origin обязательны.
+        v19, 64 MiB, t=2,p=1; пароль до 1024 bytes, новый минимум 12 Unicode code points и максимум 1024 UTF-8 bytes. Preauth CSRF + точный Origin обязательны.
         LOGIN_FAILED одинаков для неизвестного/отозванного входа/неверного пароля. Лимит 10 попыток/15
         минут по login и peer IP, успешные попытки тоже считаются. Секрет сессии ротируется; preauth потребляется
         атомарно. TTL 8 часов; GET его не продлевает. После входа получить session CSRF заново. Повтор
@@ -807,7 +807,7 @@ paths:
       summary: Установить пароль по invite/reset
       description: Анонимный preauth CSRF и Origin обязательны. Invite 24 часа, reset 30 минут; хеш секрета
         в БД, одноразовое атомарное применение. LINK_INVALID нейтрален для неизвестного/истёкшего/отозванного/повторного
-        токена. Новый пароль 12–1024 bytes Argon2id. Отзывает все сессии и ссылки аккаунта; не создаёт
+        токена. Новый пароль минимум 12 Unicode code points, максимум 1024 UTF-8 bytes, Argon2id. Отзывает все сессии и ссылки аккаунта; не создаёт
         сессию автоматически. После успеха войти. 10 попыток/15 минут peer IP. Передать token в JSON;
         ссылка UI использует fragment, не query.
       x-status: implemented

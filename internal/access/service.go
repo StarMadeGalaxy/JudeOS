@@ -9,6 +9,7 @@ import (
 	"errors"
 	"github.com/StarMadeGalaxy/JudeOS/internal/platform/database"
 	"time"
+	"unicode/utf8"
 )
 
 var (
@@ -483,7 +484,7 @@ func (s *Service) Change(ctx context.Context, token, csrf, tenant, request, id s
 	})
 }
 func (s *Service) Redeem(ctx context.Context, token, password, preauth, csrf, request string) error {
-	if len(password) < 12 || len(password) > 1024 {
+	if !utf8.ValidString(password) || utf8.RuneCountInString(password) < 12 || len(password) > 1024 {
 		return ErrInvalid
 	}
 	var expected string

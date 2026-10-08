@@ -14,7 +14,7 @@ func TestPasswordsAndRoles(t *testing.T) {
 	if h == h2 || strings.Contains(h, "synthetic") {
 		t.Fatal("salt/hash")
 	}
-	for _, bad := range []string{"short", strings.Repeat("a", 1025)} {
+	for _, bad := range []string{"short", strings.Repeat("Я", 6), strings.Repeat("a", 1025)} {
 		if _, e = HashPassword(bad); e == nil {
 			t.Fatal("password bounds")
 		}

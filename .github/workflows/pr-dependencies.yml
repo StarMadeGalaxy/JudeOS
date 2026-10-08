@@ -12,6 +12,7 @@ permissions:
   contents: read
   pull-requests: read
   checks: write
+  statuses: write
 # Every run reconciles all open PRs, including after a dependency closes/merges.
 # Pending runs may be coalesced by GitHub; every surviving run reads current state.
 concurrency:

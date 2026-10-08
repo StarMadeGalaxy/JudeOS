@@ -81,7 +81,7 @@ Gate проверяет заявленные зависимости, не выв
 
 ## Безопасность и отказ
 
-`pull_request_target` получает contents/pull-requests read и checks write. Checkout
+`pull_request_target` получает contents/pull-requests read, checks/statuses write. Checkout
 строго default branch, persist-credentials=false; PR head/описание не исполняются.
 GitHub token передаётся через env, не пишется в отчёт. REST ошибки дают нейтральный
 failure; недоступность API не превращается в success. Summary не включает чужие
@@ -92,3 +92,11 @@ pending/устаревшими: проверить run и перезапусти
 Тесты: `python3 -m unittest discover -s .github/scripts -p 'test_*.py'`.
 Workflow выполняется только после интеграции trusted версии; его end-to-end проверка
 и required-check read-back обязательны до закрытия #103.
+
+## Исправление Expected при зелёном API CheckRun
+
+На PR #101 8 октября 2026 backend merge вернул `Required status check "PR dependencies" is expected`, хотя API/GraphQL показывали SUCCESS, isRequired=true, правильные head SHA и Actions app15368, все CI и повторный approve. Строка `Merge after: none` разобрана успешно; отсутствие декларации не является причиной. Наличие API-created CheckRun само по себе не доказало работоспособность защиты.
+
+Gate дополнительно публикует commit status `PR dependencies` на том же head: pending до вычисления, затем success/failure с тем же результатом, что подробный CheckRun. `statuses: write` ограничен trusted-default-branch workflow; исполнения PR-кода и новых секретов нет. Ошибка публикации оставляет pending, не даёт новый success. Это подготовленное исправление; реальный positive/negative merge и правильная привязка источника GitHub Actions должны быть проверены после интеграции. Два результата одного имени должны согласовываться, зелёный общий job их не заменяет.
+
+Исправление gate также может быть заблокировано старым Expected. Оператору нужен отдельный согласованный bootstrap интеграции: сначала review готового PR, затем интеграция настроечного исправления с сохранением остальных CI/review и немедленное восстановление required context с live read-back. Не отключать защиту или использовать admin bypass без явного поручения пользователя. Не закрывать #103 до подтверждённого запрета merge при открытой зависимости и разрешения после её merge.

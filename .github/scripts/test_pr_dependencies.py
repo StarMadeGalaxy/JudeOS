@@ -85,7 +85,7 @@ class EvaluationTests(unittest.TestCase):
         api = FakeAPI(pull(body='Merge after: #2'))
         row = gate.check_pull(api, 10)
         self.assertFalse(row[2])
-        self.assertEqual(api.calls[-1][2]['conclusion'], 'failure')
+        self.assertEqual(api.calls[-1][2]['state'], 'failure')
 
     def test_cycles_cannot_pass(self):
         first, second = pull(10, 'Merge after: #20'), pull(20, 'Merge after: #10')
@@ -98,9 +98,44 @@ class PublicationTests(unittest.TestCase):
         api = FakeAPI(pull())
         row = gate.check_pull(api, 10)
         self.assertTrue(row[2])
-        self.assertEqual(api.calls[0][2]['head_sha'], 'a' * 40)
-        self.assertEqual(api.calls[0][2]['status'], 'in_progress')
-        self.assertEqual(api.calls[-1][2]['conclusion'], 'success')
+        self.assertEqual(api.calls[0][0], '/statuses/' + 'a' * 40)
+        self.assertEqual(api.calls[0][2]['state'], 'pending')
+        self.assertEqual(api.calls[1][2]['head_sha'], 'a' * 40)
+        self.assertEqual(api.calls[1][2]['status'], 'in_progress')
+        self.assertEqual(api.calls[-2][2]['conclusion'], 'success')
+        self.assertEqual(api.calls[-1][2]['state'], 'success')
+
+    def test_waiting_dependency_publishes_failure_in_both_results(self):
+        api = FakeAPI(pull(body='Merge after: #2'), deps={2: {'base': {'ref': 'main'}, 'merged': False}})
+        self.assertFalse(gate.check_pull(api, 10)[2])
+        self.assertEqual(api.calls[-2][2]['conclusion'], 'failure')
+        self.assertEqual(api.calls[-1][2]['state'], 'failure')
+        self.assertEqual(api.calls[-1][2]['context'], gate.CHECK)
+        self.assertIn('#2', api.calls[-1][2]['description'])
+
+    def test_publication_failure_leaves_pending_status(self):
+        api = FakeAPI(pull())
+        original = api.request
+        def request(path, method='GET', data=None):
+            if path == '/check-runs':
+                raise gate.GateError('synthetic API failure')
+            return original(path, method, data)
+        api.request = request
+        with self.assertRaises(gate.GateError):
+            gate.check_pull(api, 10)
+        self.assertEqual([c[2]['state'] for c in api.calls], ['pending'])
+
+    def test_final_status_write_failure_never_publishes_success_status(self):
+        api = FakeAPI(pull())
+        original = api.request
+        def request(path, method='GET', data=None):
+            if path.startswith('/statuses/') and data['state'] == 'success':
+                raise gate.GateError('synthetic API failure')
+            return original(path, method, data)
+        api.request = request
+        with self.assertRaises(gate.GateError):
+            gate.check_pull(api, 10)
+        self.assertEqual([c[2]['state'] for c in api.calls if c[0].startswith('/statuses/')], ['pending'])
 
     def test_description_head_base_or_state_race_blocks(self):
         for field, replacement in [('body', 'Merge after: #2'),
@@ -110,7 +145,7 @@ class PublicationTests(unittest.TestCase):
             latest = {**original, field: replacement}
             api = FakeAPI(original, latest=latest)
             self.assertFalse(gate.check_pull(api, 10)[2])
-            self.assertEqual(api.calls[-1][2]['conclusion'], 'failure')
+            self.assertEqual(api.calls[-1][2]['state'], 'failure')
 
     def test_shared_commit_cannot_publish_conflicting_success(self):
         api = FakeAPI(pull())

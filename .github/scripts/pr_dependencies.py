@@ -108,6 +108,12 @@ def check_pull(api, number, blocked_reason=None):
     sha = pr['head']['sha']
     if not re.fullmatch(r'[0-9a-f]{40}', sha):
         raise GateError('Invalid head SHA.')
+    # Also publish a commit status: a successful API-created Actions CheckRun can
+    # remain 'Expected' in branch protection even when isRequired reports true.
+    # Pending must precede evaluation, including when CheckRun creation fails.
+    api.request(f'/statuses/{sha}', 'POST', {
+        'context': CHECK, 'state': 'pending',
+        'description': 'Checking current PR dependencies.'})
     run = api.request('/check-runs', 'POST', {
         'name': CHECK, 'head_sha': sha, 'status': 'in_progress',
         'output': {'title': 'Checking PR dependencies',
@@ -126,6 +132,11 @@ def check_pull(api, number, blocked_reason=None):
         'status': 'completed', 'conclusion': 'success' if passed else 'failure',
         'output': {'title': 'Dependencies satisfied' if passed else 'Merge blocked',
                    'summary': message}})
+    # The status and detailed CheckRun use the same SHA and fail-closed result.
+    # A failed write leaves pending rather than reusing the preceding green status.
+    api.request(f'/statuses/{sha}', 'POST', {
+        'context': CHECK, 'state': 'success' if passed else 'failure',
+        'description': message[:140]})
     return number, deps, passed, message
 
 

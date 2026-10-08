@@ -18,6 +18,8 @@
 
 ## Root-команды получения и проверки на VPS
 
+**Первый запуск остановлен до исправления Docker29.** Оператор уже получил этот manifest/checkout и успешно выполнил published gate и GHCR pull. Финальный checker исходного a546194 отказал: Docker29.8.2 возвращает registry digest в `.Id`, а checker и adapter #91 ожидают config digest. Platform/OCI source/version и clean HEAD совпали. Исправление #22 сохраняет проверку config hash; аналогичное изменение адаптера согласуется в [#91](https://github.com/StarMadeGalaxy/JudeOS/issues/91#issuecomment-6054914930). До review/merge обоих исправлений, принятого baseline и повторной проверки **не выполнять enable/dispatch**. Не редактировать source checkout или опубликованный manifest и не пересоздавать существующие каталоги. Следующие команды фиксируют получение первого выпуска; их старый checker на Docker29 пока ожидаемо отказывает.
+
 В доверенной **Bash root-консоли VPS**, после [preflight](hostinger-first-run.md#read-only-preflight-на-vps). Используются точные опубликованные значения. Блок рассчитан на первый запуск с новыми путями; при существующем checkout/manifest/config он останавливается, ничего не удаляет и не регенерирует пароли. Для уже начатой настройки сначала согласовать её состояние с #91, не обходить guards. Не отключать proxy, CA/TLS или SSH host verification.
 
 ```bash

@@ -17,6 +17,12 @@ def main():
         p.error('Use a SemVer release tag vMAJOR.MINOR.PATCH[-prerelease]')
     if os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('GITHUB_REF') != 'refs/tags/' + a.tag:
         p.error('Publishing is only allowed in the checked GitHub Actions tag run')
+    # Artifact config IDs must remain addressable; do not load/login/push on
+    # a containerd store whose .Id has different semantics.
+    store = json.loads(subprocess.check_output(
+        ['docker', 'info', '--format', '{{json .DriverStatus}}'], text=True)) or []
+    if ['driver-type', 'io.containerd.snapshotter.v1'] in store:
+        p.error('Release publish requires the classic Docker image store (config image IDs)')
     manifest = a.directory / 'release.json'
     data = json.loads(manifest.read_text())
     subprocess.run(['git', 'merge-base', '--is-ancestor', os.environ['GITHUB_SHA'], 'origin/main'], check=True)

@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tarfile
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,6 +34,46 @@ def validate_manifest(data, commit, root):
     return image
 
 
+def verify_image_identity(data, docker='docker'):
+    """Check either Docker image store without confusing manifest/config hashes."""
+    image = data['registry_digest']
+    fmt = '{{.Id}}\n{{.Os}}/{{.Architecture}}\n{{index .Config.Labels "org.opencontainers.image.revision"}}\n{{index .Config.Labels "org.opencontainers.image.version"}}'
+    identity = subprocess.check_output([docker, 'image', 'inspect', image, '--format', fmt],
+                                       text=True, stderr=subprocess.DEVNULL).splitlines()
+    commit = data['source_commit']
+    if len(identity) != 4 or identity[1:] != ['linux/amd64', commit, 'sha-' + commit]:
+        raise ValueError('Pulled image platform/source labels do not match release')
+    # Docker's containerd image store reports the registry manifest digest as
+    # .Id. Require that exact digest AND hash the locally exported config blob.
+    # This stays offline after pull and never extracts layers or prints config.
+    if identity[0] != image.split('@', 1)[1]:
+        if identity[0] == data['local_image_id']:
+            return
+        raise ValueError('Pulled image ID does not match release')
+    with tempfile.TemporaryFile() as saved:
+        subprocess.run([docker, 'image', 'save', image], stdout=saved,
+                       stderr=subprocess.DEVNULL, check=True)
+        saved.seek(0)
+        try:
+            with tarfile.open(fileobj=saved, mode='r:') as archive:
+                def read_regular(name):
+                    member = archive.getmember(name)
+                    if not member.isfile() or member.size > 4 * 1024 * 1024:
+                        raise ValueError('Invalid exported image identity metadata')
+                    with archive.extractfile(member) as content:
+                        return content.read()
+                manifest = json.loads(read_regular('manifest.json'))
+                if (not isinstance(manifest, list) or len(manifest) != 1
+                        or not isinstance(manifest[0], dict)
+                        or not isinstance(manifest[0].get('Config'), str)):
+                    raise ValueError('Require a single exported image config')
+                config_id = 'sha256:' + hashlib.sha256(read_regular(manifest[0]['Config'])).hexdigest()
+                if config_id != data['local_image_id']:
+                    raise ValueError('Pulled image config digest does not match release')
+        except (tarfile.TarError, KeyError) as error:
+            raise ValueError('Invalid exported image identity metadata') from error
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--manifest', type=Path, required=True)
@@ -51,17 +93,12 @@ def main():
         image = validate_manifest(data, commit, ROOT)
         if a.pull:
             subprocess.run(['docker', 'pull', image], check=True, stdout=sys.stderr)
-        # Inspect only identity fields. Never emit container/image environment or credentials.
-        fmt = '{{.Id}}\n{{.Os}}/{{.Architecture}}\n{{index .Config.Labels "org.opencontainers.image.revision"}}\n{{index .Config.Labels "org.opencontainers.image.version"}}'
-        identity = subprocess.check_output(['docker', 'image', 'inspect', image, '--format', fmt],
-                                           text=True, stderr=subprocess.DEVNULL).splitlines()
-        if identity != [data['local_image_id'], 'linux/amd64', commit, 'sha-' + commit]:
-            raise ValueError('Pulled image ID/platform/source labels do not match release')
+        verify_image_identity(data)
         if git('rev-parse', 'HEAD') != commit or git('status', '--porcelain'):
             raise ValueError('Checkout changed during verification')
         print(json.dumps({'image': image, 'source_commit': commit, 'schema_version': data['schema_version'],
                           'release_tag': data['release_tag'], 'verified': True}))
-    except (OSError, ValueError, TypeError, subprocess.CalledProcessError):
+    except (OSError, ValueError, TypeError, KeyError, subprocess.CalledProcessError):
         print('Release check failed: require published manifest, accepted clean main checkout and matching image/schema.', file=sys.stderr)
         raise SystemExit(1)
 

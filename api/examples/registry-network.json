@@ -1,0 +1,126 @@
+{
+  "cases": [
+    {
+      "name": "NetworkProfile positive",
+      "schema": "NetworkProfile",
+      "valid": true,
+      "value": {
+        "network_id": "00000000-0000-4000-8000-000000000601",
+        "name": "Синтетическая сеть",
+        "version": 1,
+        "clubs": [
+          {
+            "tenant_id": "00000000-0000-4000-8000-000000000101",
+            "network_id": "00000000-0000-4000-8000-000000000601",
+            "name": "Синтетический клуб",
+            "address": "Тестовая улица, 1",
+            "timezone": "Europe/Minsk",
+            "version": 1
+          }
+        ],
+        "owners": [
+          {
+            "account_id": "00000000-0000-4000-8000-000000000201",
+            "login": "synthetic.owner",
+            "active": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClubSettings positive",
+      "schema": "ClubSettings",
+      "valid": true,
+      "value": {
+        "tenant_id": "00000000-0000-4000-8000-000000000101",
+        "network_id": "00000000-0000-4000-8000-000000000601",
+        "name": "Синтетический клуб",
+        "address": "Тестовая улица, 1",
+        "timezone": "Europe/Minsk",
+        "version": 1
+      }
+    },
+    {
+      "name": "StaffAssignmentLink positive",
+      "schema": "StaffAssignmentLink",
+      "valid": true,
+      "value": {
+        "token": "0000000000000000000000000000000000000000000000000000000000000000",
+        "expires_at": "2050-01-01T00:00:00Z",
+        "kind": "join"
+      }
+    },
+    {
+      "name": "PersonPage positive",
+      "schema": "PersonPage",
+      "valid": true,
+      "value": {
+        "items": [
+          {
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "tenant_id": "00000000-0000-4000-8000-000000000101",
+            "display_name": "Синтетический участник",
+            "archived": false,
+            "version": 1
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    {
+      "name": "HouseholdProfile positive",
+      "schema": "HouseholdProfile",
+      "valid": true,
+      "value": {
+        "household_id": "00000000-0000-4000-8000-000000000501",
+        "name": "Синтетическая семья",
+        "version": 1,
+        "members": []
+      }
+    },
+    {
+      "name": "search omits private phone",
+      "schema": "PersonPage",
+      "valid": false,
+      "value": {
+        "items": [
+          {
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "tenant_id": "00000000-0000-4000-8000-000000000101",
+            "display_name": "Синтетический участник",
+            "archived": false,
+            "version": 1,
+            "phone": "+375000000027"
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    {
+      "name": "family has no auth grants",
+      "schema": "HouseholdProfile",
+      "valid": false,
+      "value": {
+        "household_id": "00000000-0000-4000-8000-000000000501",
+        "name": "Синтетическая семья",
+        "version": 1,
+        "members": [],
+        "grants": [
+          {
+            "role": "parent"
+          }
+        ]
+      }
+    },
+    {
+      "name": "assignment never resets existing password",
+      "schema": "StaffAssignmentLink",
+      "valid": false,
+      "value": {
+        "token": "0000000000000000000000000000000000000000000000000000000000000000",
+        "expires_at": "2050-01-01T00:00:00Z",
+        "kind": "reset"
+      }
+    }
+  ]
+}

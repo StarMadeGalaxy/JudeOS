@@ -12,6 +12,7 @@ async function server(page) {
     else if(path.endsWith('/session')){status=state.signedIn?200:401;body=state.signedIn?owner:{code:'SESSION_EXPIRED'};}
     else if(path.endsWith('/logout')){state.signedIn=false;state.logout++;status=204;}
     else if(path.endsWith('/redeem')){state.redeem++;expect(state.signedIn).toBe(false);status=204;}
+    else if(path.endsWith('/people')&&method==='GET')body={items:[],next_cursor:null};
     else if(path.endsWith('/invitations'))body={token:'a'.repeat(64),expires_at:'2050-01-01T12:00:00Z'};
     else if(path.endsWith('/staff')&&method==='GET')body={items:[
       {membership_id:id,login:'synthetic.owner',active:true,state:'active',grants},

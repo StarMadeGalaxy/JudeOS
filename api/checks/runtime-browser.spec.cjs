@@ -24,7 +24,7 @@ test('built web shell works with live API at mobile and desktop widths', async (
 test('runtime Swagger displays only implemented operations',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/docs');
-  await expect(page.locator('.opblock')).toHaveCount(13);
+  await expect(page.locator('.opblock')).toHaveCount(45);
   await page.locator('#operations-operations-getReadiness .opblock-summary').click();
   await expect(page.locator('#operations-operations-getReadiness')).toContainText('503');
   expect(await page.locator('.errors-wrapper').count()).toBe(0);

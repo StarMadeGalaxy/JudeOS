@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const sessionCookie = "__Host-judeos-session"
@@ -62,7 +64,21 @@ func body(w http.ResponseWriter, req *http.Request, target any) bool {
 	}
 	req.Body = http.MaxBytesReader(w, req.Body, 16<<10)
 	defer req.Body.Close()
-	decoder := json.NewDecoder(req.Body)
+	raw, err := io.ReadAll(req.Body)
+	if err != nil {
+		var large *http.MaxBytesError
+		if errors.As(err, &large) {
+			failure(w, 413, "PAYLOAD_TOO_LARGE", "Запрос слишком большой")
+		} else {
+			failure(w, 400, "INVALID_REQUEST", "Некорректный запрос")
+		}
+		return false
+	}
+	if !utf8.Valid(raw) || !uniqueJSON(raw) {
+		failure(w, 400, "INVALID_REQUEST", "Некорректный запрос")
+		return false
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	err = decoder.Decode(target)
 	if err == nil {
@@ -82,37 +98,9 @@ func body(w http.ResponseWriter, req *http.Request, target any) bool {
 }
 func accessRoutes(r chi.Router, o Options) {
 	// Register even when DB is unavailable, preserving route/contract coverage.
-	guard := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			origin := req.Header.Get("Origin")
-			site := req.Header.Get("Sec-Fetch-Site")
-			if o.Origin == "" || (origin != "" && origin != o.Origin) || (site != "" && site != "same-origin" && site != "none") || (req.Method != "GET" && origin != o.Origin) {
-				failure(w, 403, "ACCESS_DENIED", "Источник запроса не разрешён")
-				return
-			}
-			if o.Access == nil {
-				accessError(w, errors.New("unavailable"))
-				return
-			}
-			host, _, err := net.SplitHostPort(req.RemoteAddr)
-			if err != nil {
-				host = req.RemoteAddr
-			}
-			allowed, err := o.Access.Limit(req.Context(), "http:"+host, 120, time.Minute)
-			if err != nil {
-				accessError(w, err)
-				return
-			}
-			if !allowed {
-				w.Header().Set("Retry-After", "60")
-				failure(w, 429, "RATE_LIMITED", "Повторите позже")
-				return
-			}
-			next.ServeHTTP(w, req)
-		})
-	}
+
 	r.Group(func(r chi.Router) {
-		r.Use(guard)
+		r.Use(requestGuard(o))
 		r.Get("/api/v1/access/csrf", func(w http.ResponseWriter, req *http.Request) {
 			csrf, expires, fresh, e := o.Access.CSRF(req.Context(), cookie(req, sessionCookie), cookie(req, preauthCookie))
 			if e != nil {
@@ -286,4 +274,84 @@ func accessRoutes(r chi.Router, o Options) {
 			})
 		})
 	})
+}
+
+func requestGuard(o Options) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			origin := req.Header.Get("Origin")
+			site := req.Header.Get("Sec-Fetch-Site")
+			if o.Origin == "" || (origin != "" && origin != o.Origin) || (site != "" && site != "same-origin" && site != "none") || (req.Method != "GET" && origin != o.Origin) {
+				failure(w, 403, "ACCESS_DENIED", "Источник запроса не разрешён")
+				return
+			}
+			if o.Access == nil {
+				accessError(w, errors.New("unavailable"))
+				return
+			}
+			host, _, err := net.SplitHostPort(req.RemoteAddr)
+			if err != nil {
+				host = req.RemoteAddr
+			}
+			allowed, err := o.Access.Limit(req.Context(), "http:"+host, 120, time.Minute)
+			if err != nil {
+				accessError(w, err)
+				return
+			}
+			if !allowed {
+				w.Header().Set("Retry-After", "60")
+				failure(w, 429, "RATE_LIMITED", "Повторите позже")
+				return
+			}
+			next.ServeHTTP(w, req)
+		})
+	}
+}
+
+// Reject duplicate keys at every depth: different JSON parsers must not resolve
+// security-sensitive roles/identifiers to different values.
+func uniqueJSON(raw []byte) bool {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	var value func() bool
+	value = func() bool {
+		t, e := d.Token()
+		if e != nil {
+			return false
+		}
+		if x, ok := t.(json.Delim); ok {
+			switch x {
+			case '{':
+				seen := map[string]bool{}
+				for d.More() {
+					k, e := d.Token()
+					key, ok := k.(string)
+					if e != nil || !ok || seen[key] {
+						return false
+					}
+					seen[key] = true
+					if !value() {
+						return false
+					}
+				}
+				t, e = d.Token()
+				return e == nil && t == json.Delim('}')
+			case '[':
+				for d.More() {
+					if !value() {
+						return false
+					}
+				}
+				t, e = d.Token()
+				return e == nil && t == json.Delim(']')
+			default:
+				return false
+			}
+		}
+		return true
+	}
+	if !value() {
+		return false
+	}
+	_, e := d.Token()
+	return e == io.EOF
 }

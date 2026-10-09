@@ -1,40 +1,60 @@
-# Реестр первого онлайн-сценария
+# Реестр HTTP API
 
-Контракт #16 принят пользователем: [DECISIONS U2026-10-07-S0-01](../planning/DECISIONS.md), [PR #78 merged](https://github.com/StarMadeGalaxy/JudeOS/pull/78), [ADR 0006, принят](../planning/adr/0006-first-online-contract.md). Три операции журнала остаются запланированными; #26 предлагает ещё девять операций S1 и расширение журнала, ожидающие принятия. #21 реализует staff access. [#19](https://github.com/StarMadeGalaxy/JudeOS/issues/19) реализует только четыре служебные операции. Источник схем — [OpenAPI](openapi/openapi.yaml). Ответственный за каркас — NikishGum; модуль не задаёт постоянное назначение человека.
+Принятый минимум #26 интегрирован PR [#102](https://github.com/StarMadeGalaxy/JudeOS/pull/102); реестр и явные сети реализуются #27. Journal/attendance операции остаются planned и не появляются в runtime Swagger. Источник схем — [OpenAPI](openapi/openapi.yaml); права/повторы/ограничения — [S1-CONTRACT](S1-CONTRACT.md) и [ADR0013](../planning/adr/0013-network-and-registry.md).
 
 | Method | Path | operationId | Модуль | Аудитория | Авторизация/scope | Статус |
 |---|---|---|---|---|---|---|
-| GET | `/api/v1/access/csrf` | `getCsrfToken` | access | REST сотрудника | Public, same-origin; preauth/session CSRF | реализован #21 |
-| POST | `/api/v1/access/login` | `loginStaff` | access | REST сотрудника | Public; preauth CSRF + Origin + credentials | реализован #21 |
-| GET | `/api/v1/access/session` | `getAccessSession` | access | REST сотрудника | Активная серверная сессия | реализован #21 |
-| POST | `/api/v1/access/logout` | `logoutStaff` | access | REST сотрудника | Сессия + CSRF + Origin | реализован #21 |
-| GET | `/api/v1/tenants/{tenant_id}/sessions` | `listAssignedSessions` | training | REST тренера | Активный coach, membership и текущие назначения | запланирован |
-| GET | `/api/v1/tenants/{tenant_id}/sessions/{session_id}` | `getSessionJournal` | training | REST тренера | Активный coach, назначение конкретного занятия | запланирован |
-| PUT | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/attendance/{athlete_id}` | `setAttendance` | attendance | REST тренера | Coach/назначение/roster/состояние + CSRF + Origin | запланирован |
+| GET | `/api/v1/access/csrf` | `getCsrfToken` | access | REST сотрудника | Public | реализован #21 |
+| POST | `/api/v1/access/login` | `loginStaff` | access | REST сотрудника | Public | реализован #21 |
+| GET | `/api/v1/access/session` | `getAccessSession` | access | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | реализован #21 |
+| POST | `/api/v1/access/logout` | `logoutStaff` | access | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | реализован #21 |
+| GET | `/api/v1/tenants/{tenant_id}/sessions` | `listAssignedSessions` | training | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #16 |
+| GET | `/api/v1/tenants/{tenant_id}/sessions/{session_id}` | `getSessionJournal` | training | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #16 |
+| PUT | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/attendance/{athlete_id}` | `setAttendance` | attendance | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #16 |
+| GET | `/healthz` | `getHealth` | operations | REST сотрудника | Public | реализован #19 |
+| GET | `/readyz` | `getReadiness` | operations | REST сотрудника | Public | реализован #19 |
+| GET | `/openapi.json` | `getRuntimeOpenAPI` | operations | REST сотрудника | Public | реализован #19 |
+| GET | `/docs` | `getSwaggerUI` | operations | REST сотрудника | Public | реализован #19 |
+| POST | `/api/v1/access/redeem` | `redeemAccessLink` | access | REST сотрудника | Public | реализован #21 |
+| GET | `/api/v1/tenants/{tenant_id}/staff` | `listStaff` | access | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | реализован #21 |
+| POST | `/api/v1/tenants/{tenant_id}/staff/invitations` | `inviteStaff` | access | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | реализован #21 |
+| POST | `/api/v1/tenants/{tenant_id}/staff/{membership_id}/reset` | `issueStaffReset` | access | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | реализован #21 |
+| PUT | `/api/v1/tenants/{tenant_id}/staff/{membership_id}` | `changeStaffAccess` | access | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | реализован #21 |
+| POST | `/api/v1/tenants/{tenant_id}/people` | `createPerson` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| GET | `/api/v1/tenants/{tenant_id}/people` | `listPersons` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/athletes` | `createAthlete` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| GET | `/api/v1/tenants/{tenant_id}/athletes` | `listAthletes` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| GET | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}` | `getAthleteProfile` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| PUT | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}` | `updateAthlete` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/guardian-links` | `verifyGuardianLink` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| PUT | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/primary-contact` | `setPrimaryContact` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/close` | `closeSession` | training | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #26 |
+| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/roster` | `addKnownRosterAthlete` | training | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #26 |
+| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/guests` | `createSessionGuest` | training | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #26 |
+| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/roster/{athlete_id}/exclude` | `excludeRosterAthlete` | training | REST сотрудника | Session; текущие права/scope, CSRF + Origin для команд | запланирован #26 |
+| GET | `/api/v1/tenants/{tenant_id}/households` | `listHouseholds` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/households` | `createHousehold` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| GET | `/api/v1/tenants/{tenant_id}/people/{person_id}` | `getPersonProfile` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| PUT | `/api/v1/tenants/{tenant_id}/people/{person_id}` | `updatePerson` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/people/{person_id}/archive` | `archivePerson` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/archive` | `archiveAthlete` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/guardian-links/{guardian_link_id}/revoke` | `revokeGuardianLink` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| GET | `/api/v1/tenants/{tenant_id}/households/{household_id}` | `getHouseholdProfile` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| PUT | `/api/v1/tenants/{tenant_id}/households/{household_id}` | `updateHousehold` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/households/{household_id}/members` | `addHouseholdMember` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/households/{household_id}/members/{household_member_id}/end` | `endHouseholdMember` | people | REST сотрудника | Administrator/manager клуба, явный owner его сети или platform; coach запрещён | реализован #27 |
+| GET | `/api/v1/networks` | `listNetworks` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| GET | `/api/v1/networks/{network_id}` | `getNetworkProfile` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| PUT | `/api/v1/networks/{network_id}` | `renameNetwork` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| POST | `/api/v1/platform/networks` | `createPlatformNetwork` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/network` | `createNetworkFromClub` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| POST | `/api/v1/networks/{network_id}/clubs` | `createNetworkClub` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| PUT | `/api/v1/networks/{network_id}/clubs/{tenant_id}` | `updateNetworkClub` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| PUT | `/api/v1/networks/{network_id}/owners` | `changeNetworkOwner` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| PUT | `/api/v1/platform/administrators` | `changePlatformAdministrator` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| POST | `/api/v1/access/accept-invitation` | `acceptClubInvitation` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/staff/assignments` | `assignStaffToClub` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| GET | `/api/v1/tenants/{tenant_id}/coaches` | `listClubCoaches` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
+| POST | `/api/v1/tenants/{tenant_id}/coaches/{membership_id}/revoke` | `revokeClubCoach` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
 
-| POST | `/api/v1/tenants/{tenant_id}/people` | `createPerson` | people | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| POST | `/api/v1/tenants/{tenant_id}/athletes` | `createAthlete` | people | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| GET | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}` | `getAthleteProfile` | people | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба; минимальный scope | запланирован #26/#102, **контракт принят** |
-| POST | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/guardian-links` | `verifyGuardianLink` | people | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| PUT | `/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/primary-contact` | `setPrimaryContact` | people | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/close` | `closeSession` | training | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба или текущий назначенный coach; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/roster` | `addKnownRosterAthlete` | training | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба или текущий назначенный coach; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/guests` | `createSessionGuest` | training | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба или текущий назначенный coach; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/roster/{athlete_id}/exclude` | `excludeRosterAthlete` | training | REST сотрудника | Administrator клуба своей сети / manager назначенного клуба; CSRF + Origin + версия/ID | запланирован #26/#102, **контракт принят** |
-
-| GET | `/healthz` | `getHealth` | platform | служебный | Public, dev/synthetic | реализован #19 |
-| GET | `/readyz` | `getReadiness` | platform | служебный | Public, dev/synthetic; проверка runtime роли | реализован #19, усилен #20 |
-| GET | `/openapi.json` | `getRuntimeOpenAPI` | platform | служебный | Public, dev/synthetic | реализован #19 |
-| GET | `/docs` | `getSwaggerUI` | platform | служебный | Public, dev/synthetic | реализован #19 |
-
-Входящие iPay/Telegram, метрики, предметные команды появляются в своих задачах. Статические исключения chi.Walk заданы в [static-routes.json](static-routes.json): web `/` и `/assets/*`, два локальных файла Swagger UI. [Общая политика](README.md#http-политика-основы-s0) описывает HEAD/OPTIONS/404/405, слеши и отсутствие SPA catch-all. Runtime `/openapi.json` и Swagger UI показывают только реализованные операции.
-
-#20 усиливает readiness проверкой безопасной runtime роли и схемы основы (исторически 3), не добавляя предметных endpoint'ов. Серверный request_id связывает HTTP/context/логи и будущий tenant-аудит; права сотрудников/auth реализованы #21; текущий runtime требует schema 4.
-
-| POST | `/api/v1/access/redeem` | `redeemAccessLink` | access | REST сотрудника | Public; preauth CSRF/Origin | реализован #21 |
-| GET | `/api/v1/tenants/{tenant_id}/staff` | `listStaff` | access | REST сотрудника | Administrator club; session/CSRF/Origin для команд | реализован #21 |
-| POST | `/api/v1/tenants/{tenant_id}/staff/invitations` | `inviteStaff` | access | REST сотрудника | Administrator club; session/CSRF/Origin для команд | реализован #21 |
-| POST | `/api/v1/tenants/{tenant_id}/staff/{membership_id}/reset` | `issueStaffReset` | access | REST сотрудника | Administrator club; session/CSRF/Origin для команд | реализован #21 |
-| PUT | `/api/v1/tenants/{tenant_id}/staff/{membership_id}` | `changeStaffAccess` | access | REST сотрудника | Administrator club; session/CSRF/Origin для команд | реализован #21 |
-
-[Матрица S1 и происхождение](S1-CONTRACT.md): область ролей и закрытие отдельно подтверждены владельцем; [поля/контакты и временное добавление coach также подтверждены владельцем](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281); конкретные DTO приняты с review/merge #102. Расширения listAssignedSessions/getSessionJournal/setAttendance помечены accepted, runtime planned; старый минимальный DTO сохраняется. Закрытие текущему назначенному coach разрешено по явному ответу владельца; administrator/manager закрывают в своей области без назначения тренером. Добавление известного/гостя действует только на указанное занятие, без Enrollment/шаблона/будущего состава; постоянную группу ведёт manager, coach не исключает. Auth/implemented маршруты сохраняются. #21 принята и merged через PR101; общий контракт и runtime проверены после интеграции main. Сетевое представление прав остаётся открытым.
+Статические исключения chi.Walk — [static-routes.json](static-routes.json). HEAD/OPTIONS/404/405/слеши — [общая HTTP политика](README.md#http-политика-основы-s0). Runtime требует schema 8 и показывает только implemented операции. Произвольные клубные administrator не получают сеть: принадлежность и organizational grant явные. Production/реальный пилот/restore не разрешены.

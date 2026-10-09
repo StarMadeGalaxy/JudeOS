@@ -27,6 +27,8 @@ import (
 const tenantA = "00000000-0000-4000-8000-000000000101"
 const tenantB = "00000000-0000-4000-8000-000000000102"
 
+var captureMu sync.Mutex
+
 type browser struct {
 	t      *testing.T
 	client *http.Client
@@ -66,6 +68,30 @@ func (b *browser) call(method, path string, value any, status int) map[string]an
 		if !c.Secure || !c.HttpOnly || c.Path != "/" || c.Domain != "" || c.SameSite != http.SameSiteLaxMode {
 			b.t.Fatal("unsafe cookie")
 		}
+	}
+	if file := os.Getenv("JUDEOS_TEST_RESPONSE_FILE"); file != "" {
+		captureMu.Lock()
+		f, e := os.OpenFile(file, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+		if e != nil {
+			captureMu.Unlock()
+			b.t.Fatal("response capture")
+		}
+		value := value
+		if strings.Contains(path, "login") || strings.Contains(path, "redeem") {
+			if m, ok := value.(map[string]any); ok {
+				clone := map[string]any{}
+				for k, v := range m {
+					clone[k] = v
+				}
+				if _, ok := clone["password"]; ok {
+					clone["password"] = "synthetic-contract-password"
+				}
+				value = clone
+			}
+		}
+		json.NewEncoder(f).Encode(map[string]any{"method": method, "path": path, "status": status, "request": value, "response": v, "headers": res.Header})
+		f.Close()
+		captureMu.Unlock()
 	}
 	return v
 }

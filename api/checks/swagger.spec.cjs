@@ -3,7 +3,7 @@ test('Swagger resolves the accepted planned operations and displays command and 
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await expect(page.locator('.opblock')).toHaveCount(25);
+  await expect(page.locator('.opblock')).toHaveCount(52);
   await page.locator('#operations-attendance-setAttendance .opblock-summary').click();
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('base_version');
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('ATTENDANCE_VERSION_CONFLICT');
@@ -19,10 +19,14 @@ test('Swagger resolves the accepted planned operations and displays command and 
   await page.locator('#operations-people-createPerson .opblock-summary').click();
   await expect(page.locator('#operations-people-createPerson')).toContainText('display_name');
   await page.locator('#operations-people-createPerson').screenshot({ path: 'dist/swagger-s1-person.png' });
-  const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
+  await page.locator('#operations-networks-createNetworkClub .opblock-summary').click();
+ await expect(page.locator('#operations-networks-createNetworkClub')).toContainText('address');
+ await page.locator('#operations-people-archivePerson .opblock-summary').click();
+ await expect(page.locator('#operations-people-archivePerson')).toContainText('base_version');
+ const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
   expect(spec.openapi).toBe('3.0.3');
   expect(spec.components.schemas.PrimaryContact.properties.phone.nullable).toBe(true);
   expect(await page.locator('.errors-wrapper').count()).toBe(0);
   expect(errors).toEqual([]);
-  await page.screenshot({ path: 'dist/swagger-preview.png', fullPage: true });
+  await page.screenshot({ path: 'dist/swagger-preview.png', fullPage: false });
 });

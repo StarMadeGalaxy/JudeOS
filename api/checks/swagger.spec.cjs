@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-test('Swagger resolves the proposed operations and displays command and conflict examples', async ({ page }) => {
+test('Swagger resolves the accepted planned operations and displays command and conflict examples', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
@@ -9,7 +9,7 @@ test('Swagger resolves the proposed operations and displays command and conflict
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('ATTENDANCE_VERSION_CONFLICT');
   await page.locator('#operations-training-closeSession .opblock-summary').click();
   await expect(page.locator('#operations-training-closeSession')).toContainText('base_version');
-  await expect(page.locator('#operations-training-closeSession')).toContainText('ПРЕДЛОЖЕНИЕ');
+  await expect(page.locator('#operations-training-closeSession')).toContainText('Принятый wire');
   await expect(page.locator('#operations-training-closeSession')).toContainText('текущий назначенный coach');
   await expect(page.locator('#operations-training-closeSession')).toContainText('назначенном ему клубе');
   await page.locator('#operations-training-addKnownRosterAthlete .opblock-summary').click();

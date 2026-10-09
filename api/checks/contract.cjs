@@ -32,7 +32,7 @@ for (const [route, item] of Object.entries(spec.paths)) {
       assert.equal(operation['x-issue'], operation.tags.includes('access') ? 21 : 19);
     }
     if (operation['x-issue'] === 26 || operation['x-s1-issue'] === 26) {
-      assert.equal(operation['x-contract-status'], 'proposed');
+      assert.equal(operation['x-contract-status'], 'accepted');
       assert.equal(operation['x-status'], 'planned');
     }
     assert(registry.includes(`| ${method.toUpperCase()} | \`${route}\` | \`${operation.operationId}\` |`), `Registry misses ${operation.operationId}`);
@@ -80,5 +80,5 @@ assert.equal(Object.values(runtime.paths).flatMap(item => Object.values(item)).l
 const runtimeIds = Object.values(runtime.paths).flatMap(item => Object.values(item)).map(op => op.operationId).sort();
 const implementedIds = Object.values(spec.paths).flatMap(item => Object.values(item)).filter(op => op['x-status'] === 'implemented').map(op => op.operationId).sort();
 assert.deepEqual(runtimeIds, implementedIds);
-assert(!JSON.stringify(runtime).includes('PrimaryContact'), 'Proposed S1 schemas must not leak into runtime docs');
+assert(!JSON.stringify(runtime).includes('PrimaryContact'), 'Planned S1 schemas must not leak into runtime docs');
 process.stdout.write(`Contract: ${operations.length} operations (${operations.length - implemented} planned, ${implemented} implemented), ${fixtures.cases.length + s1.cases.length} schema fixtures and every response example passed.\n`);

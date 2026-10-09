@@ -27,7 +27,7 @@ test('real HTTPS UI: invite → password → login → roles → revoke → logo
     const pathname=new URL(response.url()).pathname;
     if (!pathname.startsWith('/api/v1/')) return;
     validation.push((async()=>{
-      const route=pathname.replace(tenant,'{tenant_id}').replace(/\/staff\/[a-f0-9-]{36}/,'/staff/{membership_id}');
+      const route=Object.keys(spec.paths).sort((a,b)=>(a.match(/\{/g)||[]).length-(b.match(/\{/g)||[]).length).find(p=>new RegExp('^'+p.replace(/\{[^}]+\}/g,'[^/]+')+'$').test(pathname));
       const op=spec.paths[route]?.[response.request().method().toLowerCase()];
       if (!op) throw new Error('Undocumented runtime response');
       let definition=op.responses[String(response.status())];
@@ -46,7 +46,7 @@ test('real HTTPS UI: invite → password → login → roles → revoke → logo
   expect(new URL(page.url()).hash).toBe('');
   await page.getByLabel('Новый пароль').fill(password);
   await page.getByRole('button',{name:'Установить пароль',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('Пароль установлен');
+  await expect(page.locator('section > .status')).toContainText('Пароль установлен');
   await page.getByLabel('Логин',{exact:true}).fill(ownerLogin);
   await page.getByLabel('Пароль',{exact:true}).fill(password);
   await page.getByRole('button',{name:'Войти',exact:true}).click();
@@ -58,7 +58,7 @@ test('real HTTPS UI: invite → password → login → roles → revoke → logo
   expect(await page.evaluate(()=>document.cookie)).not.toContain('__Host-judeos-session');
   const ownerRow=page.locator('.staff li').filter({has:page.getByText(ownerLogin,{exact:true})});
   page.once('dialog',d=>d.accept());await ownerRow.getByRole('button',{name:'Отозвать доступ',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('Изменение отклонено');
+  await expect(page.locator('section > .status')).toContainText('Изменение отклонено');
   await page.getByLabel('Логин нового сотрудника').fill(coachLogin);
   await page.getByRole('button',{name:'Создать приглашение',exact:true}).click();
   const panel=page.getByRole('complementary',{name:'Приглашение сотруднику'});
@@ -88,7 +88,7 @@ test('real HTTPS UI: invite → password → login → roles → revoke → logo
   expect(await responseStatus(page,'/api/v1/access/session')).toBe(401);
   await page.getByLabel('Новый пароль').fill(password);
   await page.getByRole('button',{name:'Установить пароль',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('Пароль установлен');
+  await expect(page.locator('section > .status')).toContainText('Пароль установлен');
   // Installing the recipient password must not change the original owner's credentials.
   await page.getByLabel('Логин',{exact:true}).fill(ownerLogin);
   await page.getByLabel('Пароль',{exact:true}).fill(password);
@@ -118,12 +118,12 @@ test('real HTTPS UI: invite → password → login → roles → revoke → logo
   await coach.getByRole('button',{name:'Войти',exact:true}).click();
   await expect(coach.getByRole('heading',{name:'Рабочее пространство',exact:true})).toBeVisible();
   await coachRow.getByLabel('Менеджер',{exact:true}).check();await coachRow.getByRole('button',{name:'Сохранить роли',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('Доступ обновлён');
+  await expect(page.locator('section > .status')).toContainText('Доступ обновлён');
   expect(await responseStatus(coach,'/api/v1/access/session')).toBe(401);
   await coach.reload();await expect(coach.getByRole('heading',{name:'Вход в клуб'})).toBeVisible();
   await coach.getByLabel('Логин',{exact:true}).fill(coachLogin);await coach.getByLabel('Пароль',{exact:true}).fill(password);await coach.getByRole('button',{name:'Войти',exact:true}).click();
   await expect(coach.getByText('Ваши роли: Тренер, Менеджер.')).toBeVisible();
-  page.once('dialog',d=>d.accept());await coachRow.getByRole('button',{name:'Отозвать доступ',exact:true}).click();await expect(page.getByRole('status')).toContainText('Доступ обновлён');
+  page.once('dialog',d=>d.accept());await coachRow.getByRole('button',{name:'Отозвать доступ',exact:true}).click();await expect(page.locator('section > .status')).toContainText('Доступ обновлён');
   expect(await responseStatus(coach,'/api/v1/access/session')).toBe(401);
   await expect(coachRow).toContainText('Доступ отозван');
   await expect(coachRow.getByRole('button')).toHaveCount(0);

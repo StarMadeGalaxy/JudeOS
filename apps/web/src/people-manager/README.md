@@ -1,6 +1,6 @@
 # Интерфейс менеджера людей и семей — #28
 
-Изолированный mobile-first модуль для [Issue #28](https://github.com/StarMadeGalaxy/JudeOS/issues/28). В этой версии работает **явная синтетическая демонстрация в памяти**. Обычный вход, существующие RegistryPanel/NetworkPanel, общая навигация, API, SQL и релизы не изменены. Подключение в приложение требует merge [PR #111](https://github.com/StarMadeGalaxy/JudeOS/pull/111) и отдельного согласованного небольшого diff. До него PR #28 остаётся draft/In progress; полная приёмка задачи не объявляется завершённой.
+Изолированный mobile-first модуль для [Issue #28](https://github.com/StarMadeGalaxy/JudeOS/issues/28). В этой версии работает **явная синтетическая демонстрация в памяти**. Обычный вход, существующие RegistryPanel/NetworkPanel, общая навигация, API, SQL и релизы не изменены. [PR #111](https://github.com/StarMadeGalaxy/JudeOS/pull/111) принят и merged 9 октября 2026; main0e793f2 объединена в ветку #28. Подключение в приложение ожидает отдельного согласования [точного небольшого diff](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6085572961). До него PR #113 остаётся draft/In progress; полная приёмка задачи не объявляется завершённой.
 
 ## Запуск и проверяемое поведение
 
@@ -53,7 +53,7 @@ node --test apps/web/src/people-manager/checks/adapter.test.cjs
 api/node_modules/.bin/playwright test -c apps/web/src/people-manager/checks/playwright.config.cjs
 ```
 
-Обычный web build проверяет TypeScript нового модуля и сохраняет прежнюю точку входа. Отдельный build-preview собирает саму демонстрацию в игнорируемый `dist/preview` внутри модуля. Пять adapter tests проверяют request/response всех19 операций через AJV по извлечённому OpenAPI, страницы/однофамильцев/архив, семейные периоды, GuardianLink/контакт, повтор/устаревание/отказ и версии родителей. Пять Playwright scenarios проверяют UI/клавиатуру/формы/страницы/ошибки/повтор, отсутствие `/api` запросов и storage. Снимки320/390/768/1280 сохраняются в игнорируемый `dist/` модуля.
+На принятой main0e793f2 повторно проверены web/preview сборки, adapter5 и актуальный API53/runtime46/81fixtures/TS. Все19 операций и их транзитивные схемы извлечённого snapshot структурно совпадают с OpenAPI принятой main. Обычный web build проверяет TypeScript нового модуля и сохраняет прежнюю точку входа. Отдельный build-preview собирает саму демонстрацию в игнорируемый `dist/preview` внутри модуля. Пять adapter tests проверяют request/response всех19 операций через AJV по извлечённому OpenAPI, страницы/однофамильцев/архив, семейные периоды, GuardianLink/контакт, повтор/устаревание/отказ и версии родителей. Пять Playwright scenarios проверяют UI/клавиатуру/формы/страницы/ошибки/повтор, отсутствие `/api` запросов и storage. Снимки320/390/768/1280 сохраняются в игнорируемый `dist/` модуля.
 
 Дополнительная проверка axe-core4.11.0 не добавляет зависимость в общие package/lockfiles:
 

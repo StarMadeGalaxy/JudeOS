@@ -79,7 +79,7 @@ ImportBatch: `received → validated → ready → applying → completed/comple
 | RecordReversal | type/сумма/событие/evidence/reason, список Allocation/частей компенсации | Reversal и связанные Changes атомарны; исходные строки сохранены |
 | AdjustRecommendation | snapshot/base_version, месяц/точное уменьшение/reason | Новая версия снимка; денежные Receipt/Allocation неизменны |
 
-Результат различает applied/replayed/version_conflict/idempotency_conflict/invalid/forbidden/needs_review, содержит ссылки на эффекты и безопасные текущие версии/суммы при действующем доступе. Машинные HTTP codes/DTO будут определены общей OpenAPI до реализации, не этим документом. Ошибка/rollback не возвращает applied; validation и conflict не расходуют деньги. ID не заменяется автоматически при неизвестном результате.
+Результат различает applied/replayed/version_conflict/idempotency_conflict/invalid/forbidden/needs_review/in_progress, содержит ссылки на эффекты и безопасные текущие версии/суммы при действующем доступе. `in_progress` означает незавершённый исход исходной операции при ограниченном ожидании, не подтверждает commit и не разрешает второй эффект; повтор сохраняет исходный ID/payload. Машинные HTTP codes/DTO будут определены общей OpenAPI до реализации, не этим документом. Ошибка/rollback не возвращает applied; validation и conflict не расходуют деньги. ID не заменяется автоматически при неизвестном результате.
 
 ## Остаток и транзакция
 

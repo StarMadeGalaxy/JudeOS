@@ -158,7 +158,7 @@
     }
   },
   "later_slices": {
-    "as_of_november": "2026-11-30T21:00:00Z",
+    "as_of_november": "2026-11-30T20:59:59.999999Z",
     "fixed_october_cohort": {
       "gross": 38000,
       "reversed": 8000,

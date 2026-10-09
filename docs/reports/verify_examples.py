@@ -181,6 +181,10 @@ def verify():
         assert q['final_kopecks'] == q['base_kopecks']-q['adjustment_kopecks']
 
     as_of = FIXTURE['as_of']
+    assert in_period(FIXTURE['period']['from'])
+    assert not in_period(FIXTURE['period']['to'])
+    assert not visible({'recorded_at': FIXTURE['period']['to']}, as_of)
+    assert visible({'recorded_at': as_of}, as_of)
     assert attendance(as_of) == EXPECTED['R1']
     support = support_rows('2026-10', as_of)
     assert support == EXPECTED['R2']['rows']

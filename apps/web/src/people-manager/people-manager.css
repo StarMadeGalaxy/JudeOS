@@ -1,0 +1,340 @@
+.pm-root {
+  --pm-gap: 16px;
+  max-width: 1260px;
+  margin: auto;
+  padding: 16px;
+  color: var(--jp-text);
+  font: 16px/1.6 var(--jp-font-family);
+}
+.pm-root * {
+  box-sizing: border-box;
+}
+.pm-root h1 {
+  font-size: var(--jp-font-display-size);
+  line-height: 1.2;
+  margin: 12px 0;
+}
+.pm-root h2 {
+  font-size: var(--jp-font-headline-size);
+  line-height: 1.25;
+  margin: 16px 0;
+}
+.pm-root h3 {
+  font-size: 21px;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+.pm-root h4 {
+  font-size: 18px;
+  margin: 4px 0;
+}
+.pm-root p {
+  margin: 8px 0;
+  max-width: 75ch;
+}
+.pm-root button {
+  font: inherit;
+  font-weight: 500;
+  padding: 12px 20px;
+  min-height: 48px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: var(--jp-radius-control);
+  background: var(--jp-primary);
+  color: var(--jp-white);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.pm-root button:hover:not(:disabled) {
+  background: var(--jp-primary-hover);
+}
+.pm-root button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.pm-root .pm-secondary {
+  background: var(--jp-surface);
+  color: var(--jp-text);
+  border-color: var(--jp-border);
+}
+.pm-root .pm-secondary:hover:not(:disabled) {
+  background: var(--jp-section);
+}
+.pm-root :is(button, input, select):focus-visible {
+  outline: 2px solid var(--jp-primary);
+  outline-offset: 3px;
+}
+.pm-root h2:focus {
+  outline: 2px solid var(--jp-primary);
+  outline-offset: 4px;
+}
+.pm-root input:not([type="radio"]),
+.pm-root select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  margin-top: 6px;
+  border: 1px solid var(--jp-border);
+  border-radius: var(--jp-radius-field);
+  color: var(--jp-text);
+  background: var(--jp-white);
+  font: inherit;
+  min-width: 0;
+}
+.pm-root input[aria-invalid="true"] {
+  border: 2px solid var(--jp-primary);
+}
+.pm-root label {
+  display: block;
+  margin: 0;
+}
+.pm-root fieldset {
+  border: 1px solid var(--jp-border);
+  padding: 16px;
+  border-radius: var(--jp-radius-field);
+  margin: 16px 0;
+  min-width: 0;
+}
+.pm-root .pm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  padding: 16px 0 24px;
+}
+.pm-brand {
+  border-left: 5px solid var(--jp-primary);
+  padding-left: 12px;
+  font-weight: 700;
+}
+.pm-brand span {
+  font-weight: 400;
+  color: var(--jp-text-muted);
+  margin-left: 8px;
+}
+.pm-badge {
+  background: var(--jp-section);
+  padding: 4px 12px;
+  border-radius: var(--jp-radius-pill);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.pm-demo {
+  padding: 16px 20px;
+  background: var(--jp-section);
+  border-left: 4px solid var(--jp-primary);
+  border-radius: var(--jp-radius-field);
+}
+.pm-demo p {
+  color: var(--jp-text-muted);
+}
+.pm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 8px;
+}
+.pm-tabs button {
+  flex: 1;
+  background: var(--jp-white);
+  color: var(--jp-text);
+  border-color: var(--jp-border);
+}
+.pm-tabs button[aria-pressed="true"] {
+  background: var(--jp-primary);
+  color: var(--jp-white);
+  border-color: var(--jp-primary);
+}
+.pm-list,
+.pm-detail {
+  margin: 0;
+  padding: 20px;
+  border-radius: var(--jp-radius-card);
+  background: var(--jp-white);
+  box-shadow: var(--jp-shadow-panel);
+}
+.pm-list-heading,
+.pm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.pm-list-heading {
+  justify-content: space-between;
+  margin-top: 0;
+}
+.pm-search {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0;
+  max-width: 760px;
+}
+.pm-search > div {
+  flex: 1;
+  min-width: 0;
+}
+.pm-root select {
+  max-width: 380px;
+}
+.pm-cards,
+.pm-records {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+}
+.pm-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+.pm-cards article {
+  padding: 20px;
+  height: 100%;
+  border: 1px solid var(--jp-border);
+  border-radius: var(--jp-radius-card);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  overflow-wrap: anywhere;
+}
+.pm-cards h3 {
+  flex: 1;
+}
+.pm-cards button {
+  margin-top: 16px;
+}
+.pm-kicker,
+.pm-muted {
+  color: var(--jp-text-muted);
+}
+.pm-kicker {
+  font-size: 14px;
+}
+.pm-records li {
+  border-top: 1px solid var(--jp-divider);
+  padding: 20px 0;
+  overflow-wrap: anywhere;
+}
+.pm-records button {
+  margin: 8px 12px 0 0;
+}
+.pm-contact {
+  margin: 24px 0;
+  padding: 20px;
+  background: var(--jp-surface);
+  border-radius: var(--jp-radius-card);
+}
+.pm-detail,
+.pm-form {
+  overflow-wrap: anywhere;
+}
+.pm-form {
+  max-width: 700px;
+}
+.pm-field {
+  margin: 20px 0;
+}
+.pm-root .pm-form-lock {
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+.pm-root .pm-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 0;
+}
+.pm-choice input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--jp-primary);
+}
+.pm-choice small {
+  display: block;
+  font-size: 14px;
+  color: var(--jp-text-muted);
+}
+.pm-error {
+  border-left: 4px solid var(--jp-primary);
+  background: var(--jp-section);
+  border-radius: var(--jp-radius-field);
+  padding: 16px 20px;
+  margin: 16px 0;
+}
+.pm-error button {
+  margin-top: 8px;
+}
+.pm-field-error {
+  color: var(--jp-primary);
+  font-weight: 500;
+}
+.pm-notice:not(:empty) {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--jp-section);
+  border-radius: var(--jp-radius-field);
+}
+.pm-empty {
+  padding: 32px 0;
+}
+.pm-root dt {
+  font-weight: 500;
+}
+.pm-root dd {
+  margin: 4px 0 20px;
+}
+.pm-more {
+  width: 100%;
+}
+.pm-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 575px) {
+  .pm-root .pm-header {
+    display: block;
+  }
+  .pm-badge {
+    display: inline-block;
+    margin-top: 8px;
+  }
+  .pm-list,
+  .pm-detail {
+    padding: 16px;
+  }
+  .pm-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .pm-actions button,
+  .pm-list-heading button {
+    width: 100%;
+  }
+  .pm-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pm-tabs button {
+    padding: 12px;
+    flex-basis: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm-root * {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

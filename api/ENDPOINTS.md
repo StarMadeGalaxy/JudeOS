@@ -57,4 +57,4 @@
 | GET | `/api/v1/tenants/{tenant_id}/coaches` | `listClubCoaches` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
 | POST | `/api/v1/tenants/{tenant_id}/coaches/{membership_id}/revoke` | `revokeClubCoach` | networks | REST сотрудника | Явные owner/platform; manager только coach своего клуба | реализован #27 |
 
-Статические исключения chi.Walk — [static-routes.json](static-routes.json). HEAD/OPTIONS/404/405/слеши — [общая HTTP политика](README.md#http-политика-основы-s0). Runtime требует schema 8 и показывает только implemented операции. Произвольные клубные administrator не получают сеть: принадлежность и organizational grant явные. Production/реальный пилот/restore не разрешены.
+Статические исключения chi.Walk — [static-routes.json](static-routes.json). HEAD/OPTIONS/404/405/слеши — [общая HTTP политика](README.md#http-политика-основы-s0). Runtime требует schema 9 и показывает только implemented операции. Произвольные клубные administrator не получают сеть: принадлежность и organizational grant явные. Production/реальный пилот/restore не разрешены.

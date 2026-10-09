@@ -117,7 +117,11 @@ func session(ctx context.Context, q interface {
 		err = authority(ctx, q, &s)
 	}
 	if err == nil && len(s.Memberships) == 0 && !s.Platform && len(s.Networks) == 0 {
-		return s, ErrUnauthorized
+		var pending bool
+		err = q.QueryRowContext(ctx, `SELECT access.has_pending_join($1)`, s.Account).Scan(&pending)
+		if err == nil && !pending {
+			return s, ErrUnauthorized
+		}
 	}
 	return s, err
 }
@@ -218,7 +222,13 @@ func (s *Service) Login(ctx context.Context, login, password, preauth, csrf, old
 		return empty, "", safe(e)
 	}
 	if len(ms) == 0 && !v.Platform && len(v.Networks) == 0 {
-		return empty, "", ErrUnauthorized
+		var pending bool
+		if e = tx.QueryRowContext(ctx, `SELECT access.has_pending_join($1)`, account).Scan(&pending); e != nil {
+			return empty, "", safe(e)
+		}
+		if !pending {
+			return empty, "", ErrUnauthorized
+		}
 	}
 	token := secret()
 
@@ -454,7 +464,8 @@ func (s *Service) Reset(ctx context.Context, token, csrf, tenant, request, id st
 	e := s.within(ctx, token, csrf, tenant, request, func(tx *sql.Tx, _ Session) error {
 		var active bool
 		var hasPassword bool
-		if e := tx.QueryRowContext(ctx, `SELECT m.active,a.password_hash IS NOT NULL FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id WHERE m.id=$1`, id).Scan(&active, &hasPassword); errors.Is(e, sql.ErrNoRows) {
+		var account string
+		if e := tx.QueryRowContext(ctx, `SELECT m.active,a.password_hash IS NOT NULL,a.id FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id WHERE m.id=$1 FOR UPDATE OF a`, id).Scan(&active, &hasPassword, &account); errors.Is(e, sql.ErrNoRows) {
 			return ErrToken
 		} else if e != nil {
 			return e
@@ -465,6 +476,13 @@ func (s *Service) Reset(ctx context.Context, token, csrf, tenant, request, id st
 			kind = "join"
 		}
 		if active {
+			var allowed bool
+			if e := tx.QueryRowContext(ctx, `SELECT access.local_password_reset_allowed($1,$2)`, account, tenant).Scan(&allowed); e != nil {
+				return e
+			}
+			if !allowed {
+				return ErrForbidden
+			}
 			kind = "reset"
 		}
 		var e error
@@ -563,6 +581,15 @@ func (s *Service) Redeem(ctx context.Context, token, password, preauth, csrf, re
 		}
 		if (kind == "reset" && !active) || (kind == "invite" && (active || old.Valid)) {
 			return ErrToken
+		}
+		if kind == "reset" {
+			var allowed bool
+			if e := tx.QueryRowContext(ctx, `SELECT access.local_password_reset_allowed($1,$2)`, account, tenant).Scan(&allowed); e != nil {
+				return e
+			}
+			if !allowed {
+				return ErrToken
+			}
 		}
 		r, e := tx.ExecContext(ctx, `UPDATE core.access_tokens SET used=true WHERE secret_hash=$1 AND NOT used AND expires_at>clock_timestamp()`, digest(token))
 		if e != nil {

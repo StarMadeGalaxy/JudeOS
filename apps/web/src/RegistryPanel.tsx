@@ -379,7 +379,7 @@ export function RegistryPanel({ tenant }: { tenant: string }) {
               <button
                 className="secondary"
                 disabled={busy}
-                onClick={() => void act(() => open(idOf(item)))}
+                onClick={() => void act(() => open(idOf(item)), false)}
               >
                 {item.display_name || item.name} · №{idOf(item).slice(-6)}
                 {item.archived ? " · Архив" : ""}
@@ -392,7 +392,7 @@ export function RegistryPanel({ tenant }: { tenant: string }) {
           <button
             className="secondary"
             disabled={busy}
-            onClick={() => void act(() => load(page.next_cursor!))}
+            onClick={() => void act(() => load(page.next_cursor!), false)}
           >
             Следующая страница
           </button>

@@ -362,7 +362,7 @@ func (s *Service) PlatformAdministrator(ctx context.Context, token, csrf, reques
 		return ErrForbidden
 	}
 	var target string
-	if e = tx.QueryRowContext(ctx, `SELECT id FROM access.accounts WHERE login=$1 AND NOT disabled AND password_hash IS NOT NULL`, login).Scan(&target); errors.Is(e, sql.ErrNoRows) {
+	if e = tx.QueryRowContext(ctx, `SELECT id FROM access.accounts WHERE login=$1 AND NOT disabled AND password_hash IS NOT NULL FOR UPDATE`, login).Scan(&target); errors.Is(e, sql.ErrNoRows) {
 		return ErrToken
 	} else if e != nil {
 		return safe(e)

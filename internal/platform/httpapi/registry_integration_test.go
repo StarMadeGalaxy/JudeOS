@@ -185,7 +185,12 @@ func TestRegistryNetworkPostgresHTTP(t *testing.T) {
 		t.Fatal("metadata audit")
 	}
 	beforeMembership := owner.call("GET", "/api/v1/access/session", nil, 200)["memberships"].([]any)[0].(map[string]any)["membership_id"]
+	oldLocalReset := owner.call("POST", path(clubA, "staff/"+beforeMembership.(string)+"/reset"), nil, 201)
 	network := owner.call("POST", path(clubA, "network"), map[string]any{"name": "Синтетическая сеть"}, 201)
+	owner.call("POST", path(clubA, "staff/"+beforeMembership.(string)+"/reset"), nil, 403)
+	resetBrowser := fresh()
+	resetBrowser.bootstrap()
+	resetBrowser.call("POST", "/api/v1/access/redeem", map[string]any{"token": oldLocalReset["token"], "password": password + "changed"}, 400)
 	nid := network["network_id"].(string)
 	effective := owner.call("GET", "/api/v1/access/session", nil, 200)["memberships"].([]any)[0].(map[string]any)
 	if effective["membership_id"] != beforeMembership || effective["authority_source"] != "network_owner" {
@@ -202,7 +207,12 @@ func TestRegistryNetworkPostgresHTTP(t *testing.T) {
 	owner.call("PUT", "/api/v1/networks/"+nid, map[string]any{"name": "Новое синтетическое название", "base_version": 1}, 200)
 	// Existing ready account joins a club through its own session. Join links can
 	// neither reset passwords nor be accepted by another signed-in account.
+	foreignMID := foreign.call("GET", "/api/v1/access/session", nil, 200)["memberships"].([]any)[0].(map[string]any)["membership_id"].(string)
+	oldForeignReset := foreign.call("POST", path(clubB, "staff/"+foreignMID+"/reset"), nil, 201)
 	invite := owner.call("POST", path(clubC, "staff/assignments"), map[string]any{"login": prefix + ".foreign", "grants": []access.Grant{{Role: "manager", Scope: "club"}}}, 201)
+	foreign.call("POST", path(clubB, "staff/"+foreignMID+"/reset"), nil, 403)
+	resetBrowser.bootstrap()
+	resetBrowser.call("POST", "/api/v1/access/redeem", map[string]any{"token": oldForeignReset["token"], "password": password + "changed"}, 400)
 	rows := owner.call("GET", path(clubC, "staff"), nil, 200)["items"].([]any)
 	pendingID := rows[0].(map[string]any)["membership_id"].(string)
 	replaced := owner.call("POST", path(clubC, "staff/"+pendingID+"/reset"), nil, 201)
@@ -216,6 +226,7 @@ func TestRegistryNetworkPostgresHTTP(t *testing.T) {
 	anon.bootstrap()
 	anon.call("POST", "/api/v1/access/redeem", map[string]any{"token": invite["token"], "password": password + "changed"}, 400)
 	foreign.call("POST", "/api/v1/access/accept-invitation", map[string]any{"token": invite["token"]}, 204)
+	owner.call("POST", path(clubC, "staff/"+pendingID+"/reset"), nil, 403)
 	foreign.call("POST", "/api/v1/access/accept-invitation", map[string]any{"token": invite["token"]}, 400)
 	foreign.call("GET", path(clubC, "people"), nil, 200)
 	foreign.call("GET", path(clubA, "people"), nil, 403)
@@ -225,6 +236,21 @@ func TestRegistryNetworkPostgresHTTP(t *testing.T) {
 	coach.call("GET", path(clubC, "people"), nil, 403)
 	coaches := foreign.call("GET", path(clubC, "coaches"), nil, 200)["items"].([]any)
 	mid := coaches[0].(map[string]any)["membership_id"].(string)
+	foreign.call("POST", path(clubC, "coaches/"+mid+"/revoke"), nil, 204)
+	coach.call("GET", "/api/v1/access/session", nil, 401)
+	coach.bootstrap()
+	coach.call("POST", "/api/v1/access/login", map[string]any{"login": prefix + ".coach", "password": password}, 401)
+	rejoin := foreign.call("POST", path(clubC, "staff/assignments"), map[string]any{"login": prefix + ".coach", "grants": []access.Grant{{Role: "coach", Scope: "assigned_sessions"}}}, 201)
+	coach.login(prefix+".coach", password)
+	limited := coach.call("GET", "/api/v1/access/session", nil, 200)
+	if len(limited["memberships"].([]any)) != 0 {
+		t.Fatal("pending join conferred club rights")
+	}
+	coach.call("GET", path(clubC, "people"), nil, 403)
+	coach.call("POST", "/api/v1/access/accept-invitation", map[string]any{"token": rejoin["token"]}, 204)
+	if len(coach.call("GET", "/api/v1/access/session", nil, 200)["memberships"].([]any)) != 1 {
+		t.Fatal("ready account rejoin failed")
+	}
 	foreign.call("POST", path(clubC, "coaches/"+mid+"/revoke"), nil, 204)
 	coach.call("GET", "/api/v1/access/session", nil, 401)
 	// Platform bootstrapping is operator-only, with a distinct global grant.

@@ -65,3 +65,20 @@ test('same-document fragment and loaded invitation preserve session until explic
   await expect(page.getByRole('status')).toContainText('Пароль установлен');
   expect(state.logout).toBe(1);expect(state.redeem).toBe(1);
 });
+
+test('registry next page remains visible after the read finishes',async({page})=>{
+  await server(page);
+  await page.route('**/api/v1/tenants/*/people*',async route=>{
+    const url=new URL(route.request().url());
+    const next=url.searchParams.has('cursor');
+    const items=next?[{person_id:'00000000-0000-4000-8000-000000000999',display_name:'Синтетическая следующая страница',archived:false,version:1}]:[{person_id:'00000000-0000-4000-8000-000000000901',display_name:'Синтетическая первая страница',archived:false,version:1}];
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items,next_cursor:next?null:'00000000-0000-4000-8000-000000000901'})});
+  });
+  await page.goto('/');
+  const registry=page.getByLabel('Реестр клуба');
+  await registry.getByRole('button',{name:'Следующая страница',exact:true}).click();
+  await page.waitForLoadState('networkidle');
+  await expect(registry.getByRole('button',{name:/Синтетическая следующая страница/})).toBeVisible();
+  await expect(registry.locator('.records > li')).toHaveCount(2);
+  await expect(registry.getByRole('button',{name:'Следующая страница',exact:true})).toHaveCount(0);
+});

@@ -2,6 +2,18 @@
 
 Обновлено 9 октября 2026 года. Этап — синтетическая основа S0 и реестр S1; история/подробности в Issues/PR и Git.
 
+## #28 — Интерфейс менеджера людей и семей: готов к review на synthetic
+
+@NikishGum; run `people-ui-28-20261009T141855Z-53a90179`, ветка `feat/28-people-family-manager`, [PR113](https://github.com/StarMadeGalaxy/JudeOS/pull/113). Единственный assignee/claim подтверждены; In progress установлен пользователем («Установил в in progress»), [claim](https://github.com/StarMadeGalaxy/JudeOS/issues/28#issuecomment-6083248120). Projects API403, ручной Review28 ещё не подтверждён; Done/приёмка не заявляются. Прямые зависимости26/19/23 приняты через102/83/81;111 MERGED/APPROVED, main77f2546 объединена обычным merge с сохранением обеих передач APP-FLOWS и всех чужих STATUS. `Merge after: none`.
+
+`apps/web/src/people-manager/`: мобильные карточки/полные профили, поиск и добавляемые UUID keyset страницы, Person/Athlete архив/история, семьи/периоды, GuardianLink/отзыв/единственный основной контакт, формы/ошибки/пустые состояния/фокус. Account/телефоны необязательны, семья не даёт прав. Wire19 извлечён из согласованного snapshot880e1f2, TS generated;19 операций/транзитивные схемы совпадают с принятой main. Synthetic в памяти без fetch/storage; неизвестный ответ замораживает исходную команду,409 требует перечитать родителя. [Запуск/проверки/границы](../apps/web/src/people-manager/README.md).
+
+[Точный navigation patch согласован до правки main.tsx](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6085778355). Обычная Vite-сборка содержит отдельный lazy Demo `/?demo=people`; ссылка только в прежней области registry/tenant, обратная ссылка в App. Entry переключается и остаётся в App при любом непустом fragment, включая появление после открытия demo. Auth/consumeFragment/api.ts/style.css/RegistryPanel/NetworkPanel/OpenAPI/backend/SQL/packages/workflows не менялись; preview/fault controls/window.__peopleFixture отсутствуют в обычном Demo. Ошибка live API не включает fixtures.
+
+Проверки: adapter5/AJV request/response всех19 операций; Chromium5 preview (320/390/768/1280, формы/периоды/архив/поиск/ошибки/повтор/контакт/клавиатура); Chromium10 на обычной собранной версии (API/storage isolation/reset, прежняя область ролей/возврат/нет fallback401403503,8 путей fragment invite/reset/join/recovery). Web/preview build pass; axe4.11.0 пять состояний собранного Demo WCAG2A/AA/2.1AA/best-practice без нарушений, screenshot390 просмотрен. API53/runtime46/81fixtures/TS проверен после merge111; новая CI на опубликованном head отслеживается в PR. Shared schema/source/чужие документы и diff проверены.
+
+**Остаются независимые review/UX-приёмка PR113 и ручной Review28**; обновлённый UI готов к ним. Это fixture UI/mocked auth evidence, не live API/RLS/CSRF/серверные права/конкуренция; общая интеграция — #36. Физические iOS/Android/VPS не проверялись. Только synthetic; VPS/releases/checkout/manifest/тома сохранены. Финансовая38/её документы не перехватываются, [границы](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6084045933) сохранены; следующая задача не предлагается.
+
 ## Приёмка и текущая работа
 
 ## #26 — Контракт людей и журнала S1: завершена

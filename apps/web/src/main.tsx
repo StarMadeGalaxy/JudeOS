@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource/rubik/cyrillic-400.css";
 import "@fontsource/rubik/cyrillic-700.css";
@@ -8,6 +8,7 @@ import "./style.css";
 import { APIError, request, type Role, type Grant, type Session } from "./api";
 import { NetworkPanel } from "./NetworkPanel";
 import { RegistryPanel } from "./RegistryPanel";
+const PeopleDemo = lazy(() => import("./people-manager/Demo"));
 type Staff = {
   membership_id: string;
   login: string;
@@ -435,7 +436,14 @@ function App() {
               refresh={refresh}
             />
             {registry && tenant && (
-              <RegistryPanel key={tenant} tenant={tenant} />
+              <>
+                <p>
+                  <a href="?demo=people">
+                    Люди и семьи — синтетическая демонстрация
+                  </a>
+                </p>
+                <RegistryPanel key={tenant} tenant={tenant} />
+              </>
             )}
             {(admin || manager) && (
               <div>
@@ -695,4 +703,27 @@ function App() {
     </main>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+// Agreed in #27: a fragment always returns to App, including after demo opened.
+function Entry() {
+  const [demo, setDemo] = useState(
+    () =>
+      new URLSearchParams(location.search).get("demo") === "people" &&
+      !location.hash,
+  );
+  useEffect(() => {
+    const openApp = () => {
+      if (location.hash) setDemo(false);
+    };
+    window.addEventListener("hashchange", openApp);
+    openApp();
+    return () => window.removeEventListener("hashchange", openApp);
+  }, []);
+  return demo ? (
+    <Suspense fallback={<p role="status">Загрузка демонстрации…</p>}>
+      <PeopleDemo />
+    </Suspense>
+  ) : (
+    <App />
+  );
+}
+createRoot(document.getElementById("root")!).render(<Entry />);

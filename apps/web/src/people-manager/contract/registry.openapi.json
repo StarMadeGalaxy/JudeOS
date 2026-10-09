@@ -1,0 +1,5181 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "JudeOS — принятый онлайн-контракт и каркас",
+    "version": "0.1.0",
+    "description": "Принятые #16/#20/#21 и wire #26/PR102 сохранены. Реестр людей/семей/проверенных представителей и явные сетевые/платформенные права реализованы в #27; runtime требует schema9. Полный контракт содержит52 операции:45 implemented и7 planned журнала. Однофамильцы, семьи, телефоны и поступления не выдают прав. Administrator одного клуба не получает другую сеть. Технический вариант ADR0013 требует независимого review; реальный пилот, production/restore и общий recovery расширенного входа не утверждены. Runtime публикует только implemented операции.",
+    "contact": {
+      "url": "https://github.com/StarMadeGalaxy/JudeOS/issues/16"
+    }
+  },
+  "paths": {
+    "/api/v1/tenants/{tenant_id}/people": {
+      "post": {
+        "operationId": "createPerson",
+        "tags": [
+          "people"
+        ],
+        "summary": "Создать профиль человека",
+        "description": "Реализация #27 принятого минимума #26. Administrator текущего клуба / manager, явный владелец сети только своих клубов, отдельный администратор платформы. Coach/parent/athlete не получают административную карточку. Ссылки сначала разрешаются в tenant пути; чужой ID даёт 404 до проверки версии/повтора. Принятый wire #26 / PR #102; бизнес-минимум/область ролей подтверждены: Только active administrator клуба своей сети / manager назначенного клуба. Имя не уникально; не объединять по имени/телефону. Авторство/ID/клуб серверные. Account/семья/дата рождения не создаются. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "x-contract-status": "accepted",
+        "x-s1-business-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281",
+        "x-s1-role-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
+        "x-s1-rule": "management",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantId"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "display_name": "Синтетический участник"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Текущий результат в разрешённом клубе.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProfile"
+                },
+                "example": {
+                  "person_id": "00000000-0000-4000-8000-000000000301",
+                  "tenant_id": "00000000-0000-4000-8000-000000000101",
+                  "display_name": "Синтетический участник",
+                  "phone": null,
+                  "archived": false,
+                  "version": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "x-s1-issue": 26,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listPersons",
+        "tags": [
+          "people"
+        ],
+        "summary": "Поиск и страницы людей",
+        "description": "Минимальная проекция без телефонов, оснований представителей и полного профиля. UUID keyset ORDER BY id, limit 1–100 (default 30), next_cursor null — конец. Поиск q — буквальная подстрока имени без wildcard; не объединяет совпадения. Семьи не имеют archive-флага; state=archived для них отклоняется. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Буквальная подстрока имени."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "archived",
+                "all"
+              ],
+              "default": "active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "person_id": "00000000-0000-4000-8000-000000000301",
+                      "tenant_id": "00000000-0000-4000-8000-000000000101",
+                      "display_name": "Синтетический участник",
+                      "archived": false,
+                      "version": 1
+                    }
+                  ],
+                  "next_cursor": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/athletes": {
+      "post": {
+        "operationId": "createAthlete",
+        "tags": [
+          "people"
+        ],
+        "summary": "Создать спортивное участие",
+        "description": "Реализация #27 принятого минимума #26. Administrator текущего клуба / manager, явный владелец сети только своих клубов, отдельный администратор платформы. Coach/parent/athlete не получают административную карточку. Ссылки сначала разрешаются в tenant пути; чужой ID даёт 404 до проверки версии/повтора. Принятый wire #26 / PR #102; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба; существующий неархивный Person того же клуба. Один Athlete на Person, без автоматического Account/семьи. Конфликт повторного участия разбирается без нового дубля. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "x-contract-status": "accepted",
+        "x-s1-business-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281",
+        "x-s1-role-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
+        "x-s1-rule": "management",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantId"
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAthleteRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "person_id": "00000000-0000-4000-8000-000000000301",
+                "participation": "regular"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Текущий результат в разрешённом клубе.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                },
+                "example": {
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "person": {
+                    "person_id": "00000000-0000-4000-8000-000000000301",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "display_name": "Синтетический участник",
+                    "phone": null,
+                    "archived": false,
+                    "version": 1
+                  },
+                  "participation": "regular",
+                  "archived": false,
+                  "version": 1,
+                  "guardian_links": [
+                    {
+                      "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                      "representative_display_name": "Синтетический представитель",
+                      "status": "verified",
+                      "basis_kind": "synthetic_manual_check",
+                      "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                      "valid_from": "2020-01-01T00:00:00Z",
+                      "valid_until": null,
+                      "version": 1
+                    }
+                  ],
+                  "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "primary_contact": {
+                    "display_name": "Синтетический представитель",
+                    "phone": null
+                  },
+                  "admission": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "x-s1-issue": 26,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listAthletes",
+        "tags": [
+          "people"
+        ],
+        "summary": "Поиск и страницы спортсменов",
+        "description": "Минимальная проекция без телефонов, оснований представителей и полного профиля. UUID keyset ORDER BY id, limit 1–100 (default 30), next_cursor null — конец. Поиск q — буквальная подстрока имени без wildcard; не объединяет совпадения. Семьи не имеют archive-флага; state=archived для них отклоняется. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Буквальная подстрока имени."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "archived",
+                "all"
+              ],
+              "default": "active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthletePage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "person_id": "00000000-0000-4000-8000-000000000301",
+                      "display_name": "Синтетический участник",
+                      "participation": "regular",
+                      "archived": false,
+                      "version": 1
+                    }
+                  ],
+                  "next_cursor": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}": {
+      "get": {
+        "operationId": "getAthleteProfile",
+        "tags": [
+          "people"
+        ],
+        "summary": "Прочитать карточку спортсмена",
+        "description": "Реализация #27 принятого минимума #26. Administrator текущего клуба / manager, явный владелец сети только своих клубов, отдельный администратор платформы. Coach/parent/athlete не получают административную карточку. Ссылки сначала разрешаются в tenant пути; чужой ID даёт 404 до проверки версии/повтора. Принятый wire #26 / PR #102; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба, включая сохранённую допустимую историю архива. Coach получает минимум через журнал, а не эту карточку; архив не даёт новые права. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "x-contract-status": "accepted",
+        "x-s1-business-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281",
+        "x-s1-role-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
+        "x-s1-rule": "management",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantId"
+          },
+          {
+            "name": "athlete_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID в проверенном клубе; права проверяются на target."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий результат в разрешённом клубе.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                },
+                "example": {
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "person": {
+                    "person_id": "00000000-0000-4000-8000-000000000301",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "display_name": "Синтетический участник",
+                    "phone": null,
+                    "archived": false,
+                    "version": 1
+                  },
+                  "participation": "regular",
+                  "archived": false,
+                  "version": 1,
+                  "guardian_links": [
+                    {
+                      "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                      "representative_display_name": "Синтетический представитель",
+                      "status": "verified",
+                      "basis_kind": "synthetic_manual_check",
+                      "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                      "valid_from": "2020-01-01T00:00:00Z",
+                      "valid_until": null,
+                      "version": 1
+                    }
+                  ],
+                  "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "primary_contact": {
+                    "display_name": "Синтетический представитель",
+                    "phone": null
+                  },
+                  "admission": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "x-s1-issue": 26,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "updateAthlete",
+        "tags": [
+          "people"
+        ],
+        "summary": "Изменить вид участия",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "athlete_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                },
+                "example": {
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "person": {
+                    "person_id": "00000000-0000-4000-8000-000000000301",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "display_name": "Синтетический участник",
+                    "phone": null,
+                    "archived": false,
+                    "version": 1
+                  },
+                  "participation": "regular",
+                  "archived": false,
+                  "version": 1,
+                  "guardian_links": [
+                    {
+                      "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                      "representative_display_name": "Синтетический представитель",
+                      "status": "verified",
+                      "basis_kind": "synthetic_manual_check",
+                      "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                      "valid_from": "2020-01-01T00:00:00Z",
+                      "valid_until": null,
+                      "version": 1
+                    }
+                  ],
+                  "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "primary_contact": {
+                    "display_name": "Синтетический представитель",
+                    "phone": null
+                  },
+                  "admission": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAthleteRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "participation": "guest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/guardian-links": {
+      "post": {
+        "operationId": "verifyGuardianLink",
+        "tags": [
+          "people"
+        ],
+        "summary": "Зафиксировать проверенную связь представителя",
+        "description": "Реализация #27 принятого минимума #26. Administrator текущего клуба / manager, явный владелец сети только своих клубов, отдельный администратор платформы. Coach/parent/athlete не получают административную карточку. Ссылки сначала разрешаются в tenant пути; чужой ID даёт 404 до проверки версии/повтора. Принятый wire #26 / PR #102; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба; проверка относится к конкретному Athlete и существующему Person клуба. valid_until null или строго позже valid_from. base_version — Athlete; проверивший Account/ID берётся сервером. Не создаёт кабинет/основной контакт/семью. Изменение повышает Athlete.version. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "x-contract-status": "accepted",
+        "x-s1-business-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281",
+        "x-s1-role-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
+        "x-s1-rule": "management",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantId"
+          },
+          {
+            "name": "athlete_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID в проверенном клубе; права проверяются на target."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyGuardianLinkRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                "basis_kind": "synthetic_manual_check",
+                "valid_from": "2026-10-08T09:00:00Z",
+                "valid_until": null
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Текущий результат в разрешённом клубе.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianLink"
+                },
+                "example": {
+                  "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                  "representative_display_name": "Синтетический представитель",
+                  "status": "verified",
+                  "basis_kind": "synthetic_manual_check",
+                  "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                  "valid_from": "2020-01-01T00:00:00Z",
+                  "valid_until": null,
+                  "version": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "ENTITY_VERSION_CONFLICT",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": 2
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "x-s1-issue": 26,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/primary-contact": {
+      "put": {
+        "operationId": "setPrimaryContact",
+        "tags": [
+          "people"
+        ],
+        "summary": "Выбрать или снять основной контакт",
+        "description": "Реализация #27 принятого минимума #26. Administrator текущего клуба / manager, явный владелец сети только своих клубов, отдельный администратор платформы. Coach/parent/athlete не получают административную карточку. Ссылки сначала разрешаются в tenant пути; чужой ID даёт 404 до проверки версии/повтора. Принятый wire #26 / PR #102; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба. base_version — Athlete. Связь должна быть verified, действовать сейчас и принадлежать этому Athlete/клубу. null снимает выбор. Не более одного выбора; атомарная замена. Отзыв/истечение скрывает контакт немедленно, без fallback. Меняется Athlete.version. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "x-contract-status": "accepted",
+        "x-s1-business-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281",
+        "x-s1-role-source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
+        "x-s1-rule": "management",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantId"
+          },
+          {
+            "name": "athlete_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID в проверенном клубе; права проверяются на target."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPrimaryContactRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "guardian_link_id": "00000000-0000-4000-8000-000000000801"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Текущий результат в разрешённом клубе.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                },
+                "example": {
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "person": {
+                    "person_id": "00000000-0000-4000-8000-000000000301",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "display_name": "Синтетический участник",
+                    "phone": null,
+                    "archived": false,
+                    "version": 1
+                  },
+                  "participation": "regular",
+                  "archived": false,
+                  "version": 1,
+                  "guardian_links": [
+                    {
+                      "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                      "representative_display_name": "Синтетический представитель",
+                      "status": "verified",
+                      "basis_kind": "synthetic_manual_check",
+                      "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                      "valid_from": "2020-01-01T00:00:00Z",
+                      "valid_until": null,
+                      "version": 1
+                    }
+                  ],
+                  "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "primary_contact": {
+                    "display_name": "Синтетический представитель",
+                    "phone": null
+                  },
+                  "admission": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "ENTITY_VERSION_CONFLICT",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": 2
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "x-s1-issue": 26,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/households": {
+      "get": {
+        "operationId": "listHouseholds",
+        "tags": [
+          "people"
+        ],
+        "summary": "Поиск и страницы семей",
+        "description": "Минимальная проекция без телефонов, оснований представителей и полного профиля. UUID keyset ORDER BY id, limit 1–100 (default 30), next_cursor null — конец. Поиск q — буквальная подстрока имени без wildcard; не объединяет совпадения. Семьи не имеют archive-флага; state=archived для них отклоняется. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Буквальная подстрока имени."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "all"
+              ],
+              "default": "active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "household_id": "00000000-0000-4000-8000-000000000501",
+                      "name": "Синтетическая семья",
+                      "version": 1
+                    }
+                  ],
+                  "next_cursor": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createHousehold",
+        "tags": [
+          "people"
+        ],
+        "summary": "Создать семью",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdProfile"
+                },
+                "example": {
+                  "household_id": "00000000-0000-4000-8000-000000000501",
+                  "name": "Синтетическая семья",
+                  "version": 1,
+                  "members": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHouseholdRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "name": "Синтетическая семья"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/people/{person_id}": {
+      "get": {
+        "operationId": "getPersonProfile",
+        "tags": [
+          "people"
+        ],
+        "summary": "Карточка человека",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "person_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProfile"
+                },
+                "example": {
+                  "person_id": "00000000-0000-4000-8000-000000000301",
+                  "tenant_id": "00000000-0000-4000-8000-000000000101",
+                  "display_name": "Синтетический участник",
+                  "phone": null,
+                  "archived": false,
+                  "version": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePerson",
+        "tags": [
+          "people"
+        ],
+        "summary": "Изменить человека",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "person_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProfile"
+                },
+                "example": {
+                  "person_id": "00000000-0000-4000-8000-000000000301",
+                  "tenant_id": "00000000-0000-4000-8000-000000000101",
+                  "display_name": "Синтетический участник",
+                  "phone": null,
+                  "archived": false,
+                  "version": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "display_name": "Синтетический участник",
+                "phone": null
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/people/{person_id}/archive": {
+      "post": {
+        "operationId": "archivePerson",
+        "tags": [
+          "people"
+        ],
+        "summary": "Архивировать человека",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "person_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProfile"
+                },
+                "example": {
+                  "person_id": "00000000-0000-4000-8000-000000000301",
+                  "tenant_id": "00000000-0000-4000-8000-000000000101",
+                  "display_name": "Синтетический участник",
+                  "phone": null,
+                  "archived": false,
+                  "version": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedRegistryCommand"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/archive": {
+      "post": {
+        "operationId": "archiveAthlete",
+        "tags": [
+          "people"
+        ],
+        "summary": "Архивировать спортсмена",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "athlete_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                },
+                "example": {
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "person": {
+                    "person_id": "00000000-0000-4000-8000-000000000301",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "display_name": "Синтетический участник",
+                    "phone": null,
+                    "archived": false,
+                    "version": 1
+                  },
+                  "participation": "regular",
+                  "archived": false,
+                  "version": 1,
+                  "guardian_links": [
+                    {
+                      "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                      "representative_display_name": "Синтетический представитель",
+                      "status": "verified",
+                      "basis_kind": "synthetic_manual_check",
+                      "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                      "valid_from": "2020-01-01T00:00:00Z",
+                      "valid_until": null,
+                      "version": 1
+                    }
+                  ],
+                  "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "primary_contact": {
+                    "display_name": "Синтетический представитель",
+                    "phone": null
+                  },
+                  "admission": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedRegistryCommand"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/athletes/{athlete_id}/guardian-links/{guardian_link_id}/revoke": {
+      "post": {
+        "operationId": "revokeGuardianLink",
+        "tags": [
+          "people"
+        ],
+        "summary": "Отозвать проверенную связь",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "athlete_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "guardian_link_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                },
+                "example": {
+                  "athlete_id": "00000000-0000-4000-8000-000000000401",
+                  "person": {
+                    "person_id": "00000000-0000-4000-8000-000000000301",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "display_name": "Синтетический участник",
+                    "phone": null,
+                    "archived": false,
+                    "version": 1
+                  },
+                  "participation": "regular",
+                  "archived": false,
+                  "version": 1,
+                  "guardian_links": [
+                    {
+                      "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "representative_person_id": "00000000-0000-4000-8000-000000000302",
+                      "representative_display_name": "Синтетический представитель",
+                      "status": "verified",
+                      "basis_kind": "synthetic_manual_check",
+                      "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+                      "valid_from": "2020-01-01T00:00:00Z",
+                      "valid_until": null,
+                      "version": 1
+                    }
+                  ],
+                  "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+                  "primary_contact": {
+                    "display_name": "Синтетический представитель",
+                    "phone": null
+                  },
+                  "admission": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedRegistryCommand"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/households/{household_id}": {
+      "get": {
+        "operationId": "getHouseholdProfile",
+        "tags": [
+          "people"
+        ],
+        "summary": "Карточка семьи",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "household_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdProfile"
+                },
+                "example": {
+                  "household_id": "00000000-0000-4000-8000-000000000501",
+                  "name": "Синтетическая семья",
+                  "version": 1,
+                  "members": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateHousehold",
+        "tags": [
+          "people"
+        ],
+        "summary": "Изменить семью",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "household_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdProfile"
+                },
+                "example": {
+                  "household_id": "00000000-0000-4000-8000-000000000501",
+                  "name": "Синтетическая семья",
+                  "version": 1,
+                  "members": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHouseholdRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "name": "Синтетическая семья"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/households/{household_id}/members": {
+      "post": {
+        "operationId": "addHouseholdMember",
+        "tags": [
+          "people"
+        ],
+        "summary": "Добавить члена семьи",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "household_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdProfile"
+                },
+                "example": {
+                  "household_id": "00000000-0000-4000-8000-000000000501",
+                  "name": "Синтетическая семья",
+                  "version": 1,
+                  "members": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddHouseholdMemberRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "person_id": "00000000-0000-4000-8000-000000000301",
+                "valid_from": "2020-01-01T00:00:00Z",
+                "valid_until": null
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/households/{household_id}/members/{household_member_id}/end": {
+      "post": {
+        "operationId": "endHouseholdMember",
+        "tags": [
+          "people"
+        ],
+        "summary": "Завершить членство в семье",
+        "description": "Архив сохраняет стабильные ID, историю и metadata audit, скрывает телефон архивированного Person, отзывает его GuardianLink и выбранный контакт. Независимые рабочие права Account автоматически не связываются с Person. Кабинеты parent/athlete выключены. Семья остаётся учётным объединением; завершение членства сохраняет период. Только administrator/manager разрешённого клуба, явный владелец своей сети или отдельный платформенный administrator. FORCE RLS и составные FK сохраняются. Команда атомарна с metadata-only аудитом. operation_id по tenant/actor; canonical v1/type/target/payload/version. Неизвестный сетевой результат повторять с тем же ID/payload, после конфликта — новая команда. Права и актуальность результата перепроверяются перед replay; терминальный конфликт версии сохраняется. Семья/телефон/поступление прав не дают.",
+        "x-status": "implemented",
+        "x-issue": 27,
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "household_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "name": "household_member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Непрозрачный ID; область проверяется сервером."
+          },
+          {
+            "$ref": "#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Текущий разрешённый результат.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdProfile"
+                },
+                "example": {
+                  "household_id": "00000000-0000-4000-8000-000000000501",
+                  "name": "Синтетическая семья",
+                  "version": 1,
+                  "members": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "OPERATION_ID_REUSED",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": null
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON до 16 KiB. Лишние/повторные ключи и некорректные типы отклоняются.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndHouseholdMemberRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000901",
+                "base_version": 1,
+                "valid_until": "2026-10-09T00:00:00Z"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "TenantId": {
+        "name": "tenant_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "Кандидат клуба, проверяется через активный ClubMembership; не разрешение.",
+        "example": "00000000-0000-4000-8000-000000000101"
+      },
+      "CsrfHeader": {
+        "name": "X-CSRF-Token",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 32,
+          "maxLength": 256
+        },
+        "description": "Токен GET /access/csrf, связанный с preauth или действующей сессией; не сохранять на диске.",
+        "example": "synthetic-csrf-token-0000000000000001"
+      },
+      "Origin": {
+        "name": "Origin",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "description": "Точное совпадение с настроенным HTTPS origin; отсутствие/null отклоняется.",
+        "example": "https://judeos.example"
+      }
+    },
+    "schemas": {
+      "CreatePersonRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "display_name"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "\\S",
+            "description": "Необязательный номер; null — доступного номера нет. Номер не доказывает связь или права."
+          }
+        },
+        "description": "Принятый контракт #26: полное отображаемое имя одной строкой; телефоны необязательны. Нет даты рождения, Account или автоматического разбора имени."
+      },
+      "PersonProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "person_id",
+          "tenant_id",
+          "display_name",
+          "archived",
+          "version"
+        ],
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "\\S",
+            "description": "Необязательный номер; null — доступного номера нет. Номер не доказывает связь или права."
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "INVALID_REQUEST",
+              "UNAUTHENTICATED",
+              "LOGIN_FAILED",
+              "CSRF_REJECTED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "METHOD_NOT_ALLOWED",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "PAYLOAD_TOO_LARGE",
+              "OPERATION_ID_REUSED",
+              "SESSION_CANCELLED",
+              "ATHLETE_ARCHIVED",
+              "RATE_LIMITED",
+              "INTERNAL_ERROR",
+              "SERVICE_UNAVAILABLE",
+              "SESSION_EXPIRED",
+              "ACCESS_DENIED",
+              "ACCESS_CONFLICT",
+              "LINK_INVALID"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      },
+      "S1CommandConflict": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "operation_id",
+          "current_version"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "ENTITY_VERSION_CONFLICT",
+              "SESSION_VERSION_CONFLICT",
+              "SESSION_CLOSED",
+              "SESSION_CANCELLED",
+              "ATHLETE_ARCHIVED",
+              "GUARDIAN_LINK_INACTIVE",
+              "OPERATION_ID_REUSED",
+              "ROSTER_EXCLUDED",
+              "ATHLETE_ALREADY_EXISTS",
+              "PERSON_ARCHIVED",
+              "RESULT_NOT_CURRENT",
+              "MEMBERSHIP_ENDED"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "current_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "nullable": true
+          }
+        },
+        "description": "Локальная ошибка принятого контракта S1: общая Error/auth-схема не меняется. current_version разрешённого target при конфликте версии, иначе null. Чужой объект даёт нейтральный 404 раньше проверки версии/ID."
+      },
+      "PersonPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummary"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "PersonSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "person_id",
+          "tenant_id",
+          "display_name",
+          "archived",
+          "version"
+        ],
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "CreateAthleteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "person_id",
+          "participation"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "participation": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "guest"
+            ]
+          }
+        }
+      },
+      "AthleteProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "athlete_id",
+          "person",
+          "participation",
+          "archived",
+          "version",
+          "guardian_links",
+          "primary_guardian_link_id",
+          "admission"
+        ],
+        "properties": {
+          "athlete_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonProfile"
+          },
+          "participation": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "guest"
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "guardian_links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardianLink"
+            }
+          },
+          "primary_guardian_link_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "admission": {
+            "$ref": "#/components/schemas/AdmissionSummary"
+          },
+          "primary_contact": {
+            "$ref": "#/components/schemas/PrimaryContact"
+          }
+        },
+        "description": "Принятый контракт #26: полная карточка только administrator клуба своей сети / manager назначенного клуба; объект относится к tenant пути. Не используется как DTO coach/поиска/экспорта. primary ID — сохранённый выбор, может указывать на истёкшую связь; выдаваемый контакт проверяется заново."
+      },
+      "GuardianLink": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "guardian_link_id",
+          "athlete_id",
+          "representative_person_id",
+          "status",
+          "basis_kind",
+          "verified_by_account_id",
+          "valid_from",
+          "valid_until",
+          "version"
+        ],
+        "properties": {
+          "guardian_link_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "athlete_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "representative_person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "revoked"
+            ]
+          },
+          "basis_kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "\\S"
+          },
+          "verified_by_account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "representative_display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          }
+        },
+        "description": "Принятый контракт #26: менеджер/администратор проверяет конкретную связь. Истечение определяется периодом [from,until), а не вечным флагом verified. Нет документов/диагнозов или автоматического права кабинета. Полное имя представителя — дополнительное отображаемое поле административной карточки; coach этот DTO не получает."
+      },
+      "AdmissionSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "valid_until"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "admitted",
+              "not_admitted",
+              "review_required"
+            ]
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        },
+        "nullable": true,
+        "description": "Операционный допуск без диагноза/файла; null — сведений нет. Не блокирует запись фактического присутствия. Правила истечения/изменения — #33."
+      },
+      "PrimaryContact": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "display_name",
+          "phone"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "\\S",
+            "description": "Необязательный номер; null — доступного номера нет. Номер не доказывает связь или права."
+          }
+        },
+        "nullable": true,
+        "description": "Принятый контракт #26: только имя выбранного представителя и разрешённый телефон. null — выбор отсутствует/связь отозвана/истекла; без fallback. ID/основание/другие представители не выдаются coach."
+      },
+      "AthletePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AthleteSummary"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "AthleteSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "athlete_id",
+          "person_id",
+          "display_name",
+          "participation",
+          "archived",
+          "version"
+        ],
+        "properties": {
+          "athlete_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "participation": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "guest"
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "UpdateAthleteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "participation"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "participation": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "guest"
+            ]
+          }
+        }
+      },
+      "VerifyGuardianLinkRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "representative_person_id",
+          "basis_kind",
+          "valid_from",
+          "valid_until"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "representative_person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "basis_kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "\\S"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "nullable": true
+          }
+        }
+      },
+      "SetPrimaryContactRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "guardian_link_id"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "guardian_link_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "null — явно снять выбор; иначе только действующая проверенная связь этого Athlete."
+          }
+        }
+      },
+      "HouseholdPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HouseholdSummary"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "HouseholdSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "household_id",
+          "name",
+          "version"
+        ],
+        "properties": {
+          "household_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "HouseholdProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "household_id",
+          "name",
+          "version",
+          "members"
+        ],
+        "properties": {
+          "household_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HouseholdMember"
+            }
+          }
+        }
+      },
+      "HouseholdMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "household_member_id",
+          "person_id",
+          "display_name",
+          "valid_from",
+          "valid_until"
+        ],
+        "properties": {
+          "household_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "nullable": true
+          }
+        }
+      },
+      "CreateHouseholdRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "name"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "UpdatePersonRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "display_name"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "\\S",
+            "description": "Необязательный номер; null — доступного номера нет. Номер не доказывает связь или права."
+          }
+        }
+      },
+      "VersionedRegistryCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "UpdateHouseholdRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "name"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "AddHouseholdMemberRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "person_id",
+          "valid_from",
+          "valid_until"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "nullable": true
+          }
+        }
+      },
+      "EndHouseholdMemberRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "valid_until"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Некорректный JSON, неизвестное/лишнее поле, UUID, дата или cursor.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "INVALID_REQUEST",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Нет действующей сессии; истечение или отзыв. Никаких профилей в ответе.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "UNAUTHENTICATED",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Нет разрешения или проверка CSRF/Origin отклонена.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "forbidden": {
+                "value": {
+                  "code": "FORBIDDEN",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              },
+              "csrf": {
+                "value": {
+                  "code": "CSRF_REJECTED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Объект отсутствует или вне разрешённого scope; существование чужого объекта не раскрывается.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "Тело запроса превышает 16 KiB.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "PAYLOAD_TOO_LARGE",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error415": {
+        "description": "Требуется application/json; form и text/plain не принимаются.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "UNSUPPORTED_MEDIA_TYPE",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "Ограничение частоты; Retry-After задаёт секунды ожидания.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Число секунд до следующей попытки.",
+            "example": 5
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "RATE_LIMITED",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error500": {
+        "description": "Безопасная внутренняя ошибка; результат записи может быть неизвестен клиенту.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "INTERNAL_ERROR",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "Временная недоступность; для команды результат может быть неизвестен. Повторить тот же ID/payload.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Приватные данные и токены не кешируются.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            },
+            "example": "no-store"
+          },
+          "X-Request-ID": {
+            "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "example": "synthetic-request-001"
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Число секунд до следующей попытки.",
+            "example": 5
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "SERVICE_UNAVAILABLE",
+              "message": "Синтетический пример безопасной ошибки.",
+              "request_id": "synthetic-request-001"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "staffSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-judeos-session",
+        "description": "Серверная отзываемая сессия. Secure/HttpOnly/SameSite=Lax/Path=/; host-only; секрет не передаётся в JSON и не хранится в localStorage/IndexedDB."
+      }
+    }
+  }
+}

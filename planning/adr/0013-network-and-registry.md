@@ -24,7 +24,7 @@ Person/Athlete независимы от входа. Имена/телефоны
 
 Новые миграции 00005/00006/00007/00008/00009, применённые 00001–00004 не переписываются. Только synthetic. Проверяются upgrade/repeat, разные LOGIN, RLS/составные FK/аудит/отзыв/конкуренция, чужие сети, manager→coach, consent готового входа, последний владелец, OpenAPI/runtime/TS/Swagger и рабочие browser-потоки. Новая schema требует отдельного согласованного rollout; VPS/release/secret/working volumes и production/restore #24 не затрагиваются. Независимый review технического варианта остаётся условием merge.
 
-Практические правила, схема 8, bootstrap и browser checks — [docs/people](../../docs/people/README.md). Parent/athlete кабинеты, данные реального пилота, network transfer и rollout не входят в выполненный срез.
+Практические правила, схема9, bootstrap и browser checks — [docs/people](../../docs/people/README.md). Parent/athlete кабинеты, данные реального пилота, network transfer и rollout не входят в выполненный срез.
 
 ## Уточнения независимого review #111
 

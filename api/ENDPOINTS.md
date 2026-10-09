@@ -17,9 +17,9 @@
 | GET | `/openapi.json` | `getRuntimeOpenAPI` | platform | служебный | Public, dev/synthetic | реализован #19 |
 | GET | `/docs` | `getSwaggerUI` | platform | служебный | Public, dev/synthetic | реализован #19 |
 
-Входящие iPay/Telegram, метрики, предметные команды появляются в своих задачах. Статические исключения chi.Walk заданы в [static-routes.json](static-routes.json): web `/` и `/assets/*`, два локальных файла Swagger UI. [Общая политика](README.md#http-политика-каркаса-19) описывает HEAD/OPTIONS/404/405, слеши и отсутствие SPA catch-all. Runtime `/openapi.json` и Swagger UI показывают только реализованные операции.
+Входящие iPay/Telegram, метрики, предметные команды появляются в своих задачах. Статические исключения chi.Walk заданы в [static-routes.json](static-routes.json): web `/` и `/assets/*`, два локальных файла Swagger UI. [Общая политика](README.md#http-политика-основы-s0) описывает HEAD/OPTIONS/404/405, слеши и отсутствие SPA catch-all. Runtime `/openapi.json` и Swagger UI показывают только реализованные операции.
 
-#20 усиливает readiness проверкой безопасной runtime роли и схемы основы (3), не добавляя предметных endpoint'ов. Серверный request_id связывает HTTP/context/логи и будущий tenant-аудит; права сотрудников/auth реализованы #21 (schema 4).
+#20 усиливает readiness проверкой безопасной runtime роли и схемы основы (исторически 3), не добавляя предметных endpoint'ов. Серверный request_id связывает HTTP/context/логи и будущий tenant-аудит; права сотрудников/auth реализованы #21; текущий runtime требует schema 4.
 
 | POST | `/api/v1/access/redeem` | `redeemAccessLink` | access | REST сотрудника | Public; preauth CSRF/Origin | реализован #21 |
 | GET | `/api/v1/tenants/{tenant_id}/staff` | `listStaff` | access | REST сотрудника | Administrator club; session/CSRF/Origin для команд | реализован #21 |

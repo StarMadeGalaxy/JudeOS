@@ -1,0 +1,622 @@
+{
+  "source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984",
+  "contract_status": "proposed",
+  "role_decision_source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471",
+  "ids": {
+    "tenant": "00000000-0000-4000-8000-000000000101",
+    "actor": "00000000-0000-4000-8000-000000000201",
+    "person": "00000000-0000-4000-8000-000000000301",
+    "representative": "00000000-0000-4000-8000-000000000302",
+    "athlete": "00000000-0000-4000-8000-000000000401",
+    "session": "00000000-0000-4000-8000-000000000501",
+    "guardian": "00000000-0000-4000-8000-000000000801",
+    "operation": "00000000-0000-4000-8000-000000000901"
+  },
+  "cases": [
+    {
+      "name": "person without account or phone",
+      "schema": "CreatePersonRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "display_name": "Синтетический гость"
+      },
+      "valid": true
+    },
+    {
+      "name": "whitespace name forbidden",
+      "schema": "CreatePersonRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "display_name": "  "
+      },
+      "valid": false
+    },
+    {
+      "name": "birth date is outside S1",
+      "schema": "CreatePersonRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "display_name": "Синтетический гость",
+        "birth_date": "2010-01-01"
+      },
+      "valid": false
+    },
+    {
+      "name": "client author forbidden",
+      "schema": "CreatePersonRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "display_name": "Синтетический гость",
+        "created_by": "00000000-0000-4000-8000-000000000201"
+      },
+      "valid": false
+    },
+    {
+      "name": "tenant spoof forbidden",
+      "schema": "CreatePersonRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "display_name": "Синтетический гость",
+        "tenant_id": "00000000-0000-4000-8000-000000000101"
+      },
+      "valid": false
+    },
+    {
+      "name": "separate athlete identity",
+      "schema": "CreateAthleteRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "person_id": "00000000-0000-4000-8000-000000000301",
+        "participation": "guest"
+      },
+      "valid": true
+    },
+    {
+      "name": "visit is a roster property",
+      "schema": "CreateAthleteRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "person_id": "00000000-0000-4000-8000-000000000301",
+        "participation": "visit"
+      },
+      "valid": false
+    },
+    {
+      "name": "profile",
+      "schema": "AthleteProfile",
+      "value": {
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "person": {
+          "person_id": "00000000-0000-4000-8000-000000000301",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "display_name": "Синтетический участник",
+          "archived": false,
+          "version": 1
+        },
+        "participation": "regular",
+        "archived": false,
+        "version": 1,
+        "guardian_links": [
+          {
+            "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "representative_person_id": "00000000-0000-4000-8000-000000000302",
+            "status": "verified",
+            "basis_kind": "synthetic_manual_check",
+            "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+            "valid_from": "2026-10-08T09:00:00Z",
+            "valid_until": null,
+            "version": 1
+          }
+        ],
+        "primary_guardian_link_id": "00000000-0000-4000-8000-000000000801",
+        "admission": null
+      },
+      "valid": true
+    },
+    {
+      "name": "no contact selected",
+      "schema": "PrimaryContact",
+      "value": null,
+      "valid": true
+    },
+    {
+      "name": "representative without number",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": null
+      },
+      "valid": true
+    },
+    {
+      "name": "synthetic contact",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": "+00000000000"
+      },
+      "valid": true
+    },
+    {
+      "name": "coach contact rejects basis_kind",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": null,
+        "basis_kind": "synthetic"
+      },
+      "valid": false
+    },
+    {
+      "name": "coach contact rejects person_id",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": null,
+        "person_id": "00000000-0000-4000-8000-000000000302"
+      },
+      "valid": false
+    },
+    {
+      "name": "coach contact rejects guardians",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": null,
+        "guardians": []
+      },
+      "valid": false
+    },
+    {
+      "name": "coach contact rejects payments",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": null,
+        "payments": []
+      },
+      "valid": false
+    },
+    {
+      "name": "coach contact rejects birth_date",
+      "schema": "PrimaryContact",
+      "value": {
+        "display_name": "Синтетический представитель",
+        "phone": null,
+        "birth_date": "2010-01-01"
+      },
+      "valid": false
+    },
+    {
+      "name": "missing representative name",
+      "schema": "PrimaryContact",
+      "value": {
+        "phone": null
+      },
+      "valid": false
+    },
+    {
+      "name": "clear contact explicitly",
+      "schema": "SetPrimaryContactRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "guardian_link_id": null
+      },
+      "valid": true
+    },
+    {
+      "name": "two contacts forbidden",
+      "schema": "SetPrimaryContactRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "guardian_link_id": [
+          "00000000-0000-4000-8000-000000000801",
+          "00000000-0000-4000-8000-000000000801"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "contact version required",
+      "schema": "SetPrimaryContactRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "guardian_link_id": "00000000-0000-4000-8000-000000000801"
+      },
+      "valid": false
+    },
+    {
+      "name": "verified relation",
+      "schema": "GuardianLink",
+      "value": {
+        "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "representative_person_id": "00000000-0000-4000-8000-000000000302",
+        "status": "verified",
+        "basis_kind": "synthetic_manual_check",
+        "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+        "valid_from": "2026-10-08T09:00:00Z",
+        "valid_until": null,
+        "version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "no medical data",
+      "schema": "GuardianLink",
+      "value": {
+        "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "representative_person_id": "00000000-0000-4000-8000-000000000302",
+        "status": "verified",
+        "basis_kind": "synthetic_manual_check",
+        "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+        "valid_from": "2026-10-08T09:00:00Z",
+        "valid_until": null,
+        "version": 1,
+        "diagnosis": "synthetic"
+      },
+      "valid": false
+    },
+    {
+      "name": "no document upload",
+      "schema": "GuardianLink",
+      "value": {
+        "guardian_link_id": "00000000-0000-4000-8000-000000000801",
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "representative_person_id": "00000000-0000-4000-8000-000000000302",
+        "status": "verified",
+        "basis_kind": "synthetic_manual_check",
+        "verified_by_account_id": "00000000-0000-4000-8000-000000000201",
+        "valid_from": "2026-10-08T09:00:00Z",
+        "valid_until": null,
+        "version": 1,
+        "document": "synthetic"
+      },
+      "valid": false
+    },
+    {
+      "name": "close preserves warning",
+      "schema": "CloseSessionResult",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "closed",
+          "version": 2
+        },
+        "unmarked_count": 1,
+        "warning": "UNMARKED_REMAIN"
+      },
+      "valid": true
+    },
+    {
+      "name": "close no automatic absences",
+      "schema": "CloseSessionRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "mark_absent": true
+      },
+      "valid": false
+    },
+    {
+      "name": "close requires version",
+      "schema": "CloseSessionRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901"
+      },
+      "valid": false
+    },
+    {
+      "name": "roster exclusion keeps attendance",
+      "schema": "RosterCommandResult",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "in_progress",
+          "version": 2
+        },
+        "entry": {
+          "athlete_id": "00000000-0000-4000-8000-000000000401",
+          "person_id": "00000000-0000-4000-8000-000000000301",
+          "display_name": "Тестовый спортсмен А",
+          "participation": "regular",
+          "trial": false,
+          "attendance": {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "status": "unmarked",
+            "version": 0,
+            "recorded_at": null,
+            "recorded_by_account_id": null
+          },
+          "primary_contact": null,
+          "admission": null,
+          "excluded": true
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "minimal old journal still valid",
+      "schema": "SessionJournal",
+      "value": {
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "in_progress",
+          "version": 1
+        },
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "display_name": "Тестовый спортсмен А",
+            "participation": "regular",
+            "trial": false,
+            "attendance": {
+              "athlete_id": "00000000-0000-4000-8000-000000000401",
+              "status": "unmarked",
+              "version": 0,
+              "recorded_at": null,
+              "recorded_by_account_id": null
+            }
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "enriched proposed journal",
+      "schema": "SessionJournal",
+      "value": {
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "in_progress",
+          "version": 1
+        },
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "display_name": "Тестовый спортсмен А",
+            "participation": "regular",
+            "trial": false,
+            "attendance": {
+              "athlete_id": "00000000-0000-4000-8000-000000000401",
+              "status": "unmarked",
+              "version": 0,
+              "recorded_at": null,
+              "recorded_by_account_id": null
+            },
+            "primary_contact": {
+              "display_name": "Синтетический представитель",
+              "phone": null
+            },
+            "admission": null,
+            "excluded": false
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "guest without child phone",
+      "schema": "CreateSessionGuestRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "display_name": "Синтетический гость",
+        "trial": true
+      },
+      "valid": true
+    },
+    {
+      "name": "guest no birth date",
+      "schema": "CreateSessionGuestRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "display_name": "Синтетический гость",
+        "trial": true,
+        "birth_date": "2010-01-01"
+      },
+      "valid": false
+    },
+    {
+      "name": "guest no client athlete ID",
+      "schema": "CreateSessionGuestRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "display_name": "Синтетический гость",
+        "trial": true,
+        "athlete_id": "00000000-0000-4000-8000-000000000401"
+      },
+      "valid": false
+    },
+    {
+      "name": "known participant",
+      "schema": "AddKnownRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "trial": false
+      },
+      "valid": true
+    },
+    {
+      "name": "exclude cannot delete facts",
+      "schema": "ExcludeRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "delete_attendance": true
+      },
+      "valid": false
+    },
+    {
+      "name": "fully marked closes without warning",
+      "schema": "CloseSessionResult",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "closed",
+          "version": 2
+        },
+        "unmarked_count": 0,
+        "warning": null
+      },
+      "valid": true
+    },
+    {
+      "name": "unmarked requires warning",
+      "schema": "CloseSessionResult",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "closed",
+          "version": 2
+        },
+        "unmarked_count": 1,
+        "warning": null
+      },
+      "valid": false
+    },
+    {
+      "name": "close result must be closed",
+      "schema": "CloseSessionResult",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000601",
+            "name": "Тестовая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000602",
+            "name": "Синтетический зал"
+          },
+          "starts_at": "2026-10-07T15:00:00Z",
+          "ends_at": "2026-10-07T16:00:00Z",
+          "state": "in_progress",
+          "version": 2
+        },
+        "unmarked_count": 1,
+        "warning": "UNMARKED_REMAIN"
+      },
+      "valid": false
+    },
+    {
+      "name": "temporary known add cannot enroll permanently",
+      "schema": "AddKnownRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "trial": false,
+        "enroll_permanently": true
+      },
+      "valid": false
+    },
+    {
+      "name": "temporary known add cannot change group",
+      "schema": "AddKnownRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "trial": false,
+        "group_id": "00000000-0000-4000-8000-000000000601"
+      },
+      "valid": false
+    },
+    {
+      "name": "temporary guest cannot change group",
+      "schema": "CreateSessionGuestRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000901",
+        "base_version": 1,
+        "display_name": "Синтетический гость",
+        "trial": true,
+        "group_id": "00000000-0000-4000-8000-000000000601"
+      },
+      "valid": false
+    }
+  ],
+  "business_decision_source": "https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281"
+}

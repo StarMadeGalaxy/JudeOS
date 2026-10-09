@@ -1,5 +1,15 @@
 # CI и идентифицируемые релизы
 
+## Кратко: от PR до VPS
+
+1. **PR → main.** PR проходит четыре CI checks, проверку объявленных зависимостей и ревью. После merge CI повторяется на main. Merge сам по себе не создаёт версию и не запускает выкладку.
+2. **Версию выбирает владелец.** На принятом commit main вручную создаётся новый свободный SemVer tag `vMAJOR.MINOR.PATCH[-prerelease]`; текущая тестовая серия — `v0.1.0-test.N`. Номер PR/Issue не становится номером релиза, автоматического увеличения версии нет. Опубликованные tags/образ/manifest не переписываются.
+3. **Tag → опубликованный релиз.** Push тега `v*` запускает [CI](../../.github/workflows/ci.yml) со всеми проверками и воспроизводимой сборкой. После успеха `Publish tagged release` публикует уже проверенный образ в GHCR и создаёт GitHub Release с `release.json`. Релиз однозначно задают tag, source commit и digest образа; manifest также фиксирует версию схемы и hashes SQL. Publish не выполняет серверные команды.
+4. **Релиз → test VPS.** Успешный tag CI автоматически запускает [Deploy synthetic VPS](../../.github/workflows/vps-deploy.yml); этот workflow также можно запустить вручную с `release_tag` на main. Он проверяет опубликованный релиз/CI/manifest, применяет образ по digest через установленный серверный адаптер и проверяет HTTPS/readiness/закрытые порты. PR CI и обычный push main до Apply не доходят. GitHub Release ещё не означает успешный деплой: нужен успешный Apply и внешние проверки.
+5. **Совместимость ограничивает автоматическую выкладку.** Адаптер допускает более новый интегрированный образ с прежней схемой и теми же SQL hashes; frozen checkout/manifest/credentials/volumes сохраняются. Изменение схемы, SQL или серверной конфигурации требует отдельного согласованного перехода с оператором; текущий адаптер его отклоняет. Автоматического rollback/понижения БД нет. Порядок нового baseline — в [передаче release2](second-synthetic-release.md) и [эксплуатации](hostinger-operations.md).
+
+Действующий synthetic VPS — **v0.1.0-test.2, schema 3**; production не развёрнут. #26 добавляет planned-контракт и документы без runtime-обработчиков/миграций: для самого #26 новый tag и деплой не нужны. Принятие #21 с новой схемой — отдельное изменение, которое нельзя выкатить через прежний schema3 adapter автоматически.
+
 ## Checks
 
 [CI workflow](../../.github/workflows/ci.yml) запускается на pull_request, push main, tags `v*` и вручную. Нет path filters: изменения docs/ops не обходят обязательный CI. PR-код не получает deploy/package secrets; используется pull_request, а не pull_request_target. Actions закреплены commit SHA, зависимостям разрешён только обычный TLS. Job permissions по умолчанию `contents: read`; write предоставлен только publish для release tag.

@@ -106,6 +106,8 @@ GitHub подтвердил [невозможность выбрать check sui
 
 Каждая сверка заново читает PR/зависимости, но одинаковый terminal status не записывается повторно, если PR не обновлялся, источник — github-actions[bot], а результат младше шести дней. При изменении результата/PR, другом источнике или истечении срока публикуется новая пара pending→terminal. Это сохраняет автоматическое обновление после merge зависимости и не расходует [лимит 1000 statuses на SHA/context](https://docs.github.com/en/rest/commits/statuses#create-a-commit-status) неизменившимися scheduled runs. Обновление раз в шесть дней предшествует семидневному окну required checks. Повторная сверка, изменение результата, устаревший status и частичные ошибки проверены unit tests; реальная branch-protection приёмка обязательна.
 
+Автор и последний результат читаются из history endpoint `/commits/{sha}/statuses` с пагинацией, newest first. Combined endpoint `/commits/{sha}/status` не возвращает creator, поэтому не подходит для проверки источника при дедупликации. Последний pending нельзя заменять предыдущим success; форма ответа и пагинация history покрыты regression tests.
+
 Старые CheckRuns сохраняются на прежних SHA. Миграция требует:
 
 1. Независимое ревью последнего head PR #105 и зелёные четыре CI.

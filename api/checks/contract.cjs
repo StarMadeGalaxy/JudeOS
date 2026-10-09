@@ -24,7 +24,7 @@ for (const [route, item] of Object.entries(spec.paths)) {
     if (!operation) continue;
     operations.push(operation.operationId);
     assert(['planned', 'implemented'].includes(operation['x-status']));
-    assert.equal(operation['x-issue'], operation['x-status'] === 'planned' ? 16 : 19);
+    assert.equal(operation['x-issue'], operation['x-status'] === 'planned' ? 16 : operation.tags.includes('access') ? 21 : 19);
     assert(registry.includes(`| ${method.toUpperCase()} | \`${route}\` | \`${operation.operationId}\` |`), `Registry misses ${operation.operationId}`);
     for (const [status, reference] of Object.entries(operation.responses)) {
       const response = resolve(reference);
@@ -40,10 +40,10 @@ for (const [route, item] of Object.entries(spec.paths)) {
     }
   }
 }
-assert.equal(operations.length, 11);
+assert.equal(operations.length, 16);
 assert.equal(new Set(operations).size, operations.length);
 assert.equal((registry.match(/^\| (?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \|/gm) || []).length, operations.length);
 const journal = fixtures.cases.find(c => c.name === 'journal').value;
 assert.equal(journal.roster[0].athlete_id, journal.roster[0].attendance.athlete_id);
 assert.equal(journal.session.tenant_id, fixtures.ids.tenant);
-process.stdout.write(`Contract: ${operations.length} operations (7 planned, 4 implemented), ${fixtures.cases.length} schema fixtures and every response example passed.\n`);
+process.stdout.write(`Contract: ${operations.length} operations (3 planned, 13 implemented), ${fixtures.cases.length} schema fixtures and every response example passed.\n`);

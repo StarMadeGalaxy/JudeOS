@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/StarMadeGalaxy/JudeOS/internal/access"
 	"github.com/StarMadeGalaxy/JudeOS/internal/platform/config"
 	"github.com/StarMadeGalaxy/JudeOS/internal/platform/database"
 	"github.com/StarMadeGalaxy/JudeOS/internal/platform/httpapi"
@@ -38,10 +39,27 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-	r := httpapi.New(httpapi.Options{Ready: func(ctx context.Context) error { return database.ReadyRuntime(ctx, db) }, WebDir: c.WebDir, APIDir: c.APIDir})
+	staffAccess := access.New(db)
+	r := httpapi.New(httpapi.Options{Access: staffAccess, Origin: c.Origin, Ready: func(ctx context.Context) error { return database.ReadyRuntime(ctx, db) }, WebDir: c.WebDir, APIDir: c.APIDir})
 	server := &http.Server{Addr: c.HTTPAddr, Handler: r, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for {
+			cleanup, cancel := context.WithTimeout(ctx, 5*time.Second)
+			if staffAccess.CleanExpired(cleanup) != nil && ctx.Err() == nil {
+				slog.Error("auth cleanup failed", "code", "SERVICE_UNAVAILABLE")
+			}
+			cancel()
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
 	shutdownDone := make(chan struct{})
 	go func() {
 		defer close(shutdownDone)

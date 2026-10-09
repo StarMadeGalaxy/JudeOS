@@ -92,9 +92,12 @@ func ReadyRuntime(ctx context.Context, db *sql.DB) error {
 		AND NOT rolsuper AND NOT rolbypassrls AND NOT rolcreatedb AND NOT rolcreaterole
 		AND NOT pg_has_role(current_user, 'judeos_migrator', 'MEMBER')
 		AND NOT pg_has_role(current_user, 'judeos_audit_reader', 'MEMBER')
-		AND NOT has_schema_privilege(current_user, 'public', 'CREATE')
+		AND NOT EXISTS (SELECT 1 FROM pg_namespace n WHERE n.nspname IN ('core','development','public','access','organization')
+			AND has_schema_privilege(current_user, n.oid, 'CREATE'))
 		AND NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-			WHERE n.nspname IN ('core','development','public') AND c.relowner = r.oid)
+			WHERE n.nspname IN ('core','development','public','access','organization') AND c.relowner = r.oid)
+		AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+			WHERE n.nspname IN ('core','development','public','access','organization') AND p.proowner = r.oid)
 		FROM pg_roles r WHERE rolname = current_user`).Scan(&allowed)
 	if err != nil || !allowed {
 		return ErrDenied

@@ -266,13 +266,30 @@ func TestPostgresIsolationAndUpgrade(t *testing.T) {
 	}
 	wg.Wait()
 	assertNoContext(t, runtime)
-	if _, err := admin.ExecContext(ctx, "INSERT INTO goose_db_version(version_id,is_applied) VALUES (5,true)"); err != nil {
+	if _, err := admin.ExecContext(ctx, "INSERT INTO goose_db_version(version_id,is_applied) VALUES ($1,true)", migrations.Version+1); err != nil {
 		t.Fatal("new version fixture failed")
 	}
 	if Ready(ctx, runtime) == nil {
 		t.Fatal("too new schema must not be ready")
 	}
- if _,err:=admin.ExecContext(ctx,"DELETE FROM goose_db_version WHERE version_id=5");err!=nil{t.Fatal("new version fixture cleanup failed")}
+	if _, err := admin.ExecContext(ctx, "DELETE FROM goose_db_version WHERE version_id=$1", migrations.Version+1); err != nil {
+		t.Fatal("new version fixture cleanup failed")
+	}
+	for _, table := range []string{"organization.synthetic_readiness_owner_guard", "access.synthetic_readiness_owner_guard"} {
+		if _, err := admin.ExecContext(ctx, "CREATE TABLE "+table+" (id integer)"); err != nil {
+			t.Fatal("ownership fixture", err)
+		}
+		if _, err := admin.ExecContext(ctx, "ALTER TABLE "+table+" OWNER TO judeos_runtime"); err != nil {
+			t.Fatal("ownership fixture", err)
+		}
+		denied := ReadyRuntime(ctx, runtime) != nil
+		if _, err := admin.ExecContext(ctx, "DROP TABLE "+table); err != nil {
+			t.Fatal("ownership cleanup", err)
+		}
+		if !denied {
+			t.Fatal("runtime ownership in authentication/organization schema was accepted")
+		}
+	}
 }
 
 func assertNoContext(t *testing.T, db *sql.DB) {

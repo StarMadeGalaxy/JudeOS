@@ -46,4 +46,8 @@ assert.equal((registry.match(/^\| (?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \|/
 const journal = fixtures.cases.find(c => c.name === 'journal').value;
 assert.equal(journal.roster[0].athlete_id, journal.roster[0].attendance.athlete_id);
 assert.equal(journal.session.tenant_id, fixtures.ids.tenant);
-process.stdout.write(`Contract: ${operations.length} operations (3 planned, 13 implemented), ${fixtures.cases.length} schema fixtures and every response example passed.\n`);
+const prototype = JSON.parse(fs.readFileSync(path.join(root, '../docs/prototypes/online-journal/fixture.json')));
+const validatePrototype = ajv.compile({ $ref: '#/components/schemas/SessionJournal', components: spec.components });
+assert(validatePrototype(prototype), `Prototype SessionJournal: ${JSON.stringify(validatePrototype.errors)}`);
+for (const entry of prototype.roster) assert.equal(entry.athlete_id, entry.attendance.athlete_id);
+process.stdout.write(`Contract: ${operations.length} operations (3 planned, 13 implemented), ${fixtures.cases.length} schema fixtures, every response example and prototype SessionJournal passed.\n`);

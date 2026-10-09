@@ -2,6 +2,14 @@
 
 Обновлено 9 октября 2026 года. Этап — синтетическая основа S0; история/подробности в Issues/PR и Git.
 
+## #28 — Интерфейс менеджера людей и семей: согласование перед UI
+
+@NikishGum; run `people-ui-28-20261009T141855Z-53a90179`, ветка `feat/28-people-family-manager` от main `128456ea090fb5cad02c4cd7b60933a695c8eec6`. Единственный assignee и собственный claim проверены REST; пользователь 9 октября 2026 явно подтвердил «Установил в in progress». Projects API недоступен; источник статуса — это подтверждение, [claim](https://github.com/StarMadeGalaxy/JudeOS/issues/28#issuecomment-6083248120). Зависимости #26/#19/#23 закрыты, PR102/83/81 merged; чистый checkout и текущая CLI identity проверены. Старое описание draft26 ниже историческое: фактическая приёмка — merged102; актуализацию документов #26 выполняет владелец #27, параллельные правки его раздела не вводятся.
+
+Прочитаны DESIGN/SOURCES/tokens/визуальная памятка, S1-CONTRACT и действующие схемы OpenAPI Person/Athlete/GuardianLink/PrimaryContact, APP-FLOWS и свежие обсуждения #27. Сети, платформенная панель и API27 остаются у @StarMadeGalaxy/run `people-27-20261009-01a120c5`, `feat/27-people-registry`. [Запрос согласования до редактирования apps/web/общих DTO](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6083256762): отдельный модуль `apps/web/src/people-manager` и минимальное подключение через `src/main.tsx`, без самостоятельных изменений общего API. Ответ ещё не получен. В main нет wire-контрактов поиска/keyset-пагинации, архива/отзыва и Household/периодов; S1-CONTRACT оставляет их #27. Не придумывать схемы и не принимать незавершённую реализацию27 за готовую зависимость.
+
+**Следующий шаг этой же #28:** получить подтверждение разделения apps/web и опубликованный согласованный wire для недостающих сценариев; затем UI/fixture-adapter и проверки мобильных размеров, форм, ошибок/пустых состояний, представительства и основного контакта. Fixture-проверки отдельно от live API/RLS/CSRF; интеграционная приёмка — #36. До согласования UI/общие контракты не изменены; PR реализации ещё нет. Только synthetic, VPS release/checkout/manifest не затрагиваются. Assignee/In progress сохраняются; следующая Issue не предлагается.
+
 ## Приёмка и текущая работа
 
 [#26](https://github.com/StarMadeGalaxy/JudeOS/issues/26), @NikishGum; run `people-26-20261008T122108Z-cloud-b64-cc3d0aff`, ветка `docs/26-people-journal-contract`; принятые main89745e8/#16/PR78/#22/PR97, main7034fb1 с merged #23/#84/#103 (PR81/87/104/106/108/107) интегрирована обычным merge; конфликт дополнений DECISIONS разрешён сохранением обоих разделов. Assignee/собственный claim проверены REST; ручной In progress подтверждён пользователем «in progress для 26 установлено», [источник](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6059731884).

@@ -78,7 +78,7 @@ Attendance использует `present`, `absent`, `sick`, `unmarked`: «Бы�
 
 ## Поддержка и поступления
 
-Детальный документальный проект #38: [финансовый контракт S2](../docs/finance/CONTRACT.md), [четыре предложенных отчёта и синтетические образцы](../docs/reports/README.md). Статус детализации — proposed; состав четырёх отчётов подтверждён владельцем с источником в APPROVAL, поля/формулы и два бизнес-вопроса остаются открыты. Это не восстановление D61, SQL или новый people/OpenAPI-контракт. Границы этой ссылки согласованы с владельцами [#27](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6084168958) и [#28](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6084045933).
+Детальный документальный проект #38: [финансовый контракт S2](../docs/finance/CONTRACT.md), [четыре предложенных отчёта и синтетические образцы](../docs/reports/README.md). Статус детализации — proposed; состав четырёх отчётов подтверждён владельцем с источником в APPROVAL, начало семейного уменьшения с первого ребёнка подтверждено с источником в APPROVAL. Остальные поля/формулы предложены, бизнес-вопрос выгрузки открыт. Это не восстановление D61, SQL или новый people/OpenAPI-контракт. Границы этой ссылки согласованы с владельцами [#27](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6084168958) и [#28](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6084045933).
 
 ```mermaid
 erDiagram

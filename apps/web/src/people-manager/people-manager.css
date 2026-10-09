@@ -1,3 +1,24 @@
+.pm-demo-page {
+  max-width: 1260px;
+  padding: 0;
+}
+.pm-demo-page > .pm-root {
+  margin: 0 auto;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.pm-app-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--jp-link);
+  text-decoration: underline;
+}
+.pm-app-link:focus-visible {
+  outline: 2px solid var(--jp-primary);
+  outline-offset: 3px;
+}
 .pm-root {
   --pm-gap: 16px;
   max-width: 1260px;

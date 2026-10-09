@@ -16,7 +16,10 @@ if (!process.env.AXE_CORE_PATH)
     const page = await browser.newPage({
       viewport: { width: 390, height: 850 },
     });
-    await page.goto("http://127.0.0.1:5178/src/people-manager/preview.html");
+    await page.goto(
+      process.env.PEOPLE_MANAGER_A11Y_URL ||
+        "http://127.0.0.1:5178/src/people-manager/preview.html",
+    );
     await page
       .getByRole("button", { name: /Открыть карточку/ })
       .first()

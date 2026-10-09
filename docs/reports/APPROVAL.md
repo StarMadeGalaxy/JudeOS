@@ -19,7 +19,7 @@
 | Семейное уменьшение: сначала первый ребёнок | **Подтверждено владельцем**: 110/88/77 минус60 → 50/88/77 BYN | [Вопрос, точный ответ и границы](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6085728153) |
 | Финансовый экспорт R2–R4 | **Только владелец**, manager/coach/обычный administrator без owner grant не выгружают | [Точный вопрос и ответ](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6085799340) |
 | Поля/минимизация/лимиты экспорта | Проектная детализация для review; ответ не расширяет перечень данных | [Контракт](../finance/CONTRACT.md#scope-выдача-и-экспорт) |
-| Общая матрица MVP: разделить старую финансовую строку | Новая точечная правка ждёт координации27/28 до редактирования | [Запрос27](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6085859163), [запрос28](https://github.com/StarMadeGalaxy/JudeOS/issues/28#issuecomment-6085859582) |
+| Общая матрица MVP: разделить старую финансовую строку | Граница согласована исполнителем28; ответ27 ещё ожидается до редактирования | [Запрос27](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6085859163), [согласование28](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6085974837) |
 | Технический контракт/лимиты/ADR | Proposed, ждёт независимого review | [ADR0014](../../planning/adr/0014-s2-financial-contract.md) |
 
 ## Что остаётся

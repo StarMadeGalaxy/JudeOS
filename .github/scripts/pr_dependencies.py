@@ -62,11 +62,15 @@ def evaluate(pr, fetch):
 
 
 class API:
-    def __init__(self, repository, token):
+    def __init__(self, repository, token, run_id=None):
         if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
             raise GateError('Invalid repository.')
+        if run_id is not None and not re.fullmatch(r'[1-9][0-9]*', run_id):
+            raise GateError('Invalid workflow run ID.')
         self.repository = repository
         self.token = token
+        self.run_url = (f'https://github.com/{repository}/actions/runs/{run_id}'
+                        if run_id else None)
 
     def request(self, path, method='GET', data=None):
         payload = None if data is None else json.dumps(data).encode()
@@ -101,6 +105,13 @@ def snapshot(pr):
     return pr['head']['sha'], pr.get('body'), pr['base']['ref'], pr['state']
 
 
+def publish_status(api, sha, state, message):
+    payload = {'context': CHECK, 'state': state, 'description': message[:140]}
+    if api.run_url:
+        payload['target_url'] = api.run_url
+    api.request(f'/statuses/{sha}', 'POST', payload)
+
+
 def check_pull(api, number, blocked_reason=None):
     pr = api.pull(number)
     if pr['state'] != 'open' or pr['base']['ref'] != 'main':
@@ -108,16 +119,10 @@ def check_pull(api, number, blocked_reason=None):
     sha = pr['head']['sha']
     if not re.fullmatch(r'[0-9a-f]{40}', sha):
         raise GateError('Invalid head SHA.')
-    # Also publish a commit status: a successful API-created Actions CheckRun can
-    # remain 'Expected' in branch protection even when isRequired reports true.
-    # Pending must precede evaluation, including when CheckRun creation fails.
-    api.request(f'/statuses/{sha}', 'POST', {
-        'context': CHECK, 'state': 'pending',
-        'description': 'Checking current PR dependencies.'})
-    run = api.request('/check-runs', 'POST', {
-        'name': CHECK, 'head_sha': sha, 'status': 'in_progress',
-        'output': {'title': 'Checking PR dependencies',
-                   'summary': 'Checking the current declaration against merged PRs.'}})
+    # API-created Actions CheckRuns can attach to a stale workflow's check suite;
+    # the API cannot select a suite. Commit statuses attach directly to the SHA.
+    # Do not also create a same-name CheckRun: branch protection requires both.
+    publish_status(api, sha, 'pending', 'Checking current PR dependencies.')
     deps, passed = [], False
     try:
         if blocked_reason:
@@ -128,15 +133,8 @@ def check_pull(api, number, blocked_reason=None):
             message = 'PR changed during evaluation; run the workflow again.'
     except GateError as error:
         message = str(error)
-    api.request(f"/check-runs/{run['id']}", 'PATCH', {
-        'status': 'completed', 'conclusion': 'success' if passed else 'failure',
-        'output': {'title': 'Dependencies satisfied' if passed else 'Merge blocked',
-                   'summary': message}})
-    # The status and detailed CheckRun use the same SHA and fail-closed result.
-    # A failed write leaves pending rather than reusing the preceding green status.
-    api.request(f'/statuses/{sha}', 'POST', {
-        'context': CHECK, 'state': 'success' if passed else 'failure',
-        'description': message[:140]})
+    # A failed terminal write leaves the preceding pending result in place.
+    publish_status(api, sha, 'success' if passed else 'failure', message)
     return number, deps, passed, message
 
 
@@ -168,7 +166,8 @@ def reconcile(api):
 
 def main():
     try:
-        api = API(os.environ['GITHUB_REPOSITORY'], os.environ['GH_TOKEN'])
+        api = API(os.environ['GITHUB_REPOSITORY'], os.environ['GH_TOKEN'],
+                  os.environ['GITHUB_RUN_ID'])
         summary, failed = reconcile(api)
         with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
             output.write(summary)

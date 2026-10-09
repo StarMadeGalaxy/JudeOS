@@ -14,6 +14,7 @@ def pull(number=10, body='Merge after: none', **kwargs):
 
 class FakeAPI:
     repository = 'synthetic/repo'
+    run_url = 'https://github.com/synthetic/repo/actions/runs/123'
 
     def __init__(self, pr, deps=None, latest=None):
         self.pr = pr
@@ -94,36 +95,38 @@ class EvaluationTests(unittest.TestCase):
 
 
 class PublicationTests(unittest.TestCase):
-    def test_in_progress_precedes_success_on_exact_head(self):
+    def test_pending_precedes_success_on_exact_head_without_check_suite(self):
         api = FakeAPI(pull())
         row = gate.check_pull(api, 10)
         self.assertTrue(row[2])
         self.assertEqual(api.calls[0][0], '/statuses/' + 'a' * 40)
         self.assertEqual(api.calls[0][2]['state'], 'pending')
-        self.assertEqual(api.calls[1][2]['head_sha'], 'a' * 40)
-        self.assertEqual(api.calls[1][2]['status'], 'in_progress')
-        self.assertEqual(api.calls[-2][2]['conclusion'], 'success')
+        self.assertEqual(len(api.calls), 2)
+        self.assertTrue(all(c[0] == '/statuses/' + 'a' * 40 and c[1] == 'POST'
+                            for c in api.calls))
+        self.assertTrue(all(c[2]['context'] == gate.CHECK for c in api.calls))
+        self.assertTrue(all(c[2]['target_url'] == api.run_url for c in api.calls))
         self.assertEqual(api.calls[-1][2]['state'], 'success')
 
-    def test_waiting_dependency_publishes_failure_in_both_results(self):
+    def test_waiting_dependency_publishes_failure_status(self):
         api = FakeAPI(pull(body='Merge after: #2'), deps={2: {'base': {'ref': 'main'}, 'merged': False}})
         self.assertFalse(gate.check_pull(api, 10)[2])
-        self.assertEqual(api.calls[-2][2]['conclusion'], 'failure')
         self.assertEqual(api.calls[-1][2]['state'], 'failure')
         self.assertEqual(api.calls[-1][2]['context'], gate.CHECK)
         self.assertIn('#2', api.calls[-1][2]['description'])
 
-    def test_publication_failure_leaves_pending_status(self):
+    def test_pending_write_failure_stops_before_evaluation(self):
         api = FakeAPI(pull())
         original = api.request
         def request(path, method='GET', data=None):
-            if path == '/check-runs':
+            if data['state'] == 'pending':
                 raise gate.GateError('synthetic API failure')
             return original(path, method, data)
         api.request = request
         with self.assertRaises(gate.GateError):
             gate.check_pull(api, 10)
-        self.assertEqual([c[2]['state'] for c in api.calls], ['pending'])
+        self.assertEqual(api.calls, [])
+        self.assertEqual(api.reads, 1)
 
     def test_final_status_write_failure_never_publishes_success_status(self):
         api = FakeAPI(pull())
@@ -153,8 +156,15 @@ class PublicationTests(unittest.TestCase):
         summary, failed = gate.reconcile(api)
         self.assertFalse(failed)
         self.assertIn('Multiple open PRs share this head', summary)
-        self.assertTrue(all(call[2]['conclusion'] == 'failure'
-                            for call in api.calls if call[1] == 'PATCH'))
+        self.assertEqual([c[2]['state'] for c in api.calls],
+                         ['pending', 'failure', 'pending', 'failure'])
+
+    def test_repeated_reconciliation_does_not_create_stale_check_runs(self):
+        api = FakeAPI(pull())
+        for _ in range(3):
+            gate.reconcile(api)
+        self.assertEqual([c[2]['state'] for c in api.calls], ['pending', 'success'] * 3)
+        self.assertTrue(all(c[0].startswith('/statuses/') for c in api.calls))
 
     def test_closed_pr_is_not_checked(self):
         pr = pull(); pr['state'] = 'closed'
@@ -172,6 +182,13 @@ class PublicationTests(unittest.TestCase):
     def test_repository_path_cannot_escape_api(self):
         with self.assertRaises(gate.GateError):
             gate.API('owner/repo/../../outside', 'synthetic')
+
+    def test_run_link_is_built_from_validated_metadata(self):
+        api = gate.API('synthetic/repo', 'synthetic', '123')
+        self.assertEqual(api.run_url, FakeAPI.run_url)
+        for run_id in ['', '0', '../123', '123?token=synthetic']:
+            with self.subTest(run_id=run_id), self.assertRaises(gate.GateError):
+                gate.API('synthetic/repo', 'synthetic', run_id)
 
 
 class PaginationTests(unittest.TestCase):

@@ -10,6 +10,21 @@ import (
 func networkRoutes(r chi.Router, o Options) {
 	r.Group(func(r chi.Router) {
 		r.Use(requestGuard(o))
+		r.Post("/api/v1/platform/password-recovery", func(w http.ResponseWriter, req *http.Request) {
+			var b struct {
+				Login    string `json:"login"`
+				Verified bool   `json:"identity_verified"`
+			}
+			if !body(w, req, &b) {
+				return
+			}
+			v, e := o.Access.Recovery(req.Context(), cookie(req, sessionCookie), req.Header.Get("X-CSRF-Token"), requestmeta.ID(req.Context()), b.Login, b.Verified)
+			if e != nil {
+				accessError(w, e)
+				return
+			}
+			respond(w, 201, v)
+		})
 		r.Get("/api/v1/networks", func(w http.ResponseWriter, req *http.Request) {
 			v, e := o.Access.Session(req.Context(), cookie(req, sessionCookie))
 			if e != nil {

@@ -826,14 +826,14 @@ paths:
       operationId: redeemAccessLink
       tags:
       - access
-      summary: Установить пароль по invite/reset
+      summary: Установить пароль по invite/reset/recovery
       description: 'Анонимный preauth CSRF и Origin обязательны. Invite 24 часа, reset 30 минут; хеш секрета
         в БД, одноразовое атомарное применение. LINK_INVALID нейтрален для неизвестного/истёкшего/отозванного/повторного
         токена. Новый пароль минимум 12 Unicode code points, максимум 1024 UTF-8 bytes, Argon2id. Отзывает
         все сессии и ссылки аккаунта; не создаёт сессию автоматически. После успеха войти. 10 попыток/15 минут
         peer IP. Передать token в JSON; ссылка UI использует fragment, не query. #27: явный operator platform
         bootstrap использует этот же install endpoint для первого отдельного платформенного администратора.
-        join-ссылки готового входа здесь всегда отклоняются и никогда не меняют пароль. Клубный reset повторно проверяет отсутствие owner/platform и назначений других клубов, включая действующие pending; при расширении области старый token отклоняется.'
+        join-ссылки готового входа здесь всегда отклоняются и никогда не меняют пароль. Клубный reset повторно проверяет отсутствие owner/platform и назначений других клубов, включая действующие pending; при расширении области старый token отклоняется. Общий recovery30 минут выдаёт platform после ручной проверки; операторская ссылка восстанавливает только действующего platform. Redeem повторно проверяет полномочия выдавшего, не активирует отозванные назначения, гасит все сеансы и прежние ссылки атомарно с metadata audit.'
       x-status: implemented
       x-issue: 21
       parameters:
@@ -4974,6 +4974,110 @@ paths:
             example:
               name: Синтетическая сеть
               base_version: 1
+  /api/v1/platform/password-recovery:
+    post:
+      operationId: issuePasswordRecovery
+      tags:
+      - access
+      summary: Выдать ссылку восстановления общего входа
+      description: 'Только действующий администратор платформы после ручной проверки личности получателя.
+        Точный нормализованный login — selector, не доказательство личности; семья/телефон/роль administrator
+        клуба или owner сети права выдачи не дают. CSRF/Origin обязательны, JSON16KiB, shared PostgreSQL120/minute.
+        identity_verified должен быть true. Только уже настроенный, не disabled вход; неизвестный/pending/disabled
+        даёт нейтральный400 LINK_INVALID. Случайный token показывается один раз, в БД hash; TTL30 минут.
+        Повтор не идемпотентен: заменяет предыдущую ссылку, при потере ответа явно выдайте новую. Получатель
+        использует public access/redeem с preauth CSRF; повторно проверяются состояние входа и platform-полномочия
+        выдавшего. Смена пароля атомарно гасит все сеансы/ссылки входа и пишет metadata audit, без изменения/активации
+        назначений. Нет email/Telegram отправки, резервных кодов или автоматического подтверждения личности.
+        Аварийная операторская команда не HTTP endpoint. Источник решения: https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6084409663.'
+      x-status: implemented
+      x-issue: 27
+      security:
+      - staffSession: []
+      parameters:
+      - $ref: '#/components/parameters/CsrfHeader'
+      - $ref: '#/components/parameters/Origin'
+      responses:
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '201':
+          description: Одноразовая ссылка; секрет только в этом ответе, Cache-Control:no-store.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordRecoveryLink'
+              example:
+                kind: recovery
+                token: '0000000000000000000000000000000000000000000000000000000000000000'
+                expires_at: '2050-01-01T00:30:00Z'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordRecoveryRequest'
+            example:
+              login: synthetic.owner
+              identity_verified: true
   /api/v1/platform/networks:
     post:
       operationId: createPlatformNetwork
@@ -6576,6 +6680,43 @@ components:
         recorded_by_account_id:
           type: string
           format: uuid
+    PasswordRecoveryRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - login
+      - identity_verified
+      properties:
+        login:
+          type: string
+          minLength: 1
+          maxLength: 254
+          description: trim/lowercase ASCII; первый [a-z0-9], остальные [a-z0-9._@+-].
+        identity_verified:
+          type: boolean
+          enum:
+          - true
+          description: Администратор лично подтверждает внешнюю проверку получателя.
+    PasswordRecoveryLink:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - token
+      - expires_at
+      properties:
+        kind:
+          type: string
+          enum:
+          - recovery
+        token:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+          description: Секрет показывается один раз для ручной передачи; не логировать и не хранить на диске.
+        expires_at:
+          type: string
+          format: date-time
+          pattern: Z$
     AccessLink:
       type: object
       additionalProperties: false

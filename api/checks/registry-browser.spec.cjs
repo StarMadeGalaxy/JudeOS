@@ -208,9 +208,47 @@ test("real HTTPS registry, network setup, owner and platform panels", async ({
     path: "dist/registry-platform.png",
     fullPage: true,
   });
+  const recovery = platform.getByRole("region", { name: "Восстановление входа" });
+  await recovery.getByLabel("Логин получателя").fill(fixture.login);
+  await expect(recovery.getByRole("button", { name: "Выдать ссылку восстановления" })).toBeDisabled();
+  await recovery.getByLabel("Личность получателя проверена").check();
+  await recovery.getByRole("button", { name: "Выдать ссылку восстановления" }).click();
+  const recoveryURL = await recovery.getByLabel("Одноразовая ссылка восстановления").inputValue();
+  expect(recoveryURL).toContain("/#token=");
+  await page.goto(recoveryURL);
+  await page.getByRole("button", { name: "Выйти и установить пароль" }).click();
+  await page.getByLabel("Новый пароль").fill(password + "-recovered");
+  await page.getByRole("button", { name: "Установить пароль", exact: true }).click();
+  await page.getByLabel("Логин", { exact: true }).fill(fixture.login);
+  await page.getByLabel("Пароль", { exact: true }).fill(password + "-recovered");
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Клуб", exact: true }).locator("option")).toHaveCount(2);
+  await expect(page.getByLabel("Настройки сети")).toBeVisible();
+  await recovery.getByRole("button", { name: "Скрыть ссылку", exact: true }).click();
+  await expect(recovery.getByLabel("Одноразовая ссылка восстановления")).toHaveCount(0);
+  for (const width of [320, 390, 768, 1280]) {
+    await platform.setViewportSize({ width, height: 900 });
+    expect(await platform.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
   await platformContext.close();
   expect(
     await page.evaluate(() => [localStorage.length, sessionStorage.length]),
   ).toEqual([0, 0]);
   expect(errors).toEqual([]);
+});
+
+test("operator CLI link restores the platform administrator through real HTTPS UI", async ({ page }) => {
+  const file = process.env.JUDEOS_REGISTRY_FIXTURE_FILE;
+  test.skip(!file, "requires disposable HTTPS/PostgreSQL fixture");
+  const fixture = JSON.parse(fs.readFileSync(file, "utf8"));
+  test.skip(!fixture.operator_recovery, "requires operator CLI link in private fixture");
+  await page.goto("/#token=" + fixture.operator_recovery.token);
+  await expect.poll(() => new URL(page.url()).hash === "").toBe(true);
+  await page.getByLabel("Новый пароль").fill(password + "-platform-recovered");
+  await page.getByRole("button", { name: "Установить пароль", exact: true }).click();
+  await page.getByLabel("Логин", { exact: true }).fill(fixture.platform_login);
+  await page.getByLabel("Пароль", { exact: true }).fill(password + "-platform-recovered");
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
+  await expect(page.getByLabel("Панель администратора платформы")).toBeVisible();
+  expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
 });

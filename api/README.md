@@ -90,7 +90,7 @@ Preview доступен только на `http://127.0.0.1:4173`, выдаёт
 
 Статические исключения сравнения [chi.Walk](checks/routes.cjs) перечислены в [static-routes.json](static-routes.json). `/` отдаёт только web index, `/assets/*` — только одиночные regular files сборки, без listing/traversal/SPA fallback. `/docs/assets/swagger-ui.css` и `/docs/assets/swagger-ui-bundle.js` — закреплённые локальные файлы Swagger UI. Web использует настоящий access API #21; отдельный прототип #23 с имитацией входа/журнала не подменяет этот API.
 
-`npm run bundle` создаёт полный `dist/openapi.json`, runtime-контракт только `x-status: implemented` и локальные Swagger assets. `npm run preview` показывает полный контракт для разработки; работающий `/docs` — 45 реализованных операций. Try it out отключён в обоих видах. OpenAPI остаётся единственным источником схем.
+`npm run bundle` создаёт полный `dist/openapi.json`, runtime-контракт только `x-status: implemented` и локальные Swagger assets. `npm run preview` показывает полный контракт для разработки; работающий `/docs` — 46 реализованных операций. Try it out отключён в обоих видах. OpenAPI остаётся единственным источником схем.
 
 После `make build`: `npm run check:routes` сравнивает настоящий chi tree и runtime OpenAPI. При запущенном API — `npm run check:runtime` проверяет HTTP/схемы/заголовки и точное совпадение опубликованного runtime OpenAPI с собранным артефактом, `JUDEOS_CHROMIUM_PATH=/usr/bin/chromium npm run check:browser` проверяет построенную web-оболочку и настоящий Swagger UI. `npm run check:swagger` проверяет полный контракт. Команды выполняются в api; `JUDEOS_BASE_URL` задаёт origin живого API при другом порте.
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { request, errorMessage, type Network, type Session } from "./api";
+import { RecoveryPanel } from "./RecoveryPanel";
 type Club = {
   tenant_id: string;
   network_id: string;
@@ -292,6 +293,9 @@ export function NetworkPanel({
               ))}
           </ul>
         </>
+      )}
+      {platform && (
+        <RecoveryPanel />
       )}
       {platform && (
         <details>

@@ -67,3 +67,9 @@ const familyGrant: FamilyRequest = {...family,grants:['parent']};
 // @ts-expect-error joining a ready identity never installs a password
 const joinPassword: ReadyJoin = {...join,password:'synthetic-password'};
 void [club,join,familyGrant,joinPassword];
+
+type RecoveryRequest = operations['issuePasswordRecovery']['requestBody']['content']['application/json'];
+const recovery: RecoveryRequest = {login:'synthetic.owner',identity_verified:true};
+// @ts-expect-error An unverified recipient cannot receive recovery.
+const unverifiedRecovery: RecoveryRequest = {login:'synthetic.owner',identity_verified:false};
+void [recovery,unverifiedRecovery];

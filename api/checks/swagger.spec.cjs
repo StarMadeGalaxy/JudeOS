@@ -3,7 +3,7 @@ test('Swagger resolves the accepted planned operations and displays command and 
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await expect(page.locator('.opblock')).toHaveCount(52);
+  await expect(page.locator('.opblock')).toHaveCount(53);
   await page.locator('#operations-attendance-setAttendance .opblock-summary').click();
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('base_version');
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('ATTENDANCE_VERSION_CONFLICT');
@@ -23,6 +23,9 @@ test('Swagger resolves the accepted planned operations and displays command and 
  await expect(page.locator('#operations-networks-createNetworkClub')).toContainText('address');
  await page.locator('#operations-people-archivePerson .opblock-summary').click();
  await expect(page.locator('#operations-people-archivePerson')).toContainText('base_version');
+ await page.locator("#operations-access-issuePasswordRecovery .opblock-summary").click();
+ await expect(page.locator("#operations-access-issuePasswordRecovery")).toContainText("identity_verified");
+ await expect(page.locator("#operations-access-issuePasswordRecovery")).toContainText("recovery");
  const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
   expect(spec.openapi).toBe('3.0.3');
   expect(spec.components.schemas.PrimaryContact.properties.phone.nullable).toBe(true);

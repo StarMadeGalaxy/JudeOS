@@ -2,7 +2,7 @@
 
 Внутренняя система Judo Pride и основа будущего продукта для спортивных клубов. Первый выпуск предназначен для сотрудников: люди и семьи, занятия, посещаемость, добровольная поддержка и сверка поступлений, Telegram и ограниченный офлайн.
 
-Реализованы синтетическая Go/PostgreSQL/web основа, реестр людей/семей/проверенных представителей, единый вход и явные сетевые/платформенные права сотрудников. Runtime требует schema9; OpenAPI/Swagger содержит45 реализованных операций из52. Семь операций журнала остаются planned, а отдельный мобильный прототип имитирует сервер в памяти.
+Реализованы синтетическая Go/PostgreSQL/web основа, реестр людей/семей/проверенных представителей, единый вход и явные сетевые/платформенные права сотрудников. Runtime требует schema11; OpenAPI/Swagger содержит46 реализованных операций из53. Семь операций журнала остаются planned, а отдельный мобильный прототип имитирует сервер в памяти.
 
 - [Планирование и порядок чтения](planning/README.md)
 - [План MVP 1.1](planning/MVP-DEVELOPMENT-PLAN.md)
@@ -39,7 +39,7 @@ make up
 
 ## Вход сотрудников (#21)
 
-[Запуск HTTPS, первое приглашение владельца и права](docs/access/README.md). Настройте exact `PUBLIC_ORIGIN`; пустой origin закрывает access API. Миграция00004 реализует прежний access; новые00005–00009 добавляют реестр/сеть и требуют schema9; first-owner CLI запускается явно с migrator credential, без default password и без bootstrap при старте API. Browser login/logout, invite/reset и staff roles используют только synthetic data; session/link/password не сохраняются в localStorage/IndexedDB. Deployment на существующий VPS требует отдельного принятого релиза, этот PR его не выполняет.
+[Запуск HTTPS, первое приглашение владельца и права](docs/access/README.md). Настройте exact `PUBLIC_ORIGIN`; пустой origin закрывает access API. Миграция00004 реализует прежний access; новые00005–00011 добавляют реестр/сеть и требуют schema11; first-owner CLI запускается явно с migrator credential, без default password и без bootstrap при старте API. Browser login/logout, invite/reset и staff roles используют только synthetic data; session/link/password не сохраняются в localStorage/IndexedDB. Deployment на существующий VPS требует отдельного принятого релиза, этот PR его не выполняет.
 
 ## Приёмка синтетической основы S0 (#25)
 

@@ -541,7 +541,7 @@ func (s *Service) Redeem(ctx context.Context, token, password, preauth, csrf, re
 	var tenant, id, account, kind string
 	e = s.DB.QueryRowContext(ctx, `SELECT tenant_id,membership_id,account_id,kind FROM access.token_target($1)`, digest(token)).Scan(&tenant, &id, &account, &kind)
 	if errors.Is(e, sql.ErrNoRows) {
-		return s.redeemPlatform(ctx, token, password, preauth, csrf, request)
+		return s.redeemRecovery(ctx, token, password, preauth, csrf, request)
 	}
 	if e != nil {
 		return safe(e)

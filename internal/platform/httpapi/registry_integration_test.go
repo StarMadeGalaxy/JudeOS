@@ -288,6 +288,7 @@ func TestRegistryNetworkPostgresHTTP(t *testing.T) {
 	foreign.call("GET", "/api/v1/access/session", nil, 401)
 	foreign.login(prefix+".foreign", password)
 	foreign.call("GET", path(clubA, "people"), nil, 403)
+	checkGlobalRecovery(t, ctx, migrator, runtime, admin, owner, foreign, platform, coach, fresh, prefix, password, clubC)
 	if bytes.Contains(logs.Bytes(), []byte("Синтетический Иванов")) || bytes.Contains(logs.Bytes(), []byte(password)) {
 		t.Fatal("sensitive logs")
 	}

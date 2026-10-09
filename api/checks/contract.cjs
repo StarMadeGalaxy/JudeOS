@@ -59,7 +59,7 @@ for (const [route, item] of Object.entries(spec.paths)) {
     }
   }
 }
-assert.equal(operations.length, 52);
+assert.equal(operations.length, 53);
 for (const addition of proposedOperations.operations) {
   const operation = spec.paths[addition.path]?.[addition.method.toLowerCase()];
   assert.equal(operation?.operationId, addition.operationId);
@@ -75,7 +75,7 @@ const journalSchema = ajv.compile({ $ref: '#/components/schemas/SessionJournal',
 assert(journalSchema(prototype), `Accepted #23 prototype: ${JSON.stringify(journalSchema.errors)}`);
 for (const entry of prototype.roster) assert.equal(entry.athlete_id, entry.attendance.athlete_id);
 const implemented = Object.values(spec.paths).flatMap(item => Object.values(item)).filter(op => op['x-status'] === 'implemented').length;
-assert.equal(implemented, 45);
+assert.equal(implemented, 46);
 for(const id of ['loginStaff','getAccessSession','inviteStaff','changeStaffAccess','redeemAccessLink'])assert(operations.includes(id));
 const runtime = JSON.parse(fs.readFileSync(path.join(root, 'dist/runtime-openapi.json')));
 assert.equal(Object.values(runtime.paths).flatMap(item => Object.values(item)).length, implemented);

@@ -179,8 +179,13 @@ Administrator — владелец сети со статистикой и уп�
 
 Приёмка контракта #26: [PR #102](https://github.com/StarMadeGalaxy/JudeOS/pull/102), merged 9 октября 2026, и [Approve @StarMadeGalaxy](https://github.com/StarMadeGalaxy/JudeOS/pull/102#pullrequestreview-5470355675) на финальном head `baa19c5ab8160484b2780721db5d57b11b9c125c`; [открытый технический вопрос #21](https://github.com/StarMadeGalaxy/JudeOS/issues/21#issuecomment-6066613056) остаётся отдельной границей реализации. Project Done26 не подтверждён.
 
-## SQL срез #27 (schema 9)
+## SQL срез #27 (schema 11)
 
-Новые миграции 00005/00006/00007/00008/00009 материализуют Person/Athlete без обязательного Account, отдельные Household/Member с периодами, вручную verified/revoked GuardianLink и один nullable primary link с составным FK на того же Athlete. Имя/телефон не уникальны. FORCE RLS, composite tenant FK, audit context и private registry OperationResult сохраняются; архив отзывает связи/контакт, ID и допустимая история остаются. Политика реального хранения ещё #18/#24/#52. Семейный порядок/скидки/финансы не реализованы.
+Новые миграции 00005/00006/00007/00008/00009/00010/00011 материализуют Person/Athlete без обязательного Account, отдельные Household/Member с периодами, вручную verified/revoked GuardianLink и один nullable primary link с составным FK на того же Athlete. Имя/телефон не уникальны. FORCE RLS, composite tenant FK, audit context и private registry OperationResult сохраняются; архив отзывает связи/контакт, ID и допустимая история остаются. Политика реального хранения ещё #18/#24/#52. Семейный порядок/скидки/финансы не реализованы.
 
 Organization Network имеет явные Club.network_id, отдельные Owner grants и PlatformAdministrator grants; прежние клубные роли не заменяют их. Discovery объединяет разрешения одной сессии, предметные транзакции остаются внутри одного tenant. Новые клубы создаются в явной сети; старые сети не угадываются по названию/аккаунту, transfer заблокирован. Join токен готового входа требует согласия текущего получателя и не меняет password_hash. [Правила/история/ограничения](../docs/people/README.md), [ADR0013 для review](adr/0013-network-and-registry.md). Источники требований — DECISIONS U2026-10-09-S1-27-NETWORK/PLATFORM; принятый минимум #26 не расширяет полномочия coach.
+
+
+### Восстановление общего входа — #27
+
+По DECISIONS U2026-10-09-S1-27-RECOVERY миграции00010/00011 добавляют access.password_recoveries и recovery_audit: независимый account-target, platform-issuer либо operator-ref, hash/TTL30m/used, metadata audit без login/password/raw token. FORCE RLS и узкие definer capabilities; club/network роли права выдачи не дают. Смена любого password_hash погашает прежние recovery, включая retained club reset; global redeem отзывает все сеансы/ссылки, не меняет рабочие назначения. [Контракт/команда/ограничения](../docs/access/RECOVERY.md), [ADR0013 на review](adr/0013-network-and-registry.md). Семьи/люди/финансовые правила этим не меняются.

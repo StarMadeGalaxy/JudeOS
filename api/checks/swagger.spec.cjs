@@ -1,15 +1,15 @@
 const { test, expect } = require('@playwright/test');
-test('Swagger resolves the proposed operations and displays command and conflict examples', async ({ page }) => {
+test('Swagger resolves the accepted planned operations and displays command and conflict examples', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await expect(page.locator('.opblock')).toHaveCount(25);
+  await expect(page.locator('.opblock')).toHaveCount(53);
   await page.locator('#operations-attendance-setAttendance .opblock-summary').click();
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('base_version');
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('ATTENDANCE_VERSION_CONFLICT');
   await page.locator('#operations-training-closeSession .opblock-summary').click();
   await expect(page.locator('#operations-training-closeSession')).toContainText('base_version');
-  await expect(page.locator('#operations-training-closeSession')).toContainText('ПРЕДЛОЖЕНИЕ');
+  await expect(page.locator('#operations-training-closeSession')).toContainText('Принятый wire');
   await expect(page.locator('#operations-training-closeSession')).toContainText('текущий назначенный coach');
   await expect(page.locator('#operations-training-closeSession')).toContainText('назначенном ему клубе');
   await page.locator('#operations-training-addKnownRosterAthlete .opblock-summary').click();
@@ -19,10 +19,17 @@ test('Swagger resolves the proposed operations and displays command and conflict
   await page.locator('#operations-people-createPerson .opblock-summary').click();
   await expect(page.locator('#operations-people-createPerson')).toContainText('display_name');
   await page.locator('#operations-people-createPerson').screenshot({ path: 'dist/swagger-s1-person.png' });
-  const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
+  await page.locator('#operations-networks-createNetworkClub .opblock-summary').click();
+ await expect(page.locator('#operations-networks-createNetworkClub')).toContainText('address');
+ await page.locator('#operations-people-archivePerson .opblock-summary').click();
+ await expect(page.locator('#operations-people-archivePerson')).toContainText('base_version');
+ await page.locator("#operations-access-issuePasswordRecovery .opblock-summary").click();
+ await expect(page.locator("#operations-access-issuePasswordRecovery")).toContainText("identity_verified");
+ await expect(page.locator("#operations-access-issuePasswordRecovery")).toContainText("recovery");
+ const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
   expect(spec.openapi).toBe('3.0.3');
   expect(spec.components.schemas.PrimaryContact.properties.phone.nullable).toBe(true);
   expect(await page.locator('.errors-wrapper').count()).toBe(0);
   expect(errors).toEqual([]);
-  await page.screenshot({ path: 'dist/swagger-preview.png', fullPage: true });
+  await page.screenshot({ path: 'dist/swagger-preview.png', fullPage: false });
 });

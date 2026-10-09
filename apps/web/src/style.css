@@ -29,3 +29,15 @@ button { min-height: 44px; }
 
 .invitation { margin-top: 24px; padding: 20px; border: 1px solid var(--jp-border); border-left: 4px solid var(--jp-primary); border-radius: var(--jp-radius-card); background: var(--jp-surface); overflow-wrap: anywhere; }
 .invitation button { margin-right: 12px; }
+
+.module { margin-top: var(--jp-space-lg, 32px); padding-top: 24px; border-top: 1px solid var(--jp-border); }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.record { padding: 20px; margin: 20px 0; border: 1px solid var(--jp-border); border-radius: var(--jp-radius-card); overflow-wrap: anywhere; }
+.records { list-style: none; padding: 0; }
+.records button { text-align: left; width: 100%; }
+.module button { margin-right: 8px; }
+.module summary { cursor: pointer; min-height: 44px; margin-top: 24px; }
+.module h3 { margin-top: 28px; }
+button:disabled { opacity: .65; }
+
+fieldset.registry-controls { border: 0; padding: 0; margin: 0; min-width: 0; }

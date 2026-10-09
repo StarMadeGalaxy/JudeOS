@@ -54,3 +54,22 @@ const invalidPerson: NewPerson = { ...guestProfile, birth_date: '2010-01-01' };
 // @ts-expect-error Coach projection does not expose the verification basis.
 const leakedContact: components['schemas']['PrimaryContact'] = { display_name: 'Синтетический представитель', phone: null, basis_kind: 'synthetic' };
 void [guestProfile, clearContact, contactWithoutPhone, close, temporaryAdd, permanentEnrollment, invalidPerson, leakedContact];
+
+// #27 network/registry additions use the generated source of truth.
+type FamilyRequest = operations['createHousehold']['requestBody']['content']['application/json'];
+type ClubRequest = operations['createNetworkClub']['requestBody']['content']['application/json'];
+type ReadyJoin = operations['acceptClubInvitation']['requestBody']['content']['application/json'];
+const family: FamilyRequest = {operation_id: mark.operation_id, name: 'Синтетическая семья'};
+const club: ClubRequest = {name:'Синтетический клуб',address:'Тестовая улица, 1'};
+const join: ReadyJoin = {token:'0'.repeat(64)};
+// @ts-expect-error family grouping does not grant authentication rights
+const familyGrant: FamilyRequest = {...family,grants:['parent']};
+// @ts-expect-error joining a ready identity never installs a password
+const joinPassword: ReadyJoin = {...join,password:'synthetic-password'};
+void [club,join,familyGrant,joinPassword];
+
+type RecoveryRequest = operations['issuePasswordRecovery']['requestBody']['content']['application/json'];
+const recovery: RecoveryRequest = {login:'synthetic.owner',identity_verified:true};
+// @ts-expect-error An unverified recipient cannot receive recovery.
+const unverifiedRecovery: RecoveryRequest = {login:'synthetic.owner',identity_verified:false};
+void [recovery,unverifiedRecovery];

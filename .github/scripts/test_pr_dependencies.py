@@ -236,6 +236,29 @@ class PublicationTests(unittest.TestCase):
 
 
 class PaginationTests(unittest.TestCase):
+    def test_status_history_preserves_creator_and_newest_result(self):
+        api = gate.API('synthetic/repo', 'synthetic')
+        sha = 'a' * 40
+        latest = {'context': 'PR DEPENDENCIES', 'state': 'pending',
+                  'creator': {'login': 'github-actions[bot]'}}
+        def request(path):
+            self.assertEqual(path, f'/commits/{sha}/statuses?per_page=100&page=1')
+            return [latest, {**latest, 'state': 'success'}]
+        api.request = request
+        self.assertEqual(api.latest_status(sha), latest)
+
+    def test_status_history_reads_past_other_contexts(self):
+        api = gate.API('synthetic/repo', 'synthetic')
+        calls = []
+        latest = {'context': gate.CHECK, 'state': 'failure',
+                  'creator': {'login': 'github-actions[bot]'}}
+        def request(path):
+            calls.append(path)
+            return [{'context': 'synthetic-other'}] * 100 if path.endswith('&page=1') else [latest]
+        api.request = request
+        self.assertEqual(api.latest_status('a' * 40), latest)
+        self.assertEqual(len(calls), 2)
+
     def test_all_pages_are_read(self):
         api = gate.API('synthetic/repo', 'synthetic')
         calls = []

@@ -93,8 +93,16 @@ class API:
         return self.request(f'/pulls/{number}')
 
     def latest_status(self, sha):
-        statuses = self.request(f'/commits/{sha}/status?per_page=100')['statuses']
-        return next((s for s in statuses if s['context'].casefold() == CHECK.casefold()), None)
+        # Combined status omits creator; the history endpoint includes it and
+        # returns newest first. Never mistake an older success for latest pending.
+        for page in range(1, 101):
+            statuses = self.request(f'/commits/{sha}/statuses?per_page=100&page={page}')
+            current = next((s for s in statuses if s['context'].casefold() == CHECK.casefold()), None)
+            if current:
+                return current
+            if len(statuses) < 100:
+                return None
+        raise GateError('Status pagination limit reached; cannot verify latest status.')
 
     def open_pulls(self):
         result = []

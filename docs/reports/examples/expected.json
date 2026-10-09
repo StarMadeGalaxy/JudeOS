@@ -1,0 +1,192 @@
+{
+  "definition_version": "0.1",
+  "R1": {
+    "roster_count": 9,
+    "present_count": 3,
+    "absent_count": 2,
+    "sick_count": 2,
+    "unmarked_count": 2,
+    "marked_count": 7,
+    "trial_count": 1,
+    "cancelled_roster_count": 1,
+    "excluded_roster_count": 1,
+    "open_session_count": 2,
+    "attendance_percent": "42.86",
+    "completeness_percent": "77.78"
+  },
+  "R2": {
+    "rows": [
+      {
+        "athlete": "A",
+        "recommendation_kopecks": 5000,
+        "gross": 26000,
+        "released": 2000,
+        "net": 24000,
+        "difference": -19000
+      },
+      {
+        "athlete": "B",
+        "recommendation_kopecks": 8800,
+        "gross": 12800,
+        "released": 4000,
+        "net": 8800,
+        "difference": 0
+      },
+      {
+        "athlete": "C",
+        "recommendation_kopecks": 7700,
+        "gross": 0,
+        "released": 0,
+        "net": 0,
+        "difference": 7700
+      },
+      {
+        "athlete": "D",
+        "recommendation_kopecks": 0,
+        "gross": 0,
+        "released": 0,
+        "net": 0,
+        "difference": 0
+      },
+      {
+        "athlete": "E",
+        "recommendation_kopecks": 0,
+        "gross": 0,
+        "released": 0,
+        "net": 0,
+        "difference": 0
+      }
+    ],
+    "totals": {
+      "recommendation_kopecks": 21500,
+      "gross": 38800,
+      "released": 6000,
+      "net": 32800,
+      "difference": -11300
+    }
+  },
+  "R3": {
+    "rows": [
+      {
+        "receipt": "R1",
+        "gross": 20000,
+        "reversed": 0,
+        "net": 20000,
+        "allocated": 19800,
+        "available": 200
+      },
+      {
+        "receipt": "R2",
+        "gross": 9000,
+        "reversed": 3000,
+        "net": 6000,
+        "allocated": 5000,
+        "available": 1000
+      },
+      {
+        "receipt": "R3",
+        "gross": 5000,
+        "reversed": 0,
+        "net": 5000,
+        "allocated": 0,
+        "available": 5000
+      },
+      {
+        "receipt": "R5",
+        "gross": 4000,
+        "reversed": 4000,
+        "net": 0,
+        "allocated": 0,
+        "available": 0
+      }
+    ],
+    "totals": {
+      "gross": 38000,
+      "reversed": 7000,
+      "net": 31000,
+      "allocated": 24800,
+      "available": 6200
+    },
+    "movements": {
+      "gross": 38000,
+      "refund": 7000,
+      "net": 31000
+    }
+  },
+  "R4": {
+    "unresolved_ids": [
+      "I6",
+      "I7",
+      "I8"
+    ],
+    "known_unresolved": {
+      "needs_review": 6000,
+      "conflict": 9001
+    },
+    "unknown_amount_count": 1,
+    "receipt_ids": [
+      "R1",
+      "R2",
+      "R3"
+    ],
+    "available": 6200,
+    "batch": {
+      "rows": 8,
+      "known_amount": 73001,
+      "states": {
+        "applied": {
+          "count": 4,
+          "amount": 38000
+        },
+        "duplicate": {
+          "count": 1,
+          "amount": 20000
+        },
+        "needs_review": {
+          "count": 1,
+          "amount": 6000
+        },
+        "conflict": {
+          "count": 1,
+          "amount": 9001
+        },
+        "invalid": {
+          "count": 1,
+          "amount": 0
+        }
+      }
+    }
+  },
+  "later_slices": {
+    "as_of_november": "2026-11-30T21:00:00Z",
+    "fixed_october_cohort": {
+      "gross": 38000,
+      "reversed": 8000,
+      "net": 30000,
+      "allocated": 24000,
+      "available": 6000
+    },
+    "expanded_october_cohort": {
+      "gross": 40500,
+      "reversed": 8000,
+      "net": 32500,
+      "allocated": 24000,
+      "available": 8500
+    },
+    "october_movements_recomputed": {
+      "gross": 40500,
+      "refund": 7000,
+      "net": 33500
+    }
+  },
+  "empty_attendance": {
+    "attendance_percent": null,
+    "completeness_percent": null
+  },
+  "missing_recommendation": {
+    "athlete": "A",
+    "recommendation_kopecks": null,
+    "net": 3000,
+    "difference": null
+  }
+}

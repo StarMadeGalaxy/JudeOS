@@ -1,0 +1,505 @@
+{
+  "synthetic": true,
+  "definition_version": "0.1",
+  "tenant": "club-alpha",
+  "period": {
+    "from": "2026-09-30T21:00:00Z",
+    "to": "2026-10-31T21:00:00Z"
+  },
+  "as_of": "2026-10-31T21:00:00Z",
+  "currency": "BYN",
+  "athletes": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+  ],
+  "receipts": [
+    {
+      "id": "R1",
+      "tenant": "club-alpha",
+      "amount_kopecks": 20000,
+      "currency": "BYN",
+      "occurred_at": "2026-09-30T21:30:00Z",
+      "recorded_at": "2026-09-30T21:30:00Z",
+      "source": "synthetic-manual"
+    },
+    {
+      "id": "R2",
+      "tenant": "club-alpha",
+      "amount_kopecks": 9000,
+      "currency": "BYN",
+      "occurred_at": "2026-10-05T09:00:00Z",
+      "recorded_at": "2026-10-05T09:00:00Z",
+      "source": "synthetic-manual"
+    },
+    {
+      "id": "R3",
+      "tenant": "club-alpha",
+      "amount_kopecks": 5000,
+      "currency": "BYN",
+      "occurred_at": "2026-10-07T09:00:00Z",
+      "recorded_at": "2026-10-07T09:00:00Z",
+      "source": "synthetic-manual"
+    },
+    {
+      "id": "R4",
+      "tenant": "club-alpha",
+      "amount_kopecks": 11000,
+      "currency": "BYN",
+      "occurred_at": "2026-09-20T09:00:00Z",
+      "recorded_at": "2026-09-20T09:00:00Z",
+      "source": "synthetic-manual"
+    },
+    {
+      "id": "R5",
+      "tenant": "club-alpha",
+      "amount_kopecks": 4000,
+      "currency": "BYN",
+      "occurred_at": "2026-10-08T09:00:00Z",
+      "recorded_at": "2026-10-08T09:00:00Z",
+      "source": "synthetic-manual"
+    },
+    {
+      "id": "R6",
+      "tenant": "club-alpha",
+      "amount_kopecks": 2500,
+      "currency": "BYN",
+      "occurred_at": "2026-10-20T09:00:00Z",
+      "recorded_at": "2026-11-02T09:00:00Z",
+      "source": "synthetic-manual"
+    },
+    {
+      "id": "BETA-R1",
+      "tenant": "club-beta",
+      "amount_kopecks": 99999,
+      "currency": "BYN",
+      "occurred_at": "2026-10-05T09:00:00Z",
+      "recorded_at": "2026-10-05T09:00:00Z",
+      "source": "synthetic-manual"
+    }
+  ],
+  "allocations": [
+    {
+      "id": "AL1",
+      "receipt_id": "R1",
+      "athlete": "A",
+      "support_month": "2026-10",
+      "amount_kopecks": 11000,
+      "recorded_at": "2026-10-01T09:00:00Z"
+    },
+    {
+      "id": "AL2",
+      "receipt_id": "R1",
+      "athlete": "B",
+      "support_month": "2026-10",
+      "amount_kopecks": 8800,
+      "recorded_at": "2026-10-01T09:00:00Z"
+    },
+    {
+      "id": "AL3",
+      "receipt_id": "R2",
+      "athlete": "A",
+      "support_month": "2026-10",
+      "amount_kopecks": 4000,
+      "recorded_at": "2026-10-05T10:00:00Z"
+    },
+    {
+      "id": "AL4",
+      "receipt_id": "R2",
+      "athlete": "A",
+      "support_month": "2026-11",
+      "amount_kopecks": 3000,
+      "recorded_at": "2026-10-05T10:00:00Z"
+    },
+    {
+      "id": "AL5",
+      "receipt_id": "R4",
+      "athlete": "A",
+      "support_month": "2026-10",
+      "amount_kopecks": 11000,
+      "recorded_at": "2026-09-20T10:00:00Z"
+    },
+    {
+      "id": "AL6",
+      "receipt_id": "R5",
+      "athlete": "B",
+      "support_month": "2026-10",
+      "amount_kopecks": 4000,
+      "recorded_at": "2026-10-08T10:00:00Z"
+    }
+  ],
+  "reversals": [
+    {
+      "id": "V1",
+      "receipt_id": "R2",
+      "kind": "refund",
+      "amount_kopecks": 3000,
+      "occurred_at": "2026-10-12T09:00:00Z",
+      "recorded_at": "2026-10-12T09:00:00Z"
+    },
+    {
+      "id": "V2",
+      "receipt_id": "R5",
+      "kind": "refund",
+      "amount_kopecks": 4000,
+      "occurred_at": "2026-10-10T09:00:00Z",
+      "recorded_at": "2026-10-10T09:00:00Z"
+    },
+    {
+      "id": "V3",
+      "receipt_id": "R1",
+      "kind": "refund",
+      "amount_kopecks": 1000,
+      "occurred_at": "2026-11-03T09:00:00Z",
+      "recorded_at": "2026-11-03T09:00:00Z"
+    }
+  ],
+  "changes": [
+    {
+      "id": "C1",
+      "allocation_id": "AL3",
+      "reversal_id": "V1",
+      "amount_kopecks": 2000,
+      "recorded_at": "2026-10-12T09:00:00Z"
+    },
+    {
+      "id": "C2",
+      "allocation_id": "AL6",
+      "reversal_id": "V2",
+      "amount_kopecks": 4000,
+      "recorded_at": "2026-10-10T09:00:00Z"
+    },
+    {
+      "id": "C3",
+      "allocation_id": "AL1",
+      "reversal_id": "V3",
+      "amount_kopecks": 800,
+      "recorded_at": "2026-11-03T09:00:00Z"
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "Q-A",
+      "athlete": "A",
+      "support_month": "2026-10",
+      "base_kopecks": 11000,
+      "adjustment_kopecks": 6000,
+      "final_kopecks": 5000,
+      "order": 1,
+      "policy_version": 1,
+      "family_snapshot": "SYNTH-FAMILY-OCT",
+      "recorded_at": "2026-10-01T08:00:00Z"
+    },
+    {
+      "id": "Q-B",
+      "athlete": "B",
+      "support_month": "2026-10",
+      "base_kopecks": 8800,
+      "adjustment_kopecks": 0,
+      "final_kopecks": 8800,
+      "order": 2,
+      "policy_version": 1,
+      "family_snapshot": "SYNTH-FAMILY-OCT",
+      "recorded_at": "2026-10-01T08:00:00Z"
+    },
+    {
+      "id": "Q-C",
+      "athlete": "C",
+      "support_month": "2026-10",
+      "base_kopecks": 7700,
+      "adjustment_kopecks": 0,
+      "final_kopecks": 7700,
+      "order": 3,
+      "policy_version": 1,
+      "family_snapshot": "SYNTH-FAMILY-OCT",
+      "recorded_at": "2026-10-01T08:00:00Z"
+    },
+    {
+      "id": "Q-D",
+      "athlete": "D",
+      "support_month": "2026-10",
+      "base_kopecks": 0,
+      "adjustment_kopecks": 0,
+      "final_kopecks": 0,
+      "order": 4,
+      "policy_version": 1,
+      "family_snapshot": "SYNTH-FAMILY-OCT",
+      "recorded_at": "2026-10-01T08:00:00Z"
+    },
+    {
+      "id": "Q-E",
+      "athlete": "E",
+      "support_month": "2026-10",
+      "base_kopecks": 0,
+      "adjustment_kopecks": 0,
+      "final_kopecks": 0,
+      "order": 5,
+      "policy_version": 1,
+      "family_snapshot": "SYNTH-FAMILY-OCT",
+      "recorded_at": "2026-10-01T08:00:00Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "S1",
+      "tenant": "club-alpha",
+      "state": "in_progress",
+      "starts_at": "2026-10-05T12:00:00Z",
+      "recorded_at": "2026-10-05T12:00:00Z",
+      "roster": [
+        {
+          "athlete": "A",
+          "status": "present",
+          "excluded": false,
+          "trial": false
+        },
+        {
+          "athlete": "B",
+          "status": "sick",
+          "excluded": false,
+          "trial": false
+        },
+        {
+          "athlete": "C",
+          "status": "unmarked",
+          "excluded": false,
+          "trial": false
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "tenant": "club-alpha",
+      "state": "closed",
+      "starts_at": "2026-10-08T12:00:00Z",
+      "recorded_at": "2026-10-08T12:00:00Z",
+      "roster": [
+        {
+          "athlete": "A",
+          "status": "absent",
+          "excluded": false,
+          "trial": false
+        },
+        {
+          "athlete": "B",
+          "status": "present",
+          "excluded": false,
+          "trial": false
+        },
+        {
+          "athlete": "C",
+          "status": "sick",
+          "excluded": false,
+          "trial": false
+        },
+        {
+          "athlete": "D",
+          "status": "present",
+          "excluded": true,
+          "trial": false
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "tenant": "club-alpha",
+      "state": "cancelled",
+      "starts_at": "2026-10-10T12:00:00Z",
+      "recorded_at": "2026-10-10T12:00:00Z",
+      "roster": [
+        {
+          "athlete": "A",
+          "status": "present",
+          "excluded": false,
+          "trial": false
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "tenant": "club-alpha",
+      "state": "in_progress",
+      "starts_at": "2026-10-15T12:00:00Z",
+      "recorded_at": "2026-10-15T12:00:00Z",
+      "roster": [
+        {
+          "athlete": "A",
+          "status": "present",
+          "excluded": false,
+          "trial": true
+        },
+        {
+          "athlete": "B",
+          "status": "unmarked",
+          "excluded": false,
+          "trial": false
+        },
+        {
+          "athlete": "C",
+          "status": "absent",
+          "excluded": false,
+          "trial": false
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "tenant": "club-alpha",
+      "state": "closed",
+      "starts_at": "2026-09-30T20:30:00Z",
+      "recorded_at": "2026-09-30T20:30:00Z",
+      "roster": [
+        {
+          "athlete": "A",
+          "status": "present",
+          "excluded": false,
+          "trial": false
+        }
+      ]
+    },
+    {
+      "id": "BETA-S1",
+      "tenant": "club-beta",
+      "state": "closed",
+      "starts_at": "2026-10-05T12:00:00Z",
+      "recorded_at": "2026-10-05T12:00:00Z",
+      "roster": [
+        {
+          "athlete": "A",
+          "status": "present",
+          "excluded": false,
+          "trial": false
+        }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "I1",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "applied",
+      "amount_kopecks": 20000,
+      "currency": "BYN",
+      "receipt_id": "R1",
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I2",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "applied",
+      "amount_kopecks": 9000,
+      "currency": "BYN",
+      "receipt_id": "R2",
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I3",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "applied",
+      "amount_kopecks": 5000,
+      "currency": "BYN",
+      "receipt_id": "R3",
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I4",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "applied",
+      "amount_kopecks": 4000,
+      "currency": "BYN",
+      "receipt_id": "R5",
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I5",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "duplicate",
+      "amount_kopecks": 20000,
+      "currency": "BYN",
+      "receipt_id": "R1",
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I6",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "needs_review",
+      "amount_kopecks": 6000,
+      "currency": "BYN",
+      "receipt_id": null,
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I7",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "conflict",
+      "amount_kopecks": 9001,
+      "currency": "BYN",
+      "receipt_id": null,
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    },
+    {
+      "id": "I8",
+      "tenant": "club-alpha",
+      "batch": "B1",
+      "status": "invalid",
+      "amount_kopecks": null,
+      "currency": null,
+      "receipt_id": null,
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": "110,001"
+    },
+    {
+      "id": "BETA-I1",
+      "tenant": "club-beta",
+      "batch": "BETA-B1",
+      "status": "needs_review",
+      "amount_kopecks": 99999,
+      "currency": "BYN",
+      "receipt_id": null,
+      "recorded_at": "2026-10-16T09:00:00Z",
+      "raw_amount": null
+    }
+  ],
+  "scenarios": {
+    "concurrent_allocation": {
+      "initial_version": 4,
+      "initial_available": 9000,
+      "first_request": 6000,
+      "second_request": 5000,
+      "expected_after_first": {
+        "version": 5,
+        "available": 3000
+      },
+      "expected_second": "version_conflict"
+    },
+    "family_size_totals": [
+      11000,
+      19800,
+      27500,
+      27500,
+      27500
+    ],
+    "excess_family_reduction": {
+      "base": 27500,
+      "reduction": 30000,
+      "final": 0,
+      "unused": 2500
+    }
+  }
+}

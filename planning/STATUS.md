@@ -2,6 +2,16 @@
 
 Обновлено 9 октября 2026 года. Этап — синтетическая основа S0; история/подробности в Issues/PR и Git.
 
+## #38 — Финансовый контракт и конкретные отчёты: согласование
+
+@NikishGum; run `finance-38-20261009T152658Z-912c136c`, ветка `docs/38-finance-contract-reports` от принятой main128456e. [Собственный claim](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6083985782): единственный assignee проверен, пользователь отдельно подтвердил In progress38 сообщением «готово» 9 октября; Projects API403, подтверждение28 не перенесено. #28/run people-ui-28-20261009T141855Z-53a90179 и #27/run people-27-20261009-01a120c5 сохраняют назначение/статус. #26/PR102 принята и merged; #27/PR111 остаётся open/review, не принятой зависимостью. Границы документов согласованы владельцами [27](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6084168958) и [28](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6084045933); документальная38 независима от111, новые общие DTO не используются.
+
+Подготовлены [контракт S2](../docs/finance/CONTRACT.md), [ADR0014 proposed](adr/0014-s2-financial-contract.md), [R1–R4 v0.1](../docs/reports/README.md) и проверяемые синтетические примеры: Receipt/Allocation/ImportBatch/возвраты, целые копейки BYN, версия/блокировка остатка/повторы, компенсирующая история, клубный scope/минимальный экспорт и предложенные экраны. Отдельные оси даты поступления/месяца поддержки; поздняя запись и возврат следующего месяца объясняются as_of. Действующие OpenAPI/DTO, модель людей/семей, runtime/SQL/Telegram/apps/web не изменены; в DATA-MODEL только согласованная ссылка, DECISIONS — отдельный блок предложений. D61 не реконструирован; новые поля/формулы/лимиты не выданы за подтверждения.
+
+Проверки: `python3 docs/reports/verify_examples.py` PASS — строки/итоги четырёх отчётов, три среза, границы времени/двух клубов, семьи1–5/нулевой предел/missing recommendation, исходы импорта и отсутствие двойного счёта. Markdown local links/fences и diff --check PASS; прежние DECISIONS/STATUS сохранены. Это документальная арифметика, не DB/RLS/runtime-конкуренция/реальный iPay/выдача CSV/телефон. Только synthetic; действующие VPS release/checkout/manifest и рабочие тома сохранены, deploy/tag/merge не выполнялись.
+
+**Блокер приёмки:** [подтверждение владельца/менеджера состава/полей/фильтров/формул R1–R4](../docs/reports/APPROVAL.md) и способа семейного уменьшения/экспортных ограничений ещё отсутствует. Технический ADR также ждёт независимого review. PR должен остаться draft/In progress до этих подтверждений; далее записать точный источник в APPROVAL/DECISIONS, обновить проверки и передать на Review. #38 не завершена, следующая задача не предлагается.
+
 ## Приёмка и текущая работа
 
 [#26](https://github.com/StarMadeGalaxy/JudeOS/issues/26), @NikishGum; run `people-26-20261008T122108Z-cloud-b64-cc3d0aff`, ветка `docs/26-people-journal-contract`; принятые main89745e8/#16/PR78/#22/PR97, main7034fb1 с merged #23/#84/#103 (PR81/87/104/106/108/107) интегрирована обычным merge; конфликт дополнений DECISIONS разрешён сохранением обоих разделов. Assignee/собственный claim проверены REST; ручной In progress подтверждён пользователем «in progress для 26 установлено», [источник](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6059731884).

@@ -78,6 +78,8 @@ Attendance использует `present`, `absent`, `sick`, `unmarked`: «Бы�
 
 ## Поддержка и поступления
 
+Детальный документальный проект #38: [финансовый контракт S2](../docs/finance/CONTRACT.md), [четыре предложенных отчёта и синтетические образцы](../docs/reports/README.md). Статус — proposed, бизнес-подтверждение отчётов ожидается; это не восстановление D61, SQL или новый people/OpenAPI-контракт. Границы этой ссылки согласованы с владельцами [#27](https://github.com/StarMadeGalaxy/JudeOS/issues/27#issuecomment-6084168958) и [#28](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6084045933).
+
 ```mermaid
 erDiagram
     ATHLETE ||--o{ CONTRIBUTION_RECOMMENDATION : suggested_for

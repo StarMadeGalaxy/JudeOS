@@ -31,6 +31,7 @@ type Grant struct {
 }
 type Membership struct {
 	ID       string  `json:"membership_id"`
+	Source   string  `json:"authority_source,omitempty"`
 	Tenant   string  `json:"tenant_id"`
 	Club     string  `json:"club_name"`
 	Timezone string  `json:"timezone"`
@@ -41,8 +42,11 @@ type Session struct {
 	Expires     time.Time    `json:"expires_at"`
 	Memberships []Membership `json:"memberships"`
 	CSRF        string       `json:"-"`
+	Networks    []Network    `json:"networks"`
+	Platform    bool         `json:"platform_administrator"`
 }
 type Link struct {
+	Kind    string    `json:"kind,omitempty"`
 	Token   string    `json:"token"`
 	Expires time.Time `json:"expires_at"`
 }
@@ -109,8 +113,15 @@ func session(ctx context.Context, q interface {
 	}
 	s.Expires = s.Expires.UTC()
 	s.Memberships, err = memberships(ctx, q, s.Account)
-	if err == nil && len(s.Memberships) == 0 {
-		return s, ErrUnauthorized
+	if err == nil {
+		err = authority(ctx, q, &s)
+	}
+	if err == nil && len(s.Memberships) == 0 && !s.Platform && len(s.Networks) == 0 {
+		var pending bool
+		err = q.QueryRowContext(ctx, `SELECT access.has_pending_join($1)`, s.Account).Scan(&pending)
+		if err == nil && !pending {
+			return s, ErrUnauthorized
+		}
 	}
 	return s, err
 }
@@ -206,11 +217,21 @@ func (s *Service) Login(ctx context.Context, login, password, preauth, csrf, old
 	if e != nil {
 		return empty, "", safe(e)
 	}
-	if len(ms) == 0 {
-		return empty, "", ErrUnauthorized
+	v := Session{Account: account, Expires: time.Now().UTC().Add(SessionTTL), Memberships: ms, CSRF: secret()}
+	if e = authority(ctx, tx, &v); e != nil {
+		return empty, "", safe(e)
+	}
+	if len(ms) == 0 && !v.Platform && len(v.Networks) == 0 {
+		var pending bool
+		if e = tx.QueryRowContext(ctx, `SELECT access.has_pending_join($1)`, account).Scan(&pending); e != nil {
+			return empty, "", safe(e)
+		}
+		if !pending {
+			return empty, "", ErrUnauthorized
+		}
 	}
 	token := secret()
-	v := Session{account, time.Now().UTC().Add(SessionTTL), ms, secret()}
+
 	if old != "" {
 		if _, e = tx.ExecContext(ctx, `UPDATE access.sessions SET revoked=true WHERE secret_hash=$1`, digest(old)); e != nil {
 			return empty, "", safe(e)
@@ -265,7 +286,7 @@ func ValidGrants(gs []Grant) bool {
 // resolved from the current server repository, never a request body/menu choice.
 func Allows(gs []Grant, action string, assigned bool) bool {
 	switch action {
-	case "staff", "finance", "people", "schedule", "attendance", "journal", "add_guest":
+	case "staff", "finance", "people", "schedule", "attendance", "journal", "add_guest", "assign_coach":
 	default:
 		return false
 	}
@@ -287,7 +308,11 @@ func Allows(gs []Grant, action string, assigned bool) bool {
 	}
 	return false
 }
-func (s *Service) within(ctx context.Context, token, csrf, tenant, request string, fn func(*sql.Tx, Session) error) error {
+
+// Within authorizes an action twice, including after the shared club lock.
+// Repositories must use the supplied transaction; caller-provided tenant IDs
+// never become trusted context until this check succeeds.
+func (s *Service) Within(ctx context.Context, token, csrf, tenant, request, action string, fn func(*sql.Tx, Session) error) error {
 	if !uuidPattern.MatchString(tenant) {
 		return ErrInvalid
 	}
@@ -300,7 +325,7 @@ func (s *Service) within(ctx context.Context, token, csrf, tenant, request strin
 	}
 	found := false
 	for _, m := range v.Memberships {
-		if m.Tenant == tenant && Allows(m.Grants, "staff", false) {
+		if m.Tenant == tenant && Allows(m.Grants, action, false) {
 			found = true
 		}
 	}
@@ -308,6 +333,11 @@ func (s *Service) within(ctx context.Context, token, csrf, tenant, request strin
 		return ErrForbidden
 	}
 	return safe(tenantTx(ctx, s.DB, database.TenantContext{TenantID: tenant, ActorID: v.Account, RequestID: request}, func(tx *sql.Tx) error {
+		if v.Platform {
+			if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(27,1)`); e != nil {
+				return e
+			}
+		}
 		// Every staff mutation in one club serializes before authorization and the
 		// last-owner check. A request authorized before a revocation cannot slip past it.
 		if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,21))`, tenant); e != nil {
@@ -322,7 +352,7 @@ func (s *Service) within(ctx context.Context, token, csrf, tenant, request strin
 		}
 		allowed := false
 		for _, m := range current.Memberships {
-			if m.Tenant == tenant && Allows(m.Grants, "staff", false) {
+			if m.Tenant == tenant && Allows(m.Grants, action, false) {
 				allowed = true
 			}
 		}
@@ -332,10 +362,13 @@ func (s *Service) within(ctx context.Context, token, csrf, tenant, request strin
 		return fn(tx, current)
 	}))
 }
+func (s *Service) within(ctx context.Context, token, csrf, tenant, request string, fn func(*sql.Tx, Session) error) error {
+	return s.Within(ctx, token, csrf, tenant, request, "staff", fn)
+}
 func (s *Service) List(ctx context.Context, token, tenant, request string) ([]Staff, error) {
 	items := []Staff{}
 	e := s.within(ctx, token, "", tenant, request, func(tx *sql.Tx, _ Session) error {
-		rows, e := tx.QueryContext(ctx, `SELECT m.id,m.account_id,a.login,m.active,CASE WHEN m.active THEN 'active' WHEN a.password_hash IS NULL THEN 'pending' ELSE 'revoked' END,coalesce((SELECT jsonb_agg(jsonb_build_object('role',role,'scope',scope) ORDER BY role) FROM core.role_grants g WHERE (g.tenant_id,g.membership_id)=(m.tenant_id,m.id)),'[]'::jsonb) FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id ORDER BY m.id`)
+		rows, e := tx.QueryContext(ctx, `SELECT m.id,m.account_id,a.login,m.active,CASE WHEN m.active THEN 'active' WHEN EXISTS(SELECT 1 FROM core.access_tokens t WHERE t.membership_id=m.id AND NOT t.used AND t.expires_at>clock_timestamp() AND t.kind IN ('invite','join')) THEN 'pending' ELSE 'revoked' END,coalesce((SELECT jsonb_agg(jsonb_build_object('role',role,'scope',scope) ORDER BY role) FROM core.role_grants g WHERE (g.tenant_id,g.membership_id)=(m.tenant_id,m.id)),'[]'::jsonb) FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id ORDER BY m.id`)
 		if e != nil {
 			return e
 		}
@@ -412,7 +445,7 @@ func issueToken(ctx context.Context, tx *sql.Tx, tenant, id, kind string) (Link,
 	if kind == "reset" {
 		ttl = ResetTTL
 	}
-	v := Link{secret(), time.Now().UTC().Add(ttl)}
+	v := Link{Token: secret(), Expires: time.Now().UTC().Add(ttl), Kind: kind}
 	// Issuing a replacement invalidates all previous links for this membership.
 	if _, e := tx.ExecContext(ctx, `UPDATE core.access_tokens SET used=true WHERE tenant_id=$1 AND membership_id=$2 AND NOT used`, tenant, id); e != nil {
 		return Link{}, e
@@ -431,16 +464,25 @@ func (s *Service) Reset(ctx context.Context, token, csrf, tenant, request, id st
 	e := s.within(ctx, token, csrf, tenant, request, func(tx *sql.Tx, _ Session) error {
 		var active bool
 		var hasPassword bool
-		if e := tx.QueryRowContext(ctx, `SELECT m.active,a.password_hash IS NOT NULL FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id WHERE m.id=$1`, id).Scan(&active, &hasPassword); errors.Is(e, sql.ErrNoRows) {
+		var account string
+		if e := tx.QueryRowContext(ctx, `SELECT m.active,a.password_hash IS NOT NULL,a.id FROM core.memberships m JOIN access.accounts a ON a.id=m.account_id WHERE m.id=$1 FOR UPDATE OF a`, id).Scan(&active, &hasPassword, &account); errors.Is(e, sql.ErrNoRows) {
 			return ErrToken
 		} else if e != nil {
 			return e
 		}
-		if !active && hasPassword {
-			return ErrConflict
-		}
+
 		kind := "invite"
+		if !active && hasPassword {
+			kind = "join"
+		}
 		if active {
+			var allowed bool
+			if e := tx.QueryRowContext(ctx, `SELECT access.local_password_reset_allowed($1,$2)`, account, tenant).Scan(&allowed); e != nil {
+				return e
+			}
+			if !allowed {
+				return ErrForbidden
+			}
 			kind = "reset"
 		}
 		var e error
@@ -499,10 +541,13 @@ func (s *Service) Redeem(ctx context.Context, token, password, preauth, csrf, re
 	var tenant, id, account, kind string
 	e = s.DB.QueryRowContext(ctx, `SELECT tenant_id,membership_id,account_id,kind FROM access.token_target($1)`, digest(token)).Scan(&tenant, &id, &account, &kind)
 	if errors.Is(e, sql.ErrNoRows) {
-		return ErrToken
+		return s.redeemRecovery(ctx, token, password, preauth, csrf, request)
 	}
 	if e != nil {
 		return safe(e)
+	}
+	if kind != "invite" && kind != "reset" {
+		return ErrToken
 	}
 	select {
 	case s.slots <- struct{}{}:
@@ -536,6 +581,15 @@ func (s *Service) Redeem(ctx context.Context, token, password, preauth, csrf, re
 		}
 		if (kind == "reset" && !active) || (kind == "invite" && (active || old.Valid)) {
 			return ErrToken
+		}
+		if kind == "reset" {
+			var allowed bool
+			if e := tx.QueryRowContext(ctx, `SELECT access.local_password_reset_allowed($1,$2)`, account, tenant).Scan(&allowed); e != nil {
+				return e
+			}
+			if !allowed {
+				return ErrToken
+			}
 		}
 		r, e := tx.ExecContext(ctx, `UPDATE core.access_tokens SET used=true WHERE secret_hash=$1 AND NOT used AND expires_at>clock_timestamp()`, digest(token))
 		if e != nil {

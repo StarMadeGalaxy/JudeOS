@@ -110,6 +110,8 @@ func New(o Options) *chi.Mux {
 		file(filepath.Join(o.WebDir, "assets", name), "")(w, req)
 	})
 	accessRoutes(r, o)
+	registryRoutes(r, o)
+	networkRoutes(r, o)
 	return r
 }
 

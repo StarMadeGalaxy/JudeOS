@@ -22,7 +22,9 @@ RUN --mount=type=secret,id=build_ca \
     if [ -f /run/secrets/build_ca ]; then export SSL_CERT_FILE=/run/secrets/build_ca; fi; \
     CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/api ./cmd/api && \
     CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/db ./cmd/db && \
-    CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/access-bootstrap ./cmd/access-bootstrap
+    CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/access-bootstrap ./cmd/access-bootstrap && \
+    CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/platform-bootstrap ./cmd/platform-bootstrap && \
+    CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/platform-recovery ./cmd/platform-recovery
 
 FROM scratch
 WORKDIR /app

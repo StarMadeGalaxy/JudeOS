@@ -13,6 +13,8 @@ build:
 	$(GO) build -mod=readonly -trimpath -o bin/api ./cmd/api
 	$(GO) build -mod=readonly -trimpath -o bin/db ./cmd/db
 	$(GO) build -mod=readonly -trimpath -o bin/access-bootstrap ./cmd/access-bootstrap
+	$(GO) build -mod=readonly -trimpath -o bin/platform-bootstrap ./cmd/platform-bootstrap
+	$(GO) build -mod=readonly -trimpath -o bin/platform-recovery ./cmd/platform-recovery
 db-up: env
 	$(COMPOSE) up -d --wait db
 bootstrap:

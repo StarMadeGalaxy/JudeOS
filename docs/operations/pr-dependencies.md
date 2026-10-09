@@ -38,8 +38,8 @@ PR, а не готовность к merge. Объясните причины з�
 
 Actions → **PR dependency gate** → последний завершённый run → **Summary** содержит
 общую таблицу открытых PR, их зависимостей и причины блокировки. В каждом PR
-Checks → **PR dependencies** показывает его результат; **Details** ведёт к запуску
-со сверкой и общей таблицей. Таблица означает только
+Checks → **PR dependencies** показывает его результат; **Details** ведёт к запуску,
+опубликовавшему результат. Последняя сверка всех PR — в Summary последнего run. Таблица означает только
 готовность зависимостей: у PR могут оставаться review/CI/acceptance blockers.
 
 Workflow пересчитывает все открытые PR при opened/edited/synchronize/reopened,
@@ -102,7 +102,9 @@ Workflow выполняется только после интеграции tru
 
 GitHub подтвердил [невозможность выбрать check suite при создании CheckRun через GITHUB_TOKEN](https://github.com/orgs/community/discussions/24616). Наблюдаемая привязка к первому запуску совпадает с описанным там случаем блокировки required check после повторных запусков. Само наличие SUCCESS/isRequired в API не доказывает, что результат будет принят merge gate. Внутренняя логика выбора результата на сервере GitHub недоступна репозиторию.
 
-Исправление публикует только commit status `PR dependencies` на актуальном SHA: pending до вычисления, затем success/failure после сверки и повторного чтения PR. Details ведёт к текущему run/Summary. Commit status не зависит от check suite; API-created CheckRun больше не создаётся, permission checks:write удалён. Предварительный вариант с двумя результатами одного имени заменён: [GitHub требует прохождения обоих](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks), поэтому такой вариант сохранял риск старого Expected. Если итоговая запись не удалась после успешного pending, status остаётся pending. Ошибка первой записи не может гарантированно погасить предыдущий результат: не принимать его за свежую сверку, проверить ошибку workflow.
+Исправление публикует только commit status `PR dependencies` на актуальном SHA: pending при новой/изменённой публикации, затем success/failure после сверки и повторного чтения PR. Details ведёт к run/Summary, опубликовавшему результат. Commit status не зависит от check suite; API-created CheckRun больше не создаётся, permission checks:write удалён. Предварительный вариант с двумя результатами одного имени заменён: [GitHub требует прохождения обоих](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks), поэтому такой вариант сохранял риск старого Expected. Если итоговая запись не удалась после успешного pending, status остаётся pending. Ошибка первой записи не может гарантированно погасить предыдущий результат: не принимать его за свежую сверку, проверить ошибку workflow.
+
+Каждая сверка заново читает PR/зависимости, но одинаковый terminal status не записывается повторно, если PR не обновлялся, источник — github-actions[bot], а результат младше шести дней. При изменении результата/PR, другом источнике или истечении срока публикуется новая пара pending→terminal. Это сохраняет автоматическое обновление после merge зависимости и не расходует [лимит 1000 statuses на SHA/context](https://docs.github.com/en/rest/commits/statuses#create-a-commit-status) неизменившимися scheduled runs. Обновление раз в шесть дней предшествует семидневному окну required checks. Повторная сверка, изменение результата, устаревший status и частичные ошибки проверены unit tests; реальная branch-protection приёмка обязательна.
 
 Старые CheckRuns сохраняются на прежних SHA. Миграция требует:
 

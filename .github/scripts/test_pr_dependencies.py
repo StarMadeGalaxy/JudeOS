@@ -1,4 +1,5 @@
 import importlib.util
+from datetime import datetime, timedelta, timezone
 import unittest
 from pathlib import Path
 
@@ -9,7 +10,7 @@ spec.loader.exec_module(gate)
 
 def pull(number=10, body='Merge after: none', **kwargs):
     return dict(number=number, body=body, head={'sha': 'a' * 40},
-                base={'ref': 'main'}, state='open', **kwargs)
+                base={'ref': 'main'}, state='open', updated_at='2020-01-01T00:00:00Z', **kwargs)
 
 
 class FakeAPI:
@@ -22,6 +23,10 @@ class FakeAPI:
         self.latest = latest or pr
         self.calls = []
         self.reads = 0
+        self.previous = None
+
+    def latest_status(self, sha):
+        return self.previous
 
     def pull(self, number):
         if number == self.pr['number']:
@@ -33,6 +38,9 @@ class FakeAPI:
 
     def request(self, path, method='GET', data=None):
         self.calls.append((path, method, data))
+        if path.startswith('/statuses/'):
+            self.previous = {**data, 'created_at': datetime.now(timezone.utc).isoformat(),
+                             'creator': {'login': 'github-actions[bot]'}}
         return {'id': 1}
 
     def open_pulls(self):
@@ -156,15 +164,51 @@ class PublicationTests(unittest.TestCase):
         summary, failed = gate.reconcile(api)
         self.assertFalse(failed)
         self.assertIn('Multiple open PRs share this head', summary)
-        self.assertEqual([c[2]['state'] for c in api.calls],
-                         ['pending', 'failure', 'pending', 'failure'])
+        self.assertEqual([c[2]['state'] for c in api.calls], ['pending', 'failure'])
 
     def test_repeated_reconciliation_does_not_create_stale_check_runs(self):
         api = FakeAPI(pull())
         for _ in range(3):
             gate.reconcile(api)
-        self.assertEqual([c[2]['state'] for c in api.calls], ['pending', 'success'] * 3)
+        self.assertEqual([c[2]['state'] for c in api.calls], ['pending', 'success'])
         self.assertTrue(all(c[0].startswith('/statuses/') for c in api.calls))
+        self.assertEqual(api.reads, 6)
+
+    def test_unchanged_failure_still_rechecks_dependency_merge(self):
+        api = FakeAPI(pull(body='Merge after: #2'),
+                      deps={2: {'base': {'ref': 'main'}, 'merged': False}})
+        gate.check_pull(api, 10)
+        gate.check_pull(api, 10)
+        self.assertEqual(len(api.calls), 2)
+        api.deps[2]['merged'] = True
+        self.assertTrue(gate.check_pull(api, 10)[2])
+        self.assertEqual([c[2]['state'] for c in api.calls],
+                         ['pending', 'failure', 'pending', 'success'])
+
+    def test_prior_success_does_not_hide_new_failure(self):
+        api = FakeAPI(pull(body='Merge after: #2'),
+                      deps={2: {'base': {'ref': 'main'}, 'merged': True}})
+        gate.check_pull(api, 10)
+        api.deps = {}
+        self.assertFalse(gate.check_pull(api, 10)[2])
+        self.assertEqual([c[2]['state'] for c in api.calls],
+                         ['pending', 'success', 'pending', 'failure'])
+
+    def test_updated_pr_or_old_status_cannot_reuse_previous_success(self):
+        for reason in ['updated', 'expired', 'another_source', 'invalid_date']:
+            with self.subTest(reason=reason):
+                api = FakeAPI(pull())
+                gate.check_pull(api, 10)
+                if reason == 'updated':
+                    api.pr['updated_at'] = api.previous['created_at']
+                elif reason == 'expired':
+                    api.previous['created_at'] = (datetime.now(timezone.utc) - timedelta(days=6)).isoformat()
+                elif reason == 'another_source':
+                    api.previous['creator']['login'] = 'synthetic'
+                else:
+                    api.previous['created_at'] = 'not-a-date'
+                gate.check_pull(api, 10)
+                self.assertEqual([c[2]['state'] for c in api.calls], ['pending', 'success'] * 2)
 
     def test_closed_pr_is_not_checked(self):
         pr = pull(); pr['state'] = 'closed'

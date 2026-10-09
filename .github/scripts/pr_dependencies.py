@@ -1,6 +1,7 @@
 """Trusted-base dependency gate. Never executes code or shell text from a PR."""
 import json
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 import os
 import re
 import sys
@@ -91,6 +92,10 @@ class API:
     def pull(self, number):
         return self.request(f'/pulls/{number}')
 
+    def latest_status(self, sha):
+        statuses = self.request(f'/commits/{sha}/status?per_page=100')['statuses']
+        return next((s for s in statuses if s['context'].casefold() == CHECK.casefold()), None)
+
     def open_pulls(self):
         result = []
         for page in range(1, 101):
@@ -112,6 +117,21 @@ def publish_status(api, sha, state, message):
     api.request(f'/statuses/{sha}', 'POST', payload)
 
 
+def reusable_status(status, pr):
+    # A status from this publisher may remain in place while we re-evaluate an
+    # unchanged PR. Renew it before GitHub's seven-day required-check window.
+    if (not status or status.get('state') not in ('success', 'failure') or
+            status.get('creator', {}).get('login') != 'github-actions[bot]'):
+        return False
+    try:
+        created = datetime.fromisoformat(status['created_at'].replace('Z', '+00:00'))
+        updated = datetime.fromisoformat(pr['updated_at'].replace('Z', '+00:00'))
+        age = datetime.now(timezone.utc) - created
+        return updated < created and timedelta(0) <= age < timedelta(days=6)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 def check_pull(api, number, blocked_reason=None):
     pr = api.pull(number)
     if pr['state'] != 'open' or pr['base']['ref'] != 'main':
@@ -122,7 +142,13 @@ def check_pull(api, number, blocked_reason=None):
     # API-created Actions CheckRuns can attach to a stale workflow's check suite;
     # the API cannot select a suite. Commit statuses attach directly to the SHA.
     # Do not also create a same-name CheckRun: branch protection requires both.
-    publish_status(api, sha, 'pending', 'Checking current PR dependencies.')
+    try:
+        previous = api.latest_status(sha)
+    except GateError:
+        previous = None
+    reuse = reusable_status(previous, pr)
+    if not reuse:
+        publish_status(api, sha, 'pending', 'Checking current PR dependencies.')
     deps, passed = [], False
     try:
         if blocked_reason:
@@ -133,8 +159,15 @@ def check_pull(api, number, blocked_reason=None):
             message = 'PR changed during evaluation; run the workflow again.'
     except GateError as error:
         message = str(error)
+    state = 'success' if passed else 'failure'
+    # GitHub limits each SHA/context to 1000 status records. Always re-evaluate,
+    # but only write when the PR/result changes or the existing status expires.
+    if reuse and previous['state'] == state and previous.get('description') == message[:140]:
+        return number, deps, passed, message
+    if reuse:
+        publish_status(api, sha, 'pending', 'Checking current PR dependencies.')
     # A failed terminal write leaves the preceding pending result in place.
-    publish_status(api, sha, 'success' if passed else 'failure', message)
+    publish_status(api, sha, state, message)
     return number, deps, passed, message
 
 

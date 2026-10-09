@@ -266,12 +266,13 @@ func TestPostgresIsolationAndUpgrade(t *testing.T) {
 	}
 	wg.Wait()
 	assertNoContext(t, runtime)
-	if _, err := admin.ExecContext(ctx, "INSERT INTO goose_db_version(version_id,is_applied) VALUES (4,true)"); err != nil {
+	if _, err := admin.ExecContext(ctx, "INSERT INTO goose_db_version(version_id,is_applied) VALUES (5,true)"); err != nil {
 		t.Fatal("new version fixture failed")
 	}
 	if Ready(ctx, runtime) == nil {
 		t.Fatal("too new schema must not be ready")
 	}
+ if _,err:=admin.ExecContext(ctx,"DELETE FROM goose_db_version WHERE version_id=5");err!=nil{t.Fatal("new version fixture cleanup failed")}
 }
 
 func assertNoContext(t *testing.T, db *sql.DB) {

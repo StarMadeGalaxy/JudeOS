@@ -265,3 +265,7 @@ RPO/RTO выбираются до соответствующего пилота.
 Chi v5 принят пользователем для маршрутизации поверх стандартного net/http: [ADR 0004](adr/0004-chi-and-api-documentation.md). Группы маршрутов выражают общие middleware сессии/клуба/ролей; предметные права остаются в application services и PostgreSQL. Версию patch закрепить и проверить в S0. Явно определить HEAD/OPTIONS, 404/405 с Allow и поведение завершающих слешей.
 
 Каждый реализуемый endpoint имеет OpenAPI-описание и запись в реестре; Swagger UI отображает этот контракт. Обновление документации, проверка покрытия маршрутов и совместимости входят в приёмку каждого среза. Детали ближайшего API фиксируются до зависимой работы; будущие endpoint’ы не выдумываются заранее. Единые правила: [документация API](../docs/API-DOCUMENTATION.md).
+
+## Доступ S0.4 реализован в #21
+
+[ADR 0010 (предложено)](adr/0010-staff-access.md) фиксирует Argon2id, DB-backed revocable sessions, CSRF/preauth/exact HTTPS Origin, shared PostgreSQL rate buckets и last-owner lock/trigger. [Access runbook](../docs/access/README.md) задаёт TTL, первое приглашение владельца, конфигурацию, восстановление и ограничения synthetic scope. Глобальный authentication bridge не содержит детских профилей; прямые клубные queries по trusted tenant transaction/RLS. Runtime privilege/readiness и metadata audit #20 сохранены, current schema=4.

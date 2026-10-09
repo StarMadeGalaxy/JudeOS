@@ -1,7 +1,7 @@
 # Зависимости PR и порядок интеграции
 
 GitHub Actions запускает workflow по событиям репозитория и публикует результаты.
-`PR dependency gate` вычисляет required check **PR dependencies** на текущем head
+`PR dependency gate` публикует required context **PR dependencies** как commit status на текущем head
 каждого открытого PR в main. Это условие порядка интеграции; оно не заменяет CI,
 независимый Approve, ручную приёмку или актуальность ветки относительно main.
 
@@ -38,7 +38,8 @@ PR, а не готовность к merge. Объясните причины з�
 
 Actions → **PR dependency gate** → последний завершённый run → **Summary** содержит
 общую таблицу открытых PR, их зависимостей и причины блокировки. В каждом PR
-Checks → **PR dependencies** показывает его результат. Таблица означает только
+Checks → **PR dependencies** показывает его результат; **Details** ведёт к запуску,
+опубликовавшему результат. Последняя сверка всех PR — в Summary последнего run. Таблица означает только
 готовность зависимостей: у PR могут оставаться review/CI/acceptance blockers.
 
 Workflow пересчитывает все открытые PR при opened/edited/synchronize/reopened,
@@ -81,7 +82,7 @@ Gate проверяет заявленные зависимости, не выв
 
 ## Безопасность и отказ
 
-`pull_request_target` получает contents/pull-requests read и checks write. Checkout
+`pull_request_target` получает contents/pull-requests read и statuses write. Checkout
 строго default branch, persist-credentials=false; PR head/описание не исполняются.
 GitHub token передаётся через env, не пишется в отчёт. REST ошибки дают нейтральный
 failure; недоступность API не превращается в success. Summary не включает чужие
@@ -92,3 +93,27 @@ pending/устаревшими: проверить run и перезапусти
 Тесты: `python3 -m unittest discover -s .github/scripts -p 'test_*.py'`.
 Workflow выполняется только после интеграции trusted версии; его end-to-end проверка
 и required-check read-back обязательны до закрытия #103.
+
+## Причина Expected при зелёном API CheckRun и миграция
+
+На PR #101 8 октября 2026 backend merge вернул `Required status check "PR dependencies" is expected`, хотя API/GraphQL показывали SUCCESS, isRequired=true, правильные head SHA и Actions app15368, все CI и повторный approve. Строка `Merge after: none` разобрана успешно. 9 октября то же расхождение подтверждено на #105: его зависимость #104 merged, все четыре CI и независимый Approve присутствуют, но merge заблокирован.
+
+Установлен дефект публикации: API-created Actions CheckRun привязывается к устаревшему check suite. На head #101 `860cbda` свежий CheckRun `113704709711` попал в suite `102504732950` первого запуска [37833239124](https://github.com/StarMadeGalaxy/JudeOS/actions/runs/37833239124), а более поздние suites `102505049932` и `102511539616` содержат только `Reconcile dependency checks`. На head #105 `b229df8` успешный CheckRun `113704667668` аналогично попал в suite `102510427237` первого запуска [37835230403](https://github.com/StarMadeGalaxy/JudeOS/actions/runs/37835230403), но отсутствует в двух следующих suites. Commit statuses на обоих head отсутствовали; test merge commits не имели ни checks, ни statuses. Имя context, SHA и ожидаемый app совпадают, поэтому ошибка декларации, другой коммит или другой источник не объясняют расхождение.
+
+GitHub подтвердил [невозможность выбрать check suite при создании CheckRun через GITHUB_TOKEN](https://github.com/orgs/community/discussions/24616). Наблюдаемая привязка к первому запуску совпадает с описанным там случаем блокировки required check после повторных запусков. Само наличие SUCCESS/isRequired в API не доказывает, что результат будет принят merge gate. Внутренняя логика выбора результата на сервере GitHub недоступна репозиторию.
+
+Исправление публикует только commit status `PR dependencies` на актуальном SHA: pending при новой/изменённой публикации, затем success/failure после сверки и повторного чтения PR. Details ведёт к run/Summary, опубликовавшему результат. Commit status не зависит от check suite; API-created CheckRun больше не создаётся, permission checks:write удалён. Предварительный вариант с двумя результатами одного имени заменён: [GitHub требует прохождения обоих](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks), поэтому такой вариант сохранял риск старого Expected. Если итоговая запись не удалась после успешного pending, status остаётся pending. Ошибка первой записи не может гарантированно погасить предыдущий результат: не принимать его за свежую сверку, проверить ошибку workflow.
+
+Каждая сверка заново читает PR/зависимости, но одинаковый terminal status не записывается повторно, если PR не обновлялся, источник — github-actions[bot], а результат младше шести дней. При изменении результата/PR, другом источнике или истечении срока публикуется новая пара pending→terminal. Это сохраняет автоматическое обновление после merge зависимости и не расходует [лимит 1000 statuses на SHA/context](https://docs.github.com/en/rest/commits/statuses#create-a-commit-status) неизменившимися scheduled runs. Обновление раз в шесть дней предшествует семидневному окну required checks. Повторная сверка, изменение результата, устаревший status и частичные ошибки проверены unit tests; реальная branch-protection приёмка обязательна.
+
+Автор и последний результат читаются из history endpoint `/commits/{sha}/statuses` с пагинацией, newest first. Combined endpoint `/commits/{sha}/status` не возвращает creator, поэтому не подходит для проверки источника при дедупликации. Последний pending нельзя заменять предыдущим success; форма ответа и пагинация history покрыты regression tests.
+
+Старые CheckRuns сохраняются на прежних SHA. Миграция требует:
+
+1. Независимое ревью последнего head PR #105 и зелёные четыре CI.
+2. Авторизованный оператор временно снимает **только** required context `PR dependencies`, интегрирует #105 стандартным Merge и сохраняет остальные CI/review/strict/conversation/force/deletion правила. Полную защиту main не отключать. Старый publisher на main блокирует собственное исправление; повторный запуск прежнего кода его не заменяет.
+3. Обновить оставшиеся открытые ветки обычным merge из main: на новых SHA нет прежних одноимённых CheckRuns, и trusted-main publisher пишет только commit statuses. Повторить CI и независимое ревью изменившихся head.
+4. Запустить gate на main, подтвердить success/failure statuses и источника GitHub Actions, восстановить тот же required context `PR dependencies` и перечитать настройку.
+5. Подтвердить стандартный merge для удовлетворённых зависимостей и запрет для open/closed-unmerged/неправильной декларации, включая повторное обновление после merge зависимости. Пока проверки не выполнены, #103 не закрывать и восстановление защиты не объявлять завершённым.
+
+Исправление в #105 подготовлено и проверяется кодовыми тестами; реальная приёмка branch protection остаётся после интеграции. При административном API403 миграцию выполняет оператор через Settings → Branches; агент не считает её выполненной по зелёному unit test.

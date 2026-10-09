@@ -26,8 +26,11 @@ for (const [route, item] of Object.entries(spec.paths)) {
     if (!operation) continue;
     operations.push(operation.operationId);
     assert(['planned', 'implemented'].includes(operation['x-status']));
-    assert([16, 19, 26].includes(operation['x-issue']));
-    assert.equal(operation['x-status'], operation['x-issue'] === 19 ? 'implemented' : 'planned');
+    assert([16, 19, 21, 26].includes(operation['x-issue']));
+    assert.equal(operation['x-status'], [19, 21].includes(operation['x-issue']) ? 'implemented' : 'planned');
+    if (operation['x-status'] === 'implemented') {
+      assert.equal(operation['x-issue'], operation.tags.includes('access') ? 21 : 19);
+    }
     if (operation['x-issue'] === 26 || operation['x-s1-issue'] === 26) {
       assert.equal(operation['x-contract-status'], 'proposed');
       assert.equal(operation['x-status'], 'planned');
@@ -55,7 +58,7 @@ for (const [route, item] of Object.entries(spec.paths)) {
     }
   }
 }
-assert.equal(operations.length, 11 + proposedOperations.operations.length);
+assert.equal(operations.length, 16 + proposedOperations.operations.length);
 for (const addition of proposedOperations.operations) {
   const operation = spec.paths[addition.path]?.[addition.method.toLowerCase()];
   assert.equal(operation?.operationId, addition.operationId);
@@ -69,7 +72,9 @@ assert.equal(journal.session.tenant_id, fixtures.ids.tenant);
 const prototype = JSON.parse(fs.readFileSync(path.join(root, '../docs/prototypes/online-journal/fixture.json')));
 const journalSchema = ajv.compile({ $ref: '#/components/schemas/SessionJournal', components: spec.components });
 assert(journalSchema(prototype), `Accepted #23 prototype: ${JSON.stringify(journalSchema.errors)}`);
+for (const entry of prototype.roster) assert.equal(entry.athlete_id, entry.attendance.athlete_id);
 const implemented = Object.values(spec.paths).flatMap(item => Object.values(item)).filter(op => op['x-status'] === 'implemented').length;
+assert.equal(implemented, 13, 'Merged #21 runtime operations must stay implemented');
 const runtime = JSON.parse(fs.readFileSync(path.join(root, 'dist/runtime-openapi.json')));
 assert.equal(Object.values(runtime.paths).flatMap(item => Object.values(item)).length, implemented);
 const runtimeIds = Object.values(runtime.paths).flatMap(item => Object.values(item)).map(op => op.operationId).sort();

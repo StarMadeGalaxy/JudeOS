@@ -225,6 +225,12 @@ Backend использует Go + net/http + chi v5 ([ADR 0004](adr/0004-chi-and
 
 [Интерактивный прототип #23](../docs/prototypes/online-journal/README.md) показывает вход, назначенное занятие, четыре отметки, сохранение/неизвестный результат, отказ и явный конфликт. Синтетический in-memory адаптер позволяет проверить UI до backend #19–#21/#31; настоящее сохранение и права этим не реализованы.
 
+## Работающий вход сотрудников #21
+
+Оператор выдаёт первое pending owner приглашение через migrator CLI; далее active administrator создаёт staff invite в браузере. Получатель открывает fragment link/вводит код → preauth CSRF → redeem → отдельный login → session metadata/current role union. Anonymous login/redeem и все команды проверяют exact HTTPS Origin; password/token/CSRF только в памяти. Administrator выбирает клуб из собственных memberships, выдаёт reset, меняет роли или отзывает доступ. Last-owner removal возвращает 409; session revoke/expiry возвращает 401 и требует нового входа. Parent/athlete не активируются. [Реализация/технические границы](../docs/access/README.md). Журнал остаётся следующим предметным срезом, не рабочей функцией #21.
+
+Для #21 приглашение показывает логин, роли, срок и инструкции рядом со ссылкой. Активная сессия требует явного выхода перед redeem; после установки пароля получатель входит отдельно. Список различает ожидание пароля, активный и отозванный доступ. Технический readiness не входит в рабочий пользовательский сценарий.
+
 ## Предложение сценариев S1 — #26
 
 [Контракт S1](../api/S1-CONTRACT.md) и [ADR 0011, предложено](adr/0011-s1-people-journal-contract.md) конкретизируют поля Person/Athlete, GuardianLink/основной контакт и матрицу истории/состава по [рекомендациям агента по поручению владельца](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984). [Минимум полей/контактов и временное добавление coach подтверждены владельцем](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281); технический wire остаётся предложением для ревью; [область ролей и закрытие отдельно подтверждены владельцем](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471), DECISIONS U2026-10-08-S1-26-ROLES. D54 не восстановлен.

@@ -30,6 +30,7 @@ function references(node) {
   }
   for (const value of Object.values(node)) references(value);
 }
+for (const item of Object.values(spec.paths)) for (const op of Object.values(item)) for (const security of op.security || []) for (const name of Object.keys(security)) { (selected.securitySchemes ||= {})[name] = components.securitySchemes[name]; }
 references(spec);
 spec.components = selected;
 fs.writeFileSync('dist/runtime-openapi.json', JSON.stringify(spec, null, 2) + '\n');

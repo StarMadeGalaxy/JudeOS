@@ -1,0 +1,380 @@
+{
+  "schemas": {
+    "RecommendationPolicy": {
+      "policy_version": 1,
+      "currency": "BYN",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700,
+        0
+      ]
+    },
+    "RecommendationEntry": {
+      "athlete_id": "00000000-0000-4000-8000-000000000010",
+      "position": 1,
+      "base_kopecks": 11000,
+      "reduction_kopecks": 0,
+      "final_kopecks": 11000
+    },
+    "RecommendationTermsVersion": {
+      "terms_id": "00000000-0000-4000-8000-000000000003",
+      "household_id": "00000000-0000-4000-8000-000000000001",
+      "version": 1,
+      "reason": "Синтетический месячный расчёт",
+      "actor_account_id": "00000000-0000-4000-8000-000000000002",
+      "recorded_at": "2026-10-10T09:00:00Z",
+      "effective_from": "2026-11",
+      "athlete_ids": [
+        "00000000-0000-4000-8000-000000000010",
+        "00000000-0000-4000-8000-000000000011",
+        "00000000-0000-4000-8000-000000000012"
+      ],
+      "policy": {
+        "policy_version": 1,
+        "currency": "BYN",
+        "rates_kopecks": [
+          11000,
+          8800,
+          7700,
+          0
+        ]
+      }
+    },
+    "RecommendationSnapshot": {
+      "snapshot_id": "00000000-0000-4000-8000-000000000004",
+      "household_id": "00000000-0000-4000-8000-000000000001",
+      "version": 1,
+      "reason": "Синтетический месячный расчёт",
+      "actor_account_id": "00000000-0000-4000-8000-000000000002",
+      "recorded_at": "2026-10-10T09:00:00Z",
+      "support_month": "2026-11",
+      "terms_id": "00000000-0000-4000-8000-000000000003",
+      "terms_version": 1,
+      "policy": {
+        "policy_version": 1,
+        "currency": "BYN",
+        "rates_kopecks": [
+          11000,
+          8800,
+          7700,
+          0
+        ]
+      },
+      "entries": [
+        {
+          "athlete_id": "00000000-0000-4000-8000-000000000010",
+          "position": 1,
+          "base_kopecks": 11000,
+          "reduction_kopecks": 0,
+          "final_kopecks": 11000
+        },
+        {
+          "athlete_id": "00000000-0000-4000-8000-000000000011",
+          "position": 2,
+          "base_kopecks": 8800,
+          "reduction_kopecks": 0,
+          "final_kopecks": 8800
+        },
+        {
+          "athlete_id": "00000000-0000-4000-8000-000000000012",
+          "position": 3,
+          "base_kopecks": 7700,
+          "reduction_kopecks": 0,
+          "final_kopecks": 7700
+        }
+      ],
+      "base_total_kopecks": 27500,
+      "requested_reduction_kopecks": 0,
+      "applied_reduction_kopecks": 0,
+      "unused_reduction_kopecks": 0,
+      "final_total_kopecks": 27500,
+      "change_kind": "calculate"
+    },
+    "RecommendationTermsCommand": {
+      "operation_id": "00000000-0000-4000-8000-000000000005",
+      "base_version": 0,
+      "reason": "Синтетическое явное решение",
+      "acknowledge_past": false,
+      "effective_from": "2026-11",
+      "athlete_ids": [
+        "00000000-0000-4000-8000-000000000010",
+        "00000000-0000-4000-8000-000000000011",
+        "00000000-0000-4000-8000-000000000012"
+      ]
+    },
+    "RecommendationSaveCommand": {
+      "operation_id": "00000000-0000-4000-8000-000000000005",
+      "base_version": 0,
+      "reason": "Синтетическое явное решение",
+      "acknowledge_past": false,
+      "terms_version": 1
+    },
+    "RecommendationAdjustmentCommand": {
+      "operation_id": "00000000-0000-4000-8000-000000000005",
+      "base_version": 1,
+      "reason": "Синтетическое явное решение",
+      "acknowledge_past": false,
+      "kind": "add_reduction",
+      "amount_kopecks": 6000
+    },
+    "RecommendationTermsPage": {
+      "items": [
+        {
+          "terms_id": "00000000-0000-4000-8000-000000000003",
+          "household_id": "00000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "reason": "Синтетический месячный расчёт",
+          "actor_account_id": "00000000-0000-4000-8000-000000000002",
+          "recorded_at": "2026-10-10T09:00:00Z",
+          "effective_from": "2026-11",
+          "athlete_ids": [
+            "00000000-0000-4000-8000-000000000010",
+            "00000000-0000-4000-8000-000000000011",
+            "00000000-0000-4000-8000-000000000012"
+          ],
+          "policy": {
+            "policy_version": 1,
+            "currency": "BYN",
+            "rates_kopecks": [
+              11000,
+              8800,
+              7700,
+              0
+            ]
+          }
+        }
+      ],
+      "next_cursor": null
+    },
+    "RecommendationSnapshotPage": {
+      "items": [
+        {
+          "snapshot_id": "00000000-0000-4000-8000-000000000004",
+          "household_id": "00000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "reason": "Синтетический месячный расчёт",
+          "actor_account_id": "00000000-0000-4000-8000-000000000002",
+          "recorded_at": "2026-10-10T09:00:00Z",
+          "support_month": "2026-11",
+          "terms_id": "00000000-0000-4000-8000-000000000003",
+          "terms_version": 1,
+          "policy": {
+            "policy_version": 1,
+            "currency": "BYN",
+            "rates_kopecks": [
+              11000,
+              8800,
+              7700,
+              0
+            ]
+          },
+          "entries": [
+            {
+              "athlete_id": "00000000-0000-4000-8000-000000000010",
+              "position": 1,
+              "base_kopecks": 11000,
+              "reduction_kopecks": 0,
+              "final_kopecks": 11000
+            },
+            {
+              "athlete_id": "00000000-0000-4000-8000-000000000011",
+              "position": 2,
+              "base_kopecks": 8800,
+              "reduction_kopecks": 0,
+              "final_kopecks": 8800
+            },
+            {
+              "athlete_id": "00000000-0000-4000-8000-000000000012",
+              "position": 3,
+              "base_kopecks": 7700,
+              "reduction_kopecks": 0,
+              "final_kopecks": 7700
+            }
+          ],
+          "base_total_kopecks": 27500,
+          "requested_reduction_kopecks": 0,
+          "applied_reduction_kopecks": 0,
+          "unused_reduction_kopecks": 0,
+          "final_total_kopecks": 27500,
+          "change_kind": "calculate"
+        }
+      ],
+      "next_cursor": null
+    },
+    "RecommendationConflict": {
+      "code": "VERSION_CONFLICT",
+      "message": "Данные изменились. Обновите запись.",
+      "request_id": "synthetic-request-39",
+      "operation_id": "00000000-0000-4000-8000-000000000005",
+      "current_version": 2
+    }
+  },
+  "scenarios": [
+    {
+      "name": "family-1",
+      "rates_kopecks": [
+        11000
+      ],
+      "requested_reduction_kopecks": 0,
+      "expected_final_kopecks": [
+        11000
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "family-2",
+      "rates_kopecks": [
+        11000,
+        8800
+      ],
+      "requested_reduction_kopecks": 0,
+      "expected_final_kopecks": [
+        11000,
+        8800
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "family-3",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 0,
+      "expected_final_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "family-4",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700,
+        0
+      ],
+      "requested_reduction_kopecks": 0,
+      "expected_final_kopecks": [
+        11000,
+        8800,
+        7700,
+        0
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "family-5",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700,
+        0,
+        0
+      ],
+      "requested_reduction_kopecks": 0,
+      "expected_final_kopecks": [
+        11000,
+        8800,
+        7700,
+        0,
+        0
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "first-60",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 6000,
+      "expected_final_kopecks": [
+        5000,
+        8800,
+        7700
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "cascade-150",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 15000,
+      "expected_final_kopecks": [
+        0,
+        4800,
+        7700
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "excess-300",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 30000,
+      "expected_final_kopecks": [
+        0,
+        0,
+        0
+      ],
+      "expected_unused_kopecks": 2500
+    },
+    {
+      "name": "one-kopeck",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 1,
+      "expected_final_kopecks": [
+        10999,
+        8800,
+        7700
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "exact-total",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 27500,
+      "expected_final_kopecks": [
+        0,
+        0,
+        0
+      ],
+      "expected_unused_kopecks": 0
+    },
+    {
+      "name": "safe-integer-limit",
+      "rates_kopecks": [
+        11000,
+        8800,
+        7700
+      ],
+      "requested_reduction_kopecks": 9007199254740991,
+      "expected_final_kopecks": [
+        0,
+        0,
+        0
+      ],
+      "expected_unused_kopecks": 9007199254713491
+    }
+  ]
+}

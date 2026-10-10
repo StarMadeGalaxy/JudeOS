@@ -2,7 +2,7 @@
 
 Реализованный backend-срез #29 (schema12), PR114 на независимом review. Существующие DTO #16/#26 и people/access #27 сохранены. Новые формы — технический вариант для независимого review, не дополнительные подтверждённые бизнес-требования. Wire зафиксирован до реализации коммитом8ff75fbd8d72e31c7b5439969ca05b532b74270a; пользователь отдельно разрешил реализацию: [источник](https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659), «Да, реализуй этот контракт». Это согласование реализации, не приёмка финального кода. Источник поручения — [Issue29](https://github.com/StarMadeGalaxy/JudeOS/issues/29); выбор менеджером подтверждён пользователем в текущем чате 10 октября 2026: «Да, явный выбор менеджера».
 
-## Состав и границы
+## Состав и границы реализованного runtime #29
 
 Менеджер явно выбирает спортсменов и тренеров нового ручного занятия. Enrollment и GroupCoach, действующие на `starts_at`, служат подсказкой. Сервер сохраняет выбранный roster и SessionCoach в одной транзакции; последующие зачисления/переводы/окончания интервалов не пересчитывают уже созданные занятия, в том числе будущие. Никакой скрытой синхронизации состава группы с занятиями нет.
 
@@ -39,3 +39,9 @@ Manager/administrator клуба, явный owner его сети или platfo
 HTTP/DB evidence отделяется от OpenAPI/AJV fixtures/Swagger/TS/chi.Walk. Closed/cancelled на границе29 проверяются отдельным synthetic setup в БД, без утверждения реализации close/cancel. Upgrade schema11→новая, повтор migrate/readiness/audit и неизменность прежних SQL обязательны. VPS/release/checkout/manifest/рабочие тома сохраняются; merge/зелёная CI не являются публикацией на judopride.tech.
 
 Воспроизведение и разделение evidence: [training README](../docs/training/README.md), техническое решение — [ADR0015](../planning/adr/0015-training-groups-and-saved-roster.md). Shared people/training operation namespace проверяется под общей club lock; один ключ не создаёт эффект в обоих модулях. Replay временного добавления исключённого участника также возвращает ROSTER_EXCLUDED.
+
+## Целевая ревизия выбора тренеров и настройки Session
+
+[Позднее принятое правило #34](SESSION-CONFIGURATION-CONTRACT.md) заменяет manager выбор coaches для будущей реализации #30: только administrator выбирает первоначальных и последующих тренеров; manager сохраняет ручное создание с пустым coach_membership_ids без автоподстановки. В planned/in_progress administrator может менять дату/время в прежнем зале, список coaches или отменять Session; после closed/cancelled только отдельно снимать текущие назначения с сохранением истории. Время и coaches подтверждаются раздельно, reason необязательна.
+
+Предыдущие разделы описывают фактический backend #29. Его manager права, setter без reason и порядок replay ещё требуют серверного выравнивания. OpenAPI full содержит принятое целевое описание с маркером x-session-configuration-status: planned; live runtime сохраняет pinned legacy #29. Backend #30 должен реализовать новые команды и ревизии, атомарные audit/history/idempotency, сохранение исходного generation key, затем снять override с проверками. UI-only ограничение роли не считается серверной защитой; SQL/Go в #34 не изменяются. Живая интеграционная приёмка — #36.

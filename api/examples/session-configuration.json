@@ -1,0 +1,219 @@
+{
+  "source": "https://github.com/StarMadeGalaxy/JudeOS/issues/34#issuecomment-6098890491",
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "rescheduleSession-request-synthetic",
+      "schema": "RescheduleSessionRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009001",
+        "base_version": 1,
+        "starts_at": "2026-10-11T12:30:00Z",
+        "ends_at": "2026-10-11T13:30:00Z",
+        "reason": "Синтетическое пояснение"
+      }
+    },
+    {
+      "name": "rescheduleSession-result-synthetic",
+      "schema": "TrainingSession",
+      "valid": true,
+      "value": {
+        "session_id": "00000000-0000-4000-8000-000000000501",
+        "tenant_id": "00000000-0000-4000-8000-000000000101",
+        "group": {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "name": "Синтетическая группа А"
+        },
+        "venue": {
+          "id": "00000000-0000-4000-8000-000000000301",
+          "name": "Синтетический зал А"
+        },
+        "starts_at": "2026-10-11T12:30:00Z",
+        "ends_at": "2026-10-11T13:30:00Z",
+        "state": "in_progress",
+        "version": 2
+      }
+    },
+    {
+      "name": "cancelSession-request-synthetic",
+      "schema": "CancelSessionRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009002",
+        "base_version": 1
+      }
+    },
+    {
+      "name": "cancelSession-result-synthetic",
+      "schema": "TrainingSession",
+      "valid": true,
+      "value": {
+        "session_id": "00000000-0000-4000-8000-000000000501",
+        "tenant_id": "00000000-0000-4000-8000-000000000101",
+        "group": {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "name": "Синтетическая группа А"
+        },
+        "venue": {
+          "id": "00000000-0000-4000-8000-000000000301",
+          "name": "Синтетический зал А"
+        },
+        "starts_at": "2026-10-10T12:00:00Z",
+        "ends_at": "2026-10-10T13:00:00Z",
+        "state": "cancelled",
+        "version": 2
+      }
+    },
+    {
+      "name": "createManualSession-request-default",
+      "schema": "CreateManualSessionRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "group_id": "00000000-0000-4000-8000-000000000703",
+        "group_base_version": 1,
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "starts_at": "2026-10-10T15:00:00Z",
+        "ends_at": "2026-10-10T16:00:00Z",
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "trial": false
+          }
+        ],
+        "coach_membership_ids": [
+          "00000000-0000-4000-8000-000000000707"
+        ]
+      }
+    },
+    {
+      "name": "createManualSession-result-default",
+      "schema": "SessionJournal",
+      "valid": true,
+      "value": {
+        "session": {
+          "session_id": "00000000-0000-4000-8000-000000000501",
+          "tenant_id": "00000000-0000-4000-8000-000000000101",
+          "group": {
+            "id": "00000000-0000-4000-8000-000000000703",
+            "name": "Синтетическая группа"
+          },
+          "venue": {
+            "id": "00000000-0000-4000-8000-000000000701",
+            "name": "Синтетический Venue"
+          },
+          "starts_at": "2026-10-10T15:00:00Z",
+          "ends_at": "2026-10-10T16:00:00Z",
+          "state": "planned",
+          "version": 1
+        },
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "person_id": "00000000-0000-4000-8000-000000000301",
+            "display_name": "Тестовый спортсмен А",
+            "participation": "regular",
+            "trial": false,
+            "attendance": {
+              "athlete_id": "00000000-0000-4000-8000-000000000401",
+              "status": "unmarked",
+              "version": 0,
+              "recorded_at": null,
+              "recorded_by_account_id": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "setSessionCoaches-request-synthetic",
+      "schema": "SetSessionCoachesRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009003",
+        "base_version": 1,
+        "coach_membership_ids": [
+          "00000000-0000-4000-8000-000000000401"
+        ]
+      }
+    },
+    {
+      "name": "setSessionCoaches-result-default",
+      "schema": "SessionCoaches",
+      "valid": true,
+      "value": {
+        "session_id": "00000000-0000-4000-8000-000000000501",
+        "version": 1,
+        "coaches": [
+          {
+            "session_coach_id": "00000000-0000-4000-8000-000000000706",
+            "membership_id": "00000000-0000-4000-8000-000000000707",
+            "valid_from": "2026-10-10T10:00:00Z",
+            "valid_until": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "non-utc",
+      "schema": "RescheduleSessionRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009001",
+        "base_version": 1,
+        "starts_at": "2026-10-10T15:00:00+03:00",
+        "ends_at": "2026-10-11T13:30:00Z",
+        "reason": "Синтетическое пояснение"
+      }
+    },
+    {
+      "name": "venue-immutable",
+      "schema": "RescheduleSessionRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009001",
+        "base_version": 1,
+        "starts_at": "2026-10-11T12:30:00Z",
+        "ends_at": "2026-10-11T13:30:00Z",
+        "reason": "Синтетическое пояснение",
+        "venue_id": "00000000-0000-0000-0000-000000000301"
+      }
+    },
+    {
+      "name": "reason-null",
+      "schema": "RescheduleSessionRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009001",
+        "base_version": 1,
+        "starts_at": "2026-10-11T12:30:00Z",
+        "ends_at": "2026-10-11T13:30:00Z",
+        "reason": null
+      }
+    },
+    {
+      "name": "version-zero",
+      "schema": "RescheduleSessionRequest",
+      "valid": false,
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000009001",
+        "base_version": 0,
+        "starts_at": "2026-10-11T12:30:00Z",
+        "ends_at": "2026-10-11T13:30:00Z",
+        "reason": "Синтетическое пояснение"
+      }
+    },
+    {
+      "name": "coaches-optional-reason",
+      "schema": "SetSessionCoachesRequest",
+      "valid": true,
+      "value": {
+        "operation_id": "00000000-0000-0000-0000-000000009001",
+        "base_version": 1,
+        "coach_membership_ids": [],
+        "reason": "Синтетический отзыв доступа"
+      }
+    }
+  ]
+}

@@ -10,13 +10,14 @@ const s1 = JSON.parse(fs.readFileSync(path.join(root, 'examples/s1-people-journa
 const proposedOperations = JSON.parse(fs.readFileSync(path.join(root, 'examples/s1-operations.json')));
 const registryCases=JSON.parse(fs.readFileSync(path.join(root,'examples/registry-network.json')));
 const trainingCases=JSON.parse(fs.readFileSync(path.join(root,'examples/training.json')));
+const configurationCases=JSON.parse(fs.readFileSync(path.join(root,'examples/session-configuration.json')));
 const registry = fs.readFileSync(path.join(root, 'ENDPOINTS.md'), 'utf8');
 const ajv = new Ajv({ strict: false, allErrors: true });
 addFormats(ajv);
 function resolve(node) {
   return node.$ref ? node.$ref.slice(2).split('/').reduce((value, key) => value[key], spec) : node;
 }
-for (const fixture of [...fixtures.cases, ...s1.cases, ...registryCases.cases, ...trainingCases.cases]) {
+for (const fixture of [...fixtures.cases, ...s1.cases, ...registryCases.cases, ...trainingCases.cases, ...configurationCases.cases]) {
   const validate = ajv.compile({ $ref: `#/components/schemas/${fixture.schema}`, components: spec.components });
   assert.equal(validate(fixture.value), fixture.valid, `${fixture.name}: ${JSON.stringify(validate.errors)}`);
 }
@@ -28,7 +29,7 @@ for (const [route, item] of Object.entries(spec.paths)) {
     if (!operation) continue;
     operations.push(operation.operationId);
     assert(['planned', 'implemented'].includes(operation['x-status']));
-    assert([16, 19, 21, 26, 27, 29].includes(operation['x-issue']));
+    assert([16, 19, 21, 26, 27, 29, 30].includes(operation['x-issue']));
     const owner = operation['x-runtime-issue'] || operation['x-issue'];
     assert.equal(operation['x-status'], [19,21,27,29].includes(owner) ? 'implemented' : 'planned');
     if (operation['x-status'] === 'implemented') {
@@ -41,10 +42,10 @@ for (const [route, item] of Object.entries(spec.paths)) {
     assert(registry.includes(`| ${method.toUpperCase()} | \`${route}\` | \`${operation.operationId}\` |`), `Registry misses ${operation.operationId}`);
     if (operation.requestBody) {
       for (const media of Object.values(resolve(operation.requestBody).content)) {
-        if (media.example !== undefined) {
-          const validate = ajv.compile({ ...media.schema, components: spec.components });
-          assert(validate(media.example), `${operation.operationId}/request: ${JSON.stringify(validate.errors)}`);
-        }
+        const values = media.examples ? Object.values(media.examples).map(e => e.value) : [media.example];
+        const validate = ajv.compile({ ...media.schema, components: spec.components });
+        assert(values.length && values.every(v => v !== undefined), `${operation.operationId}/request: example missing`);
+        for (const value of values) assert(validate(value), `${operation.operationId}/request: ${JSON.stringify(validate.errors)}`);
       }
     }
     for (const [status, reference] of Object.entries(operation.responses)) {
@@ -61,7 +62,7 @@ for (const [route, item] of Object.entries(spec.paths)) {
     }
   }
 }
-assert.equal(operations.length, 75);
+assert.equal(operations.length, 77);
 for (const addition of proposedOperations.operations) {
   const operation = spec.paths[addition.path]?.[addition.method.toLowerCase()];
   assert.equal(operation?.operationId, addition.operationId);
@@ -87,4 +88,20 @@ assert.deepEqual(runtimeIds, implementedIds);
 assert(runtime.components.schemas.PrimaryContact, 'Implemented #27 contact schema is present');
 assert(runtime.paths['/api/v1/tenants/{tenant_id}/sessions'], 'Training reads are implemented');
 assert(!runtime.paths['/api/v1/tenants/{tenant_id}/sessions/{session_id}/close'], '#31 close remains planned');
-process.stdout.write(`Contract: ${operations.length} operations (${operations.length - implemented} planned, ${implemented} implemented), ${fixtures.cases.length + s1.cases.length + registryCases.cases.length + trainingCases.cases.length} schema fixtures and every response example passed.\n`);
+const legacy = JSON.parse(fs.readFileSync(path.join(root, 'runtime-legacy/session-configuration-v1.json')));
+for (const [id, previous] of Object.entries(legacy.operations)) {
+  const live = Object.values(runtime.paths).flatMap(item => Object.values(item)).find(op => op.operationId === id);
+  assert.deepEqual(live, previous, `${id}: live docs must describe the existing backend`);
+  const future = Object.values(spec.paths).flatMap(item => Object.values(item)).find(op => op.operationId === id);
+  assert.equal(future['x-session-configuration-status'], 'planned');
+}
+assert.deepEqual(runtime.components.schemas.SetSessionCoachesRequest, legacy.schemas.SetSessionCoachesRequest);
+assert(!runtime.components.schemas.SetSessionCoachesRequest.properties.reason);
+assert(spec.components.schemas.SetSessionCoachesRequest.properties.reason);
+for (const id of ['rescheduleSession', 'cancelSession']) {
+  const future = Object.values(spec.paths).flatMap(item => Object.values(item)).find(op => op.operationId === id);
+  assert.equal(future['x-contract-status'], 'accepted');
+  assert.equal(future['x-status'], 'planned');
+  assert(!runtimeIds.includes(id));
+}
+process.stdout.write(`Contract: ${operations.length} operations (${operations.length - implemented} planned, ${implemented} implemented), ${fixtures.cases.length + s1.cases.length + registryCases.cases.length + trainingCases.cases.length + configurationCases.cases.length} schema fixtures and every response example passed; live configuration revisions remain pinned to backend #29.\n`);

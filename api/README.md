@@ -2,7 +2,7 @@
 
 **Принят контракт S0-01 / [#16](https://github.com/StarMadeGalaxy/JudeOS/issues/16)**. Источник приёмки — DECISIONS U2026-10-07-S0-01, PR #78 merged. [ADR 0006](../planning/adr/0006-first-online-contract.md) синхронизирован с приёмкой; приёмка контракта не означает реализацию бизнес-операций. Каркас [#19](https://github.com/StarMadeGalaxy/JudeOS/issues/19) добавляет четыре служебные операции, web и синтетическую БД. Вход реализован #21/#27; группы, ручные занятия, сохранённый roster и чтение журнала — #29. Отметки/закрытие/новый гость остаются planned. Формат OpenAPI 3.0.3 и chi приняты в [ADR 0004](../planning/adr/0004-chi-and-api-documentation.md).
 
-[OpenAPI](openapi/openapi.yaml) содержит75 операций:72 реализованных и3 запланированных, схемы, параметры и все предусмотренные ответы. [Реестр](ENDPOINTS.md) проверяет их полноту. [Словарь](DATA-DICTIONARY.md) различает предметные понятия без проектирования API финансов/чата; [открытые решения](OPEN-QUESTIONS.md) указывают источник, владельца решения и блокируемую функцию.
+[OpenAPI](openapi/openapi.yaml) содержит77 операций:72 реализованных и5 запланированных, схемы, параметры и все предусмотренные ответы. [Реестр](ENDPOINTS.md) проверяет их полноту. [Словарь](DATA-DICTIONARY.md) различает предметные понятия без проектирования API финансов/чата; [открытые решения](OPEN-QUESTIONS.md) указывают источник, владельца решения и блокируемую функцию.
 
 ## Принятый контракт S1 #26 / PR #102
 
@@ -77,7 +77,7 @@ npm run preview
 
 Если в облачной среде загрузка Playwright Chromium недоступна, можно использовать уже установленный Chromium: `JUDEOS_CHROMIUM_PATH=/usr/bin/chromium npm run check:swagger`. TLS/proxy и сетевые ограничения не обходятся; вариант браузера указывается в результатах проверки.
 
-Preview доступен только на `http://127.0.0.1:4173`, выдаёт bundled JSON и локальные Swagger UI assets. Он показывает принятый полный контракт с явным статусом операций, без запросов к API, внешних CDN и реальных секретов. Playwright проверяет разрешение spec, 75 операций (72 implemented/3 planned), примеры команды/конфликта и отсутствие ошибок JS/Swagger. Ручной просмотр по этому адресу дополняет автоматическую проверку отображения.
+Preview доступен только на `http://127.0.0.1:4173`, выдаёт bundled JSON и локальные Swagger UI assets. Он показывает принятый полный контракт с явным статусом операций, без запросов к API, внешних CDN и реальных секретов. Playwright проверяет разрешение spec, 77 операций (72 implemented/5 planned), примеры команды/конфликта и отсутствие ошибок JS/Swagger. Ручной просмотр по этому адресу дополняет автоматическую проверку отображения.
 
 Каркас #19 проверяет chi.Walk, реальные служебные HTTP-ответы, миграции и web/Swagger. Изоляция/RLS/FK и атомарный минимальный аудит #20 проверяются на реальном PostgreSQL (`make check-db`), включая повторное использование соединения пула. Отзыв сессий и cookie/CSRF проверяются в реализованной #21; конкурентные roster/assignment транзакции проверяются #29, Attendance остаётся #31; схема development — только синтетические fixtures. [ADR 0008](../planning/adr/0008-tenant-isolation-and-audit.md) описывает границы.
 
@@ -96,4 +96,8 @@ Preview доступен только на `http://127.0.0.1:4173`, выдаёт
 
 ## Реализованный staff access #21
 
-Runtime контракт показывает72 реализованные операции; полный —75. Сохранены #21 access endpoints и добавлены отдельные сети/платформа, consent готового входа, manager→coach и реестр #27. Три операции attendance/close/new guest остаются planned. Каждая операция содержит security и примеры; [правила и проверки](../docs/people/README.md).
+Runtime контракт показывает72 реализованные операции; полный —77. Сохранены #21 access endpoints и добавлены отдельные сети/платформа, consent готового входа, manager→coach и реестр #27. Пять операций attendance/close/new guest/reschedule/cancel остаются planned. Каждая операция содержит security и примеры; [правила и проверки](../docs/people/README.md).
+
+## Принятый wire настройки Session #34 / backend #30
+
+[Контракт](SESSION-CONFIGURATION-CONTRACT.md), [примеры](examples/session-configuration.json) и [ADR0017](../planning/adr/0017-session-configuration.md) фиксируют принятие владельца до зависимой UI-работы. Full:77 операций, runtime:72; пять planned — attendance/close/guest и reschedule/cancel. Для реализованных createManualSession/setSessionCoaches принята ещё planned ревизия administrator-only выбора, optional reason setter и replay до state guard. Runtime build сохраняет прежние #29 операции/schema из runtime-legacy/session-configuration-v1.json; checks сравнивают эту проекцию. После реализации #30 убрать override/маркер вместе с серверными проверками. Это не изменение работающих прав backend #29 и не live-приёмка #36.

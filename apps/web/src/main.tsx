@@ -9,6 +9,7 @@ import { APIError, request, type Role, type Grant, type Session } from "./api";
 import { NetworkPanel } from "./NetworkPanel";
 import { RegistryPanel } from "./RegistryPanel";
 const PeopleDemo = lazy(() => import("./people-manager/Demo"));
+const JournalDemo = lazy(() => import("./online-journal/Demo"));
 type Staff = {
   membership_id: string;
   login: string;
@@ -435,6 +436,9 @@ function App() {
               admin={admin}
               refresh={refresh}
             />
+            {tenant && (registry || membership?.grants.some((g) => g.role === "coach")) && (
+              <p><a href="?demo=journal">Онлайн-журнал — синтетическая демонстрация</a></p>
+            )}
             {registry && tenant && (
               <>
                 <p>
@@ -705,14 +709,13 @@ function App() {
 }
 // Agreed in #27: a fragment always returns to App, including after demo opened.
 function Entry() {
-  const [demo, setDemo] = useState(
-    () =>
-      new URLSearchParams(location.search).get("demo") === "people" &&
-      !location.hash,
-  );
+  const [demo, setDemo] = useState<"people" | "journal" | null>(() => {
+    const value = new URLSearchParams(location.search).get("demo");
+    return !location.hash && (value === "people" || value === "journal") ? value : null;
+  });
   useEffect(() => {
     const openApp = () => {
-      if (location.hash) setDemo(false);
+      if (location.hash) setDemo(null);
     };
     window.addEventListener("hashchange", openApp);
     openApp();
@@ -720,7 +723,7 @@ function Entry() {
   }, []);
   return demo ? (
     <Suspense fallback={<p role="status">Загрузка демонстрации…</p>}>
-      <PeopleDemo />
+      {demo === "people" ? <PeopleDemo /> : <JournalDemo />}
     </Suspense>
   ) : (
     <App />

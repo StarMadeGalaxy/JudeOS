@@ -2,12 +2,12 @@ openapi: 3.0.3
 info:
   title: JudeOS — принятый онлайн-контракт и каркас
   version: 0.1.0
-  description: 'Принятые #16/#20/#21 и wire #26/PR102 сохранены. Реестр людей/семей/проверенных представителей
-    и явные сетевые/платформенные права реализованы в #27; runtime требует schema9. Полный контракт содержит52
-    операции:45 implemented и7 planned журнала. Однофамильцы, семьи, телефоны и поступления не выдают прав.
-    Administrator одного клуба не получает другую сеть. Технический вариант ADR0013 требует независимого review;
-    реальный пилот, production/restore и общий recovery расширенного входа не утверждены. Runtime публикует
-    только implemented операции.'
+  description: 'Принятые #16/#20/#21 и wire #26/PR102 сохранены. People/access #27/PR111 интегрированы;
+    текущий runtime требует schema11. Полный контракт:75 операций,46 implemented и29 planned,
+    включая22 новые proposed формы #29. TRAINING-CONTRACT.md фиксирует срез до реализации.
+    Семьи/телефоны/поступления не выдают прав; administrator клуба не получает другую сеть.
+    Runtime публикует только implemented. Контрактный коммит не реализует training backend,
+    реальные данные/production/restore и публикация на judopride.tech не включены.'
   contact:
     url: https://github.com/StarMadeGalaxy/JudeOS/issues/16
 servers:

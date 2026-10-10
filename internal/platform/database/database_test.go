@@ -71,11 +71,26 @@ func TestPostgresIsolationAndUpgrade(t *testing.T) {
 	if _, err := auditor.ExecContext(ctx, "SET ROLE judeos_audit_reader"); err != nil {
 		t.Fatal("audit test role failed")
 	}
+	if err := Migrate(ctx, migrator, 11); err != nil {
+		t.Fatal("accepted schema11 upgrade failed", err)
+	}
+	if err := WithinTenant(ctx, migrator, scope("00000000-0000-4000-8000-000000000999"), func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, `INSERT INTO core.people(tenant_id,id,display_name) VALUES($1,'00000000-0000-4000-8000-000000000998','Синтетический профиль до training')`, "00000000-0000-4000-8000-000000000999")
+		return err
+	}); err != nil {
+		t.Fatal("schema11 profile fixture failed", err)
+	}
 	if err := Migrate(ctx, migrator, migrations.Version); err != nil {
 		t.Fatal("tenant migration failed", err)
 	}
 	if err := Migrate(ctx, migrator, migrations.Version); err != nil {
 		t.Fatal("repeat migration failed")
+	}
+	var legacyName string
+	if err := WithinTenant(ctx, runtime, scope("00000000-0000-4000-8000-000000000999"), func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, `SELECT display_name FROM core.people WHERE id='00000000-0000-4000-8000-000000000998'`).Scan(&legacyName)
+	}); err != nil || legacyName != "Синтетический профиль до training" {
+		t.Fatal("schema11 profile changed during training upgrade", err)
 	}
 	if err := Ready(ctx, migrator); err != nil {
 		t.Fatal("schema not ready")

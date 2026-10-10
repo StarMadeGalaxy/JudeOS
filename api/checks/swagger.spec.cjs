@@ -3,7 +3,7 @@ test('Swagger resolves the accepted planned operations and displays command and 
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await expect(page.locator('.opblock')).toHaveCount(53);
+  await expect(page.locator('.opblock')).toHaveCount(75);
   await page.locator('#operations-attendance-setAttendance .opblock-summary').click();
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('base_version');
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('ATTENDANCE_VERSION_CONFLICT');
@@ -26,6 +26,15 @@ test('Swagger resolves the accepted planned operations and displays command and 
  await page.locator("#operations-access-issuePasswordRecovery .opblock-summary").click();
  await expect(page.locator("#operations-access-issuePasswordRecovery")).toContainText("identity_verified");
  await expect(page.locator("#operations-access-issuePasswordRecovery")).toContainText("recovery");
+ await page.locator('#operations-training-createManualSession .opblock-summary').click();
+ await expect(page.locator('#operations-training-createManualSession')).toContainText('group_base_version');
+ await expect(page.locator('#operations-training-createManualSession')).toContainText('coach_membership_ids');
+ await page.locator('#operations-training-createManualSession').screenshot({path:'dist/swagger-training-create.png'});
+ await page.locator('#operations-training-createEnrollment .opblock-summary').click();
+ await expect(page.locator('#operations-training-createEnrollment')).toContainText('valid_until');
+ await expect(page.locator('#operations-training-createEnrollment')).toContainText('INTERVAL_OVERLAP');
+ await page.locator('#operations-training-setSessionCoaches .opblock-summary').click();
+ await expect(page.locator('#operations-training-setSessionCoaches')).toContainText('base_version');
  const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
   expect(spec.openapi).toBe('3.0.3');
   expect(spec.components.schemas.PrimaryContact.properties.phone.nullable).toBe(true);

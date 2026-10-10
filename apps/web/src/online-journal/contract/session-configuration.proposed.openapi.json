@@ -1,0 +1,988 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "JudeOS #34 — proposed session configuration contract",
+    "version": "0.1.0-proposed",
+    "description": "Техническое предложение для отдельного согласования владельцем. Не является существующим, принятым или реализованным API. Основной OpenAPI и runtime не изменены. Источники требований: Issue34 comments6098111977/6098369503."
+  },
+  "x-contract-status": "proposed",
+  "x-source-main": "7219d0d9703de08fb9779ba1c215cf7a60cd16db",
+  "servers": [
+    {
+      "url": "https://judeos.invalid",
+      "description": "Зарезервированный пример; запросы здесь не выполняются."
+    }
+  ],
+  "security": [
+    {
+      "staffSession": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "training",
+      "description": "Предложение настройки одного занятия, не шаблон или генерация #30."
+    }
+  ],
+  "paths": {
+    "/api/v1/tenants/{tenant_id}/sessions/{session_id}/reschedule": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "summary": "Предложение: изменить дату/время одного занятия",
+        "operationId": "rescheduleSession",
+        "x-status": "planned",
+        "x-contract-status": "proposed",
+        "x-issue": 30,
+        "description": "Только administrator в принятой области сети/клуба. planned/in_progress; closed/cancelled запрещены для новой команды. Необязательная reason. Точный протокол версий/повторов/прав и отличия от действующего API — ../SESSION-CONFIG-PROPOSAL.md.",
+        "parameters": [
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/TenantId"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/SessionId"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/Origin"
+          }
+        ],
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleSessionRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "operation_id": "00000000-0000-4000-8000-000000009001",
+                    "base_version": 1,
+                    "starts_at": "2026-10-11T12:30:00Z",
+                    "ends_at": "2026-10-11T13:30:00Z",
+                    "reason": "Синтетическое пояснение"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Подтверждённый результат предложения; после ответа/replay перечитать текущий журнал.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/TrainingSession"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "session_id": "00000000-0000-4000-8000-000000000501",
+                      "tenant_id": "00000000-0000-4000-8000-000000000101",
+                      "group": {
+                        "id": "00000000-0000-4000-8000-000000000201",
+                        "name": "Синтетическая группа А"
+                      },
+                      "venue": {
+                        "id": "00000000-0000-4000-8000-000000000301",
+                        "name": "Синтетический зал А"
+                      },
+                      "starts_at": "2026-10-11T12:30:00Z",
+                      "ends_at": "2026-10-11T13:30:00Z",
+                      "state": "in_progress",
+                      "version": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "ENTITY_VERSION_CONFLICT",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": 2
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/sessions/{session_id}/cancel": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "summary": "Предложение: отменить одно занятие без удаления фактов",
+        "operationId": "cancelSession",
+        "x-status": "planned",
+        "x-contract-status": "proposed",
+        "x-issue": 30,
+        "description": "Только administrator в принятой области сети/клуба. planned/in_progress; closed/cancelled запрещены для новой команды. Необязательная reason. Точный протокол версий/повторов/прав и отличия от действующего API — ../SESSION-CONFIG-PROPOSAL.md.",
+        "parameters": [
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/TenantId"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/SessionId"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/CsrfHeader"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/Origin"
+          }
+        ],
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelSessionRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "operation_id": "00000000-0000-4000-8000-000000009002",
+                    "base_version": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Подтверждённый результат предложения; после ответа/replay перечитать текущий журнал.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/TrainingSession"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "session_id": "00000000-0000-4000-8000-000000000501",
+                      "tenant_id": "00000000-0000-4000-8000-000000000101",
+                      "group": {
+                        "id": "00000000-0000-4000-8000-000000000201",
+                        "name": "Синтетическая группа А"
+                      },
+                      "venue": {
+                        "id": "00000000-0000-4000-8000-000000000301",
+                        "name": "Синтетический зал А"
+                      },
+                      "starts_at": "2026-10-10T12:00:00Z",
+                      "ends_at": "2026-10-10T13:00:00Z",
+                      "state": "cancelled",
+                      "version": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/S1CommandConflict"
+                },
+                "example": {
+                  "code": "ENTITY_VERSION_CONFLICT",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-s1-request",
+                  "operation_id": "00000000-0000-4000-8000-000000000901",
+                  "current_version": 2
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/sessions": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "summary": "Предложение изменения прав существующей операции createManualSession",
+        "operationId": "createManualSession",
+        "x-status": "planned",
+        "x-contract-status": "proposed",
+        "x-issue": 30,
+        "x-current-runtime": "#29 реализует прежние права; эта ревизия ещё не реализована",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/TenantId"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/CsrfHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/CreateManualSessionRequest"
+              },
+              "example": {
+                "operation_id": "00000000-0000-4000-8000-000000000708",
+                "group_id": "00000000-0000-4000-8000-000000000703",
+                "group_base_version": 1,
+                "venue_id": "00000000-0000-4000-8000-000000000701",
+                "starts_at": "2026-10-10T15:00:00Z",
+                "ends_at": "2026-10-10T16:00:00Z",
+                "roster": [
+                  {
+                    "athlete_id": "00000000-0000-4000-8000-000000000401",
+                    "trial": false
+                  }
+                ],
+                "coach_membership_ids": [
+                  "00000000-0000-4000-8000-000000000707"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/SessionJournal"
+                },
+                "example": {
+                  "session": {
+                    "session_id": "00000000-0000-4000-8000-000000000501",
+                    "tenant_id": "00000000-0000-4000-8000-000000000101",
+                    "group": {
+                      "id": "00000000-0000-4000-8000-000000000703",
+                      "name": "Синтетическая группа"
+                    },
+                    "venue": {
+                      "id": "00000000-0000-4000-8000-000000000701",
+                      "name": "Синтетический Venue"
+                    },
+                    "starts_at": "2026-10-10T15:00:00Z",
+                    "ends_at": "2026-10-10T16:00:00Z",
+                    "state": "planned",
+                    "version": 1
+                  },
+                  "roster": [
+                    {
+                      "athlete_id": "00000000-0000-4000-8000-000000000401",
+                      "person_id": "00000000-0000-4000-8000-000000000301",
+                      "display_name": "Тестовый спортсмен А",
+                      "participation": "regular",
+                      "trial": false,
+                      "attendance": {
+                        "athlete_id": "00000000-0000-4000-8000-000000000401",
+                        "status": "unmarked",
+                        "version": 0,
+                        "recorded_at": null,
+                        "recorded_by_account_id": null
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, POST"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/TrainingCommandConflict"
+                },
+                "example": {
+                  "code": "ENTITY_VERSION_CONFLICT",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-request-029",
+                  "operation_id": "00000000-0000-4000-8000-000000000708",
+                  "current_version": 2
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error503"
+          }
+        },
+        "description": "Предлагаемая ревизия: administrator выбирает первоначальные coaches; manager сохраняет создание занятия, но coach_membership_ids должен быть пустым, непустой список — 403. Автоподстановки GroupCoach нет. Остальные accepted поля и права не изменены."
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/sessions/{session_id}/coaches": {
+      "put": {
+        "tags": [
+          "training"
+        ],
+        "summary": "Предложение изменения прав существующей операции setSessionCoaches",
+        "operationId": "setSessionCoaches",
+        "x-status": "planned",
+        "x-contract-status": "proposed",
+        "x-issue": 30,
+        "x-current-runtime": "#29 реализует прежние права; эта ревизия ещё не реализована",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/TenantId"
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID объекта выбранного клуба.",
+            "example": "00000000-0000-4000-8000-000000000501"
+          },
+          {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/parameters/CsrfHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSessionCoachesRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "operation_id": "00000000-0000-4000-8000-000000009003",
+                    "base_version": 1,
+                    "coach_membership_ids": [
+                      "00000000-0000-4000-8000-000000000401"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/SessionCoaches"
+                },
+                "example": {
+                  "session_id": "00000000-0000-4000-8000-000000000501",
+                  "version": 1,
+                  "coaches": [
+                    {
+                      "session_coach_id": "00000000-0000-4000-8000-000000000706",
+                      "membership_id": "00000000-0000-4000-8000-000000000707",
+                      "valid_from": "2026-10-10T10:00:00Z",
+                      "valid_until": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error404"
+          },
+          "405": {
+            "description": "Метод не поддерживается; Allow содержит разрешённые методы этого пути.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Разрешённые методы этого конкретного пути.",
+                "example": "GET, PUT"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Синтетический пример безопасной ошибки.",
+                  "request_id": "synthetic-request-001"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Приватные данные и токены не кешируются.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                },
+                "example": "no-store"
+              },
+              "X-Request-ID": {
+                "description": "Безопасная корреляция диагностики; не секрет и не ID человека.",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "example": "synthetic-request-001"
+              },
+              "Operation-Replayed": {
+                "description": "true при возврате исходного результата после проверки текущих прав/состояния.",
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": false
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../../api/openapi/openapi.yaml#/components/schemas/TrainingCommandConflict"
+                },
+                "example": {
+                  "code": "SESSION_VERSION_CONFLICT",
+                  "message": "Синтетический конфликт версии.",
+                  "request_id": "synthetic-request-029",
+                  "operation_id": "00000000-0000-4000-8000-000000000708",
+                  "current_version": 2
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "../../../../../api/openapi/openapi.yaml#/components/responses/Error503"
+          }
+        },
+        "description": "Предлагаемая ревизия: manager/coach-only запрещены. Administrator задаёт список в planned/in_progress; в closed/cancelled допускается только подмножество текущих назначений для отзыва доступа. Добавлено необязательное reason; no-op не меняет версию. Текущий backend29 реализует прежнюю ревизию."
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "staffSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-judeos-session",
+        "description": "Серверная отзываемая сессия. Secure/HttpOnly/SameSite=Lax/Path=/; host-only; секрет не передаётся в JSON и не хранится в localStorage/IndexedDB."
+      }
+    },
+    "schemas": {
+      "RescheduleSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "starts_at",
+          "ends_at"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC, RFC 3339 с Z; дата списка вычисляется в зоне клуба.",
+            "pattern": "Z$"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён."
+          }
+        }
+      },
+      "CancelSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён."
+          }
+        }
+      },
+      "SetSessionCoachesRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "base_version",
+          "coach_membership_ids"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "coach_membership_ids": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён."
+          }
+        }
+      }
+    }
+  }
+}

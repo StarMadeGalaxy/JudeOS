@@ -11,7 +11,7 @@
 | [#26: контакты/GuardianLink](https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281), [merged PR102](https://github.com/StarMadeGalaxy/JudeOS/pull/102) | Проверенная связь и отзыв, семья не право; прямая зависимость #46 принята и интегрирована |
 | [#46: порученный объём](https://github.com/StarMadeGalaxy/JudeOS/issues/46), [claim и ручной In progress](https://github.com/StarMadeGalaxy/JudeOS/issues/46#issuecomment-6095669799) | Поручение пользователя этого чата: «Начни с документов и синтетических примеров», «Не реализуй в #46 бот, привязку Telegram, outbox, worker, webhook или финансовый backend. Не отправляй реальные сообщения». Назначение/статус не являются активацией |
 | [Точные вопросы T46-01–03 и ответы владельца](https://github.com/StarMadeGalaxy/JudeOS/issues/46#issuecomment-6095725343) | Новые подтверждённые бизнес-правила этого чата; исходный запрос предложений [здесь](https://github.com/StarMadeGalaxy/JudeOS/issues/46#issuecomment-6095720774) |
-| [Проект CONTRACT #38, pinned e0ca403](https://github.com/StarMadeGalaxy/JudeOS/blob/e0ca40362c929f75ef6345bbdc205239b506395c/docs/finance/CONTRACT.md), [PR112](https://github.com/StarMadeGalaxy/JudeOS/pull/112) | Изученный проект денежных терминов/компенсаций; пока не merged. Не принятая зависимость #50; проверить принятый результат перед S3-05 |
+| [Проект CONTRACT #38, pinned e0ca403](https://github.com/StarMadeGalaxy/JudeOS/blob/e0ca40362c929f75ef6345bbdc205239b506395c/docs/finance/CONTRACT.md), [PR112](https://github.com/StarMadeGalaxy/JudeOS/pull/112) | На старте изучен как проект; затем #38/PR112 принят и merged в main328b863: [источник](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6095747367). Повторно сверены денежные термины/компенсации; runtime не реализован. Перед S3-05 сверить с актуальным принятым результатом |
 
 Точные вопросы и ответы сохранены по одной постоянной GitHub-ссылке выше, без переноса всех реплик чата в репозиторий. Вопросы не сокращены в источнике; ниже их область.
 
@@ -23,13 +23,13 @@
 
 ## Согласование общих документов до редактирования
 
-Запрошено точное узкое дополнение ссылки APP-FLOWS S3 и отдельных блоков источников DECISIONS/передачи STATUS. Общие API/DTO/OpenAPI и пересекающиеся training/финансовые разделы не меняются. Ответы пока не получены; молчание не считается согласием.
+Запрошено точное узкое дополнение ссылки APP-FLOWS S3 и отдельных блоков источников DECISIONS/передачи STATUS. Общие API/DTO/OpenAPI и пересекающиеся training/финансовые разделы не меняются. Получен [ответ #29](https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095744030); ответа #34 пока нет, молчание не считается согласием. #38 завершена после merge112; её новые разделы сохранены при обычном merge main.
 
 | Владелец задачи | Сохранённая граница | Запрос / статус |
 |---|---|---|
-| #29, @NikishGum, groups-29-20261009-1a32def2 | feat/29-groups-manual-sessions, PR114, training/backend/SQL остаются его объёмом | [Запрос](https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095672620), ожидает ответа |
+| #29, @NikishGum, groups-29-20261009-1a32def2 | feat/29-groups-manual-sessions, PR114, training/backend/SQL остаются его объёмом | [Запрос](https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095672620), [граница подтверждена](https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095744030) |
 | #34, @StarMadeGalaxy, journal-34-20261009-ccarenv-d88f5e8e | feat/34-mobile-online-journal, frontend/fixtures/журнал остаются его объёмом | [Запрос](https://github.com/StarMadeGalaxy/JudeOS/issues/34#issuecomment-6095672795), ожидает ответа |
-| #38, @NikishGum, отдельный finance run | PR112/финансовые документы, Review/Approve финального head остаются в исходной задаче | [Запрос](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6095672998), ожидает ответа |
+| #38, @NikishGum, отдельный finance run | PR112/финансовые документы, Review/Approve финального head остаются в исходной задаче | [Запрос](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6095672998); затем [задача завершена/PR112 merged](https://github.com/StarMadeGalaxy/JudeOS/issues/38#issuecomment-6095747367); новые документы сохранены |
 
 Ни назначение, ни claim/статус другой Issue не изменены. Точный подготовленный patch общих дополнений — [shared-docs.patch](shared-docs.patch); он **не применён**. Незавершённое обновление STATUS нельзя объявлять выполненным.
 
@@ -37,6 +37,6 @@
 
 - Получатель/семья/отзыв и два допустимых события описаны; тексты и основная политика приняты T46-01–03.
 - Активация **сознательно отложена владельцем**: [реестр](ACTIVATION.md) фиксирует выключенные типы, неназначенные даты/версии и источник. Это не разрешает #49/#50 включить их без конкретного акта.
-- **Для завершения #46 остаётся** согласовать и применить общие дополнения APP-FLOWS/DECISIONS/STATUS, проверить сохранность чужих разделов, получить независимое review/приёмку и интегрировать этот PR. Пока draft/In progress.
+- **Для завершения #46 остаётся** получить ответ владельца активной #34 и применить общие дополнения APP-FLOWS/DECISIONS/STATUS, проверить сохранность чужих разделов, получить независимое review/приёмку и интегрировать этот PR. Пока draft/In progress.
 - **Перед #49/#50 остаётся** фактическая реализация/приёмка зависимостей, конкретные даты/версии/контур, срок свежести и retry-параметры, метод проверки реального получателя и условия #18/#24. Для #50 — повторная сверка F с принятым #38, финансовая семантика/исторический импорт и приёмка #45. Это будущие условия активации, не реализованная часть #46.
 - Проверки текущей поставки: арифметика синтетических F1/F2/F3, ссылки/якоря/Markdown, patch applicability и сохранность main за пределами docs/notifications. Runtime N01–28, Telegram/API/RLS/worker/VPS/реальные телефоны не проверены и не затронуты.

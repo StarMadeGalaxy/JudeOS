@@ -112,6 +112,7 @@ func New(o Options) *chi.Mux {
 	accessRoutes(r, o)
 	registryRoutes(r, o)
 	networkRoutes(r, o)
+	trainingRoutes(r, o)
 	return r
 }
 

@@ -2,12 +2,12 @@ openapi: 3.0.3
 info:
   title: JudeOS — принятый онлайн-контракт и каркас
   version: 0.1.0
-  description: 'Принятые #16/#20/#21 и wire #26/PR102 сохранены. Реестр людей/семей/проверенных представителей
-    и явные сетевые/платформенные права реализованы в #27; runtime требует schema9. Полный контракт содержит52
-    операции:45 implemented и7 planned журнала. Однофамильцы, семьи, телефоны и поступления не выдают прав.
-    Administrator одного клуба не получает другую сеть. Технический вариант ADR0013 требует независимого review;
-    реальный пилот, production/restore и общий recovery расширенного входа не утверждены. Runtime публикует
-    только implemented операции.'
+  description: 'Принятые #16/#20/#21 и wire #26/PR102 сохранены. People/access #27/PR111 интегрированы;
+    текущий runtime требует schema12. Полный контракт:75 операций,72 implemented и3 planned,
+    включая22 новые формы #29, согласованные для реализации; independent review ещё требуется.
+    Семьи/телефоны/поступления не выдают прав; administrator клуба не получает другую сеть.
+    Runtime публикует только implemented. Training API реализовано #29; отметки/закрытие/новые гости остаются planned,
+    реальные данные/production/restore и публикация на judopride.tech не включены.'
   contact:
     url: https://github.com/StarMadeGalaxy/JudeOS/issues/16
 servers:
@@ -316,8 +316,10 @@ paths:
         сортировка starts_at/session_id, cursor связан с actor/tenant/date; каждая страница проверяет актуальные
         grants. Бывшее назначение само по себе не даёт историю. Wire-расширение ожидает приёмки; представление
         сетевого разрешения согласуется с #21.'
-      x-status: planned
+      x-status: implemented
       x-issue: 16
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       parameters:
       - $ref: '#/components/parameters/TenantId'
       - name: date
@@ -393,7 +395,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -413,6 +415,175 @@ paths:
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
       x-s1-issue: 26
       x-s1-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984
+    post:
+      operationId: createManualSession
+      tags:
+      - training
+      summary: Создать ручное занятие с явным составом менеджера
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный owner
+        его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id. CSRF/exact
+        HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md. Никакого
+        расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionJournal'
+              example:
+                session:
+                  session_id: 00000000-0000-4000-8000-000000000501
+                  tenant_id: 00000000-0000-4000-8000-000000000101
+                  group:
+                    id: 00000000-0000-4000-8000-000000000703
+                    name: Синтетическая группа
+                  venue:
+                    id: 00000000-0000-4000-8000-000000000701
+                    name: Синтетический Venue
+                  starts_at: '2026-10-10T15:00:00Z'
+                  ends_at: '2026-10-10T16:00:00Z'
+                  state: planned
+                  version: 1
+                roster:
+                - athlete_id: 00000000-0000-4000-8000-000000000401
+                  person_id: 00000000-0000-4000-8000-000000000301
+                  display_name: Тестовый спортсмен А
+                  participation: regular
+                  trial: false
+                  attendance:
+                    athlete_id: 00000000-0000-4000-8000-000000000401
+                    status: unmarked
+                    version: 0
+                    recorded_at: null
+                    recorded_by_account_id: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateManualSessionRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              group_id: 00000000-0000-4000-8000-000000000703
+              group_base_version: 1
+              venue_id: 00000000-0000-4000-8000-000000000701
+              starts_at: '2026-10-10T15:00:00Z'
+              ends_at: '2026-10-10T16:00:00Z'
+              roster:
+              - athlete_id: 00000000-0000-4000-8000-000000000401
+                trial: false
+              coach_membership_ids:
+              - 00000000-0000-4000-8000-000000000707
   /api/v1/tenants/{tenant_id}/sessions/{session_id}:
     get:
       operationId: getSessionJournal
@@ -426,9 +597,11 @@ paths:
         контакт при отсутствии/истечении/отзыве; fallback запрещён. Семьи, другие представители, основание
         проверки, финансы, дата рождения не выдаются. Архивный/исключённый участник сохраняет допустимые факты,
         но контакт/admission не выдаются. История не создаёт бессрочного доступа. Область ролей подтверждена;
-        wire и новые поля приняты в #102, сетевое разрешение согласуется с #21.'
-      x-status: planned
+        wire и новые поля приняты в #102, сетевая область принята #27; #29 не выдаёт optional contact/admission.'
+      x-status: implemented
       x-issue: 16
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       parameters:
       - $ref: '#/components/parameters/TenantId'
       - $ref: '#/components/parameters/SessionId'
@@ -2568,9 +2741,11 @@ paths:
         отдельный флаг, participation=visit для разового визита. Уже активный roster не дублируется; новый
         ID без эффекта не повышает версию. Исключённая строка без отдельного правила повторного включения даёт
         409 ROSTER_EXCLUDED. Отметка не записывается этой командой. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
-        Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
-      x-status: planned
+        Реализовано #29; optional contact/admission не выдаются. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
+      x-status: implemented
       x-issue: 26
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: accepted
       x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
@@ -2907,9 +3082,11 @@ paths:
         Уже excluded новый ID даёт результат без нового эффекта. В closed/cancelled изменение состава запрещено.
         Coach-only не исключает/не заменяет состав. Исключённая строка доступна разрешённой истории, но не
         новому контакту/отметке. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
-        Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
-      x-status: planned
+        Реализовано #29; optional contact/admission не выдаются. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
+      x-status: implemented
       x-issue: 26
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: accepted
       x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
@@ -6193,6 +6370,2871 @@ paths:
                 minLength: 1
                 maxLength: 100
               example: synthetic-request-001
+  /api/v1/tenants/{tenant_id}/venues:
+    get:
+      operationId: listVenues
+      tags:
+      - training
+      summary: Получить venues
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+        example: Синтетический
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
+          default: active
+        example: active
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+        example: 30
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          format: uuid
+        example: 00000000-0000-4000-8000-000000000701
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenuePage'
+              example:
+                items:
+                - venue_id: 00000000-0000-4000-8000-000000000701
+                  name: Синтетический Venue
+                  archived: false
+                  version: 1
+                next_cursor: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    post:
+      operationId: createVenue
+      tags:
+      - training
+      summary: Создать venues
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+              example:
+                venue_id: 00000000-0000-4000-8000-000000000701
+                name: Синтетический Venue
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVenueRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              name: Синтетический Venue
+  /api/v1/tenants/{tenant_id}/venues/{venue_id}:
+    get:
+      operationId: getVenue
+      tags:
+      - training
+      summary: Прочитать venues
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: venue_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000701
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+              example:
+                venue_id: 00000000-0000-4000-8000-000000000701
+                name: Синтетический Venue
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    put:
+      operationId: updateVenue
+      tags:
+      - training
+      summary: Изменить venues
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: venue_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000701
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+              example:
+                venue_id: 00000000-0000-4000-8000-000000000701
+                name: Синтетический Venue
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVenueRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              name: Синтетический Venue
+              base_version: 1
+  /api/v1/tenants/{tenant_id}/venues/{venue_id}/archive:
+    post:
+      operationId: archiveVenue
+      tags:
+      - training
+      summary: Архивировать venues
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: venue_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000701
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+              example:
+                venue_id: 00000000-0000-4000-8000-000000000701
+                name: Синтетический Venue
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingVersionRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+  /api/v1/tenants/{tenant_id}/disciplines:
+    get:
+      operationId: listDisciplines
+      tags:
+      - training
+      summary: Получить disciplines
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+        example: Синтетический
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
+          default: active
+        example: active
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+        example: 30
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          format: uuid
+        example: 00000000-0000-4000-8000-000000000701
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisciplinePage'
+              example:
+                items:
+                - discipline_id: 00000000-0000-4000-8000-000000000702
+                  name: Синтетический Discipline
+                  archived: false
+                  version: 1
+                next_cursor: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    post:
+      operationId: createDiscipline
+      tags:
+      - training
+      summary: Создать disciplines
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discipline'
+              example:
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                name: Синтетический Discipline
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDisciplineRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              name: Синтетический Discipline
+  /api/v1/tenants/{tenant_id}/disciplines/{discipline_id}:
+    get:
+      operationId: getDiscipline
+      tags:
+      - training
+      summary: Прочитать disciplines
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: discipline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000702
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discipline'
+              example:
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                name: Синтетический Discipline
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    put:
+      operationId: updateDiscipline
+      tags:
+      - training
+      summary: Изменить disciplines
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: discipline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000702
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discipline'
+              example:
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                name: Синтетический Discipline
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDisciplineRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              name: Синтетический Discipline
+              base_version: 1
+  /api/v1/tenants/{tenant_id}/disciplines/{discipline_id}/archive:
+    post:
+      operationId: archiveDiscipline
+      tags:
+      - training
+      summary: Архивировать disciplines
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: discipline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000702
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discipline'
+              example:
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                name: Синтетический Discipline
+                archived: false
+                version: 1
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingVersionRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+  /api/v1/tenants/{tenant_id}/groups:
+    get:
+      operationId: listGroups
+      tags:
+      - training
+      summary: Получить groups
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+        example: Синтетический
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
+          default: active
+        example: active
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+        example: 30
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          format: uuid
+        example: 00000000-0000-4000-8000-000000000701
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroupPage'
+              example:
+                items:
+                - group_id: 00000000-0000-4000-8000-000000000703
+                  name: Синтетическая группа
+                  venue_id: 00000000-0000-4000-8000-000000000701
+                  discipline_id: 00000000-0000-4000-8000-000000000702
+                  archived: false
+                  version: 1
+                next_cursor: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    post:
+      operationId: createGroup
+      tags:
+      - training
+      summary: Создать groups
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTrainingGroupRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              name: Синтетическая группа
+              venue_id: 00000000-0000-4000-8000-000000000701
+              discipline_id: 00000000-0000-4000-8000-000000000702
+  /api/v1/tenants/{tenant_id}/groups/{group_id}:
+    get:
+      operationId: getGroup
+      tags:
+      - training
+      summary: Прочитать groups
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    put:
+      operationId: updateGroup
+      tags:
+      - training
+      summary: Изменить groups
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTrainingGroupRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+              name: Синтетическая группа
+              venue_id: 00000000-0000-4000-8000-000000000701
+              discipline_id: 00000000-0000-4000-8000-000000000702
+  /api/v1/tenants/{tenant_id}/groups/{group_id}/archive:
+    post:
+      operationId: archiveGroup
+      tags:
+      - training
+      summary: Архивировать groups
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingVersionRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+  /api/v1/tenants/{tenant_id}/groups/{group_id}/enrollments:
+    post:
+      operationId: createEnrollment
+      tags:
+      - training
+      summary: Зачислить в группу на период
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: INTERVAL_OVERLAP
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: null
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnrollmentRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+              athlete_id: 00000000-0000-4000-8000-000000000401
+              valid_from: '2026-10-01T00:00:00Z'
+              valid_until: null
+  /api/v1/tenants/{tenant_id}/groups/{group_id}/enrollments/{enrollment_id}/end:
+    post:
+      operationId: endEnrollment
+      tags:
+      - training
+      summary: Завершить открытое зачисление
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      - name: enrollment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000704
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndTrainingIntervalRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+              valid_until: '2026-10-10T00:00:00Z'
+  /api/v1/tenants/{tenant_id}/groups/{group_id}/coaches:
+    post:
+      operationId: createGroupCoach
+      tags:
+      - training
+      summary: Назначить тренера группы на период
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: INTERVAL_OVERLAP
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: null
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupCoachRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+              membership_id: 00000000-0000-4000-8000-000000000707
+              valid_from: '2026-10-01T00:00:00Z'
+              valid_until: null
+  /api/v1/tenants/{tenant_id}/groups/{group_id}/coaches/{group_coach_id}/end:
+    post:
+      operationId: endGroupCoach
+      tags:
+      - training
+      summary: Завершить открытое назначение группы
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000703
+      - name: group_coach_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000501
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroup'
+              example:
+                group_id: 00000000-0000-4000-8000-000000000703
+                name: Синтетическая группа
+                venue_id: 00000000-0000-4000-8000-000000000701
+                discipline_id: 00000000-0000-4000-8000-000000000702
+                archived: false
+                version: 1
+                enrollments: []
+                coaches: []
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: ENTITY_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndTrainingIntervalRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+              valid_until: '2026-10-10T00:00:00Z'
+  /api/v1/tenants/{tenant_id}/sessions/{session_id}/coaches:
+    get:
+      operationId: getSessionCoaches
+      tags:
+      - training
+      summary: Прочитать историю назначений занятия
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000501
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCoaches'
+              example:
+                session_id: 00000000-0000-4000-8000-000000000501
+                version: 1
+                coaches:
+                - session_coach_id: 00000000-0000-4000-8000-000000000706
+                  membership_id: 00000000-0000-4000-8000-000000000707
+                  valid_from: '2026-10-10T10:00:00Z'
+                  valid_until: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+      security:
+      - staffSession: []
+    put:
+      operationId: setSessionCoaches
+      tags:
+      - training
+      summary: Задать текущих тренеров занятия
+      description: 'Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный
+        owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
+        CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
+        Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
+      x-status: implemented
+      x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
+      x-contract-status: proposed
+      parameters:
+      - $ref: '#/components/parameters/TenantId'
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID объекта выбранного клуба.
+        example: 00000000-0000-4000-8000-000000000501
+      - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCoaches'
+              example:
+                session_id: 00000000-0000-4000-8000-000000000501
+                version: 1
+                coaches:
+                - session_coach_id: 00000000-0000-4000-8000-000000000706
+                  membership_id: 00000000-0000-4000-8000-000000000707
+                  valid_from: '2026-10-10T10:00:00Z'
+                  valid_until: null
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          description: Метод не поддерживается; Allow содержит разрешённые методы этого пути.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Allow:
+              schema:
+                type: string
+              description: Разрешённые методы этого конкретного пути.
+              example: GET, PUT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: METHOD_NOT_ALLOWED
+                message: Синтетический пример безопасной ошибки.
+                request_id: synthetic-request-001
+        '429':
+          $ref: '#/components/responses/Error429'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '409':
+          description: Синтетический пример; точные права/версии в TRAINING-CONTRACT.md.
+          headers:
+            Cache-Control:
+              description: Приватные данные и токены не кешируются.
+              schema:
+                type: string
+                enum:
+                - no-store
+              example: no-store
+            X-Request-ID:
+              description: Безопасная корреляция диагностики; не секрет и не ID человека.
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 100
+              example: synthetic-request-001
+            Operation-Replayed:
+              description: true при возврате исходного результата после проверки текущих прав/состояния.
+              schema:
+                type: boolean
+              example: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingCommandConflict'
+              example:
+                code: SESSION_VERSION_CONFLICT
+                message: Синтетический конфликт версии.
+                request_id: synthetic-request-029
+                operation_id: 00000000-0000-4000-8000-000000000708
+                current_version: 2
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+      security:
+      - staffSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetSessionCoachesRequest'
+            example:
+              operation_id: 00000000-0000-4000-8000-000000000708
+              base_version: 1
+              coach_membership_ids:
+              - 00000000-0000-4000-8000-000000000707
 components:
   securitySchemes:
     staffSession:
@@ -7751,6 +10793,598 @@ components:
           enum:
           - invite
           - join
+    Venue:
+      type: object
+      additionalProperties: false
+      required:
+      - venue_id
+      - name
+      - archived
+      - version
+      properties:
+        venue_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        archived:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+    VenuePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Venue'
+        next_cursor:
+          type: string
+          format: uuid
+          nullable: true
+    CreateVenueRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - name
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+    UpdateVenueRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - name
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+    Discipline:
+      type: object
+      additionalProperties: false
+      required:
+      - discipline_id
+      - name
+      - archived
+      - version
+      properties:
+        discipline_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        archived:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+    DisciplinePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Discipline'
+        next_cursor:
+          type: string
+          format: uuid
+          nullable: true
+    CreateDisciplineRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - name
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+    UpdateDisciplineRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - name
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+    TrainingVersionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+    Enrollment:
+      type: object
+      additionalProperties: false
+      required:
+      - enrollment_id
+      - athlete_id
+      - valid_from
+      - valid_until
+      properties:
+        enrollment_id:
+          type: string
+          format: uuid
+        athlete_id:
+          type: string
+          format: uuid
+        valid_from:
+          type: string
+          format: date-time
+          pattern: Z$
+        valid_until:
+          type: string
+          format: date-time
+          pattern: Z$
+          nullable: true
+    GroupCoach:
+      type: object
+      additionalProperties: false
+      required:
+      - group_coach_id
+      - membership_id
+      - valid_from
+      - valid_until
+      properties:
+        group_coach_id:
+          type: string
+          format: uuid
+        membership_id:
+          type: string
+          format: uuid
+        valid_from:
+          type: string
+          format: date-time
+          pattern: Z$
+        valid_until:
+          type: string
+          format: date-time
+          pattern: Z$
+          nullable: true
+    TrainingGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - group_id
+      - name
+      - venue_id
+      - discipline_id
+      - archived
+      - version
+      - enrollments
+      - coaches
+      properties:
+        group_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        venue_id:
+          type: string
+          format: uuid
+        discipline_id:
+          type: string
+          format: uuid
+        archived:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        enrollments:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/Enrollment'
+        coaches:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/GroupCoach'
+    TrainingGroupSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - group_id
+      - name
+      - venue_id
+      - discipline_id
+      - archived
+      - version
+      properties:
+        group_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        venue_id:
+          type: string
+          format: uuid
+        discipline_id:
+          type: string
+          format: uuid
+        archived:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+    TrainingGroupPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/TrainingGroupSummary'
+        next_cursor:
+          type: string
+          format: uuid
+          nullable: true
+    CreateTrainingGroupRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - name
+      - venue_id
+      - discipline_id
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        venue_id:
+          type: string
+          format: uuid
+        discipline_id:
+          type: string
+          format: uuid
+    UpdateTrainingGroupRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - name
+      - venue_id
+      - discipline_id
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        venue_id:
+          type: string
+          format: uuid
+        discipline_id:
+          type: string
+          format: uuid
+    CreateEnrollmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - athlete_id
+      - valid_from
+      - valid_until
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        athlete_id:
+          type: string
+          format: uuid
+        valid_from:
+          type: string
+          format: date-time
+          pattern: Z$
+        valid_until:
+          type: string
+          format: date-time
+          pattern: Z$
+          nullable: true
+    CreateGroupCoachRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - membership_id
+      - valid_from
+      - valid_until
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        membership_id:
+          type: string
+          format: uuid
+        valid_from:
+          type: string
+          format: date-time
+          pattern: Z$
+        valid_until:
+          type: string
+          format: date-time
+          pattern: Z$
+          nullable: true
+    EndTrainingIntervalRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - valid_until
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        valid_until:
+          type: string
+          format: date-time
+          pattern: Z$
+    ManualRosterSelection:
+      type: object
+      additionalProperties: false
+      required:
+      - athlete_id
+      - trial
+      properties:
+        athlete_id:
+          type: string
+          format: uuid
+        trial:
+          type: boolean
+    CreateManualSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - group_id
+      - group_base_version
+      - venue_id
+      - starts_at
+      - ends_at
+      - roster
+      - coach_membership_ids
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        group_base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        venue_id:
+          type: string
+          format: uuid
+        starts_at:
+          type: string
+          format: date-time
+          pattern: Z$
+        ends_at:
+          type: string
+          format: date-time
+          pattern: Z$
+        roster:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ManualRosterSelection'
+        coach_membership_ids:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+    SessionCoachAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - session_coach_id
+      - membership_id
+      - valid_from
+      - valid_until
+      properties:
+        session_coach_id:
+          type: string
+          format: uuid
+        membership_id:
+          type: string
+          format: uuid
+        valid_from:
+          type: string
+          format: date-time
+          pattern: Z$
+        valid_until:
+          type: string
+          format: date-time
+          pattern: Z$
+          nullable: true
+    SessionCoaches:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      - version
+      - coaches
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        coaches:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/SessionCoachAssignment'
+    SetSessionCoachesRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - base_version
+      - coach_membership_ids
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        coach_membership_ids:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+    TrainingCommandConflict:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - request_id
+      - operation_id
+      - current_version
+      properties:
+        code:
+          type: string
+          enum:
+          - ENTITY_VERSION_CONFLICT
+          - SESSION_VERSION_CONFLICT
+          - OPERATION_ID_REUSED
+          - ENTITY_ARCHIVED
+          - ATHLETE_ARCHIVED
+          - INTERVAL_OVERLAP
+          - INTERVAL_ENDED
+          - SESSION_ROSTER_LOCKED
+          - COACH_INACTIVE
+          - ROSTER_ALREADY_EXCLUDED
+        message:
+          type: string
+          minLength: 1
+          maxLength: 300
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        operation_id:
+          type: string
+          format: uuid
+        current_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          nullable: true
+
   responses:
     Error403:
       description: Нет разрешения или проверка CSRF/Origin отклонена.

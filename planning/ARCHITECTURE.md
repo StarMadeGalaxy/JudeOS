@@ -269,3 +269,9 @@ Chi v5 принят пользователем для маршрутизации
 ## Доступ S0.4 реализован в #21
 
 [ADR 0010 (предложено)](adr/0010-staff-access.md) фиксирует Argon2id, DB-backed revocable sessions, CSRF/preauth/exact HTTPS Origin, shared PostgreSQL rate buckets и last-owner lock/trigger. [Access runbook](../docs/access/README.md) задаёт TTL, первое приглашение владельца, конфигурацию, восстановление и ограничения synthetic scope. Глобальный authentication bridge не содержит детских профилей; прямые клубные queries по trusted tenant transaction/RLS. Runtime privilege/readiness и metadata audit #20 сохранены, current schema=4.
+
+## Training #29 — реализация schema12 на review
+
+`internal/training` владеет группами/интервалами и сохранёнными ручными занятиями; HTTP остаётся chi/net/http, handlers не содержат бизнес-права. Минимальный people read без контактов/Account выполняется внутри trusted tenant tx. Access WithinObject проверяет текущий SessionCoach после общей club lock21; административные права/явные network owner/platform сохранены. GroupCoach не является доступом к Session. Enrollment/GroupCoach не переписывают сохранённый roster; SessionCoach история не удаляется. SQL00012 добавляет RLS/FK/узкие grants/guards и metadata audit, прежние SQL неизменны. Private command result не входит в аудит; общий people/training logical operation key сериализуется той же lock.
+
+[ADR0015](adr/0015-training-groups-and-saved-roster.md), [контракт](../api/TRAINING-CONTRACT.md), [запуск/evidence](../docs/training/README.md). Wire разрешён пользователем до кода, независимый final review PR114 ожидается. #30 расписание, #31 отметки/закрытие, #32 новый гость, #33 допуск/контакты и #34 frontend отдельно; текущий unmarked/version0 projection не является записанной Attendance. Финансовые границы/разделы #38 не меняются.

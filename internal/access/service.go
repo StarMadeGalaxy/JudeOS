@@ -313,6 +313,22 @@ func Allows(gs []Grant, action string, assigned bool) bool {
 // Repositories must use the supplied transaction; caller-provided tenant IDs
 // never become trusted context until this check succeeds.
 func (s *Service) Within(ctx context.Context, token, csrf, tenant, request, action string, fn func(*sql.Tx, Session) error) error {
+	return s.withinAction(ctx, token, csrf, tenant, request, action, nil, fn)
+}
+
+// WithinObject admits an eligible coach only for the accepted journal actions.
+// The trusted application authorizer MUST resolve the object's current assignment
+// (or filter every list row) in this transaction, after the shared revocation lock.
+// No caller-provided assignment flag is trusted; existing administrative Within
+// callers retain their original role gate.
+func (s *Service) WithinObject(ctx context.Context, token, csrf, tenant, request, action string, authorize func(*sql.Tx, Session) error, fn func(*sql.Tx, Session) error) error {
+	if authorize == nil || (action != "journal" && action != "add_guest" && action != "attendance") {
+		return ErrForbidden
+	}
+	return s.withinAction(ctx, token, csrf, tenant, request, action, authorize, fn)
+}
+
+func (s *Service) withinAction(ctx context.Context, token, csrf, tenant, request, action string, authorize func(*sql.Tx, Session) error, fn func(*sql.Tx, Session) error) error {
 	if !uuidPattern.MatchString(tenant) {
 		return ErrInvalid
 	}
@@ -325,7 +341,7 @@ func (s *Service) Within(ctx context.Context, token, csrf, tenant, request, acti
 	}
 	found := false
 	for _, m := range v.Memberships {
-		if m.Tenant == tenant && Allows(m.Grants, action, false) {
+		if m.Tenant == tenant && Allows(m.Grants, action, authorize != nil) {
 			found = true
 		}
 	}
@@ -352,12 +368,17 @@ func (s *Service) Within(ctx context.Context, token, csrf, tenant, request, acti
 		}
 		allowed := false
 		for _, m := range current.Memberships {
-			if m.Tenant == tenant && Allows(m.Grants, action, false) {
+			if m.Tenant == tenant && Allows(m.Grants, action, authorize != nil) {
 				allowed = true
 			}
 		}
 		if !allowed {
 			return ErrForbidden
+		}
+		if authorize != nil {
+			if e := authorize(tx, current); e != nil {
+				return e
+			}
 		}
 		return fn(tx, current)
 	}))

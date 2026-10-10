@@ -1,0 +1,316 @@
+{
+  "cases": [
+    {
+      "name": "training-Venue",
+      "schema": "Venue",
+      "value": {
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "name": "Синтетический Venue",
+        "archived": false,
+        "version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "training-VenuePage",
+      "schema": "VenuePage",
+      "value": {
+        "items": [
+          {
+            "venue_id": "00000000-0000-4000-8000-000000000701",
+            "name": "Синтетический Venue",
+            "archived": false,
+            "version": 1
+          }
+        ],
+        "next_cursor": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-CreateVenueRequest",
+      "schema": "CreateVenueRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "name": "Синтетический Venue"
+      },
+      "valid": true
+    },
+    {
+      "name": "training-UpdateVenueRequest",
+      "schema": "UpdateVenueRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "name": "Синтетический Venue",
+        "base_version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "training-Discipline",
+      "schema": "Discipline",
+      "value": {
+        "discipline_id": "00000000-0000-4000-8000-000000000702",
+        "name": "Синтетический Discipline",
+        "archived": false,
+        "version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "training-DisciplinePage",
+      "schema": "DisciplinePage",
+      "value": {
+        "items": [
+          {
+            "discipline_id": "00000000-0000-4000-8000-000000000702",
+            "name": "Синтетический Discipline",
+            "archived": false,
+            "version": 1
+          }
+        ],
+        "next_cursor": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-CreateDisciplineRequest",
+      "schema": "CreateDisciplineRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "name": "Синтетический Discipline"
+      },
+      "valid": true
+    },
+    {
+      "name": "training-UpdateDisciplineRequest",
+      "schema": "UpdateDisciplineRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "name": "Синтетический Discipline",
+        "base_version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "training-TrainingVersionRequest",
+      "schema": "TrainingVersionRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "training-Enrollment",
+      "schema": "Enrollment",
+      "value": {
+        "enrollment_id": "00000000-0000-4000-8000-000000000704",
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "valid_from": "2026-10-01T00:00:00Z",
+        "valid_until": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-GroupCoach",
+      "schema": "GroupCoach",
+      "value": {
+        "group_coach_id": "00000000-0000-4000-8000-000000000705",
+        "membership_id": "00000000-0000-4000-8000-000000000707",
+        "valid_from": "2026-10-01T00:00:00Z",
+        "valid_until": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-TrainingGroup",
+      "schema": "TrainingGroup",
+      "value": {
+        "group_id": "00000000-0000-4000-8000-000000000703",
+        "name": "Синтетическая группа",
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "discipline_id": "00000000-0000-4000-8000-000000000702",
+        "archived": false,
+        "version": 1,
+        "enrollments": [],
+        "coaches": []
+      },
+      "valid": true
+    },
+    {
+      "name": "training-TrainingGroupSummary",
+      "schema": "TrainingGroupSummary",
+      "value": {
+        "group_id": "00000000-0000-4000-8000-000000000703",
+        "name": "Синтетическая группа",
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "discipline_id": "00000000-0000-4000-8000-000000000702",
+        "archived": false,
+        "version": 1
+      },
+      "valid": true
+    },
+    {
+      "name": "training-TrainingGroupPage",
+      "schema": "TrainingGroupPage",
+      "value": {
+        "items": [
+          {
+            "group_id": "00000000-0000-4000-8000-000000000703",
+            "name": "Синтетическая группа",
+            "venue_id": "00000000-0000-4000-8000-000000000701",
+            "discipline_id": "00000000-0000-4000-8000-000000000702",
+            "archived": false,
+            "version": 1
+          }
+        ],
+        "next_cursor": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-CreateTrainingGroupRequest",
+      "schema": "CreateTrainingGroupRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "name": "Синтетическая группа",
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "discipline_id": "00000000-0000-4000-8000-000000000702"
+      },
+      "valid": true
+    },
+    {
+      "name": "training-UpdateTrainingGroupRequest",
+      "schema": "UpdateTrainingGroupRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1,
+        "name": "Синтетическая группа",
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "discipline_id": "00000000-0000-4000-8000-000000000702"
+      },
+      "valid": true
+    },
+    {
+      "name": "training-CreateEnrollmentRequest",
+      "schema": "CreateEnrollmentRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "valid_from": "2026-10-01T00:00:00Z",
+        "valid_until": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-CreateGroupCoachRequest",
+      "schema": "CreateGroupCoachRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1,
+        "membership_id": "00000000-0000-4000-8000-000000000707",
+        "valid_from": "2026-10-01T00:00:00Z",
+        "valid_until": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-EndTrainingIntervalRequest",
+      "schema": "EndTrainingIntervalRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1,
+        "valid_until": "2026-10-10T00:00:00Z"
+      },
+      "valid": true
+    },
+    {
+      "name": "training-CreateManualSessionRequest",
+      "schema": "CreateManualSessionRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "group_id": "00000000-0000-4000-8000-000000000703",
+        "group_base_version": 1,
+        "venue_id": "00000000-0000-4000-8000-000000000701",
+        "starts_at": "2026-10-10T15:00:00Z",
+        "ends_at": "2026-10-10T16:00:00Z",
+        "roster": [
+          {
+            "athlete_id": "00000000-0000-4000-8000-000000000401",
+            "trial": false
+          }
+        ],
+        "coach_membership_ids": [
+          "00000000-0000-4000-8000-000000000707"
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "training-SessionCoachAssignment",
+      "schema": "SessionCoachAssignment",
+      "value": {
+        "session_coach_id": "00000000-0000-4000-8000-000000000706",
+        "membership_id": "00000000-0000-4000-8000-000000000707",
+        "valid_from": "2026-10-10T10:00:00Z",
+        "valid_until": null
+      },
+      "valid": true
+    },
+    {
+      "name": "training-SessionCoaches",
+      "schema": "SessionCoaches",
+      "value": {
+        "session_id": "00000000-0000-4000-8000-000000000501",
+        "version": 1,
+        "coaches": [
+          {
+            "session_coach_id": "00000000-0000-4000-8000-000000000706",
+            "membership_id": "00000000-0000-4000-8000-000000000707",
+            "valid_from": "2026-10-10T10:00:00Z",
+            "valid_until": null
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "training-SetSessionCoachesRequest",
+      "schema": "SetSessionCoachesRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1,
+        "coach_membership_ids": [
+          "00000000-0000-4000-8000-000000000707"
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "training-TrainingCommandConflict",
+      "schema": "TrainingCommandConflict",
+      "value": {
+        "code": "ENTITY_VERSION_CONFLICT",
+        "message": "Синтетический конфликт версии.",
+        "request_id": "synthetic-request-029",
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "current_version": 2
+      },
+      "valid": true
+    },
+    {
+      "name": "coach-cannot-enroll-via-add",
+      "schema": "AddKnownRosterRequest",
+      "value": {
+        "operation_id": "00000000-0000-4000-8000-000000000708",
+        "base_version": 1,
+        "athlete_id": "00000000-0000-4000-8000-000000000401",
+        "trial": false,
+        "enroll_permanently": true
+      },
+      "valid": false
+    }
+  ]
+}

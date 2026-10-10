@@ -3,10 +3,10 @@ info:
   title: JudeOS — принятый онлайн-контракт и каркас
   version: 0.1.0
   description: 'Принятые #16/#20/#21 и wire #26/PR102 сохранены. People/access #27/PR111 интегрированы;
-    текущий runtime требует schema11. Полный контракт:75 операций,46 implemented и29 planned,
-    включая22 новые proposed формы #29. TRAINING-CONTRACT.md фиксирует срез до реализации.
+    текущий runtime требует schema12. Полный контракт:75 операций,72 implemented и3 planned,
+    включая22 новые формы #29, согласованные для реализации; independent review ещё требуется.
     Семьи/телефоны/поступления не выдают прав; administrator клуба не получает другую сеть.
-    Runtime публикует только implemented. Контрактный коммит не реализует training backend,
+    Runtime публикует только implemented. Training API реализовано #29; отметки/закрытие/новые гости остаются planned,
     реальные данные/production/restore и публикация на judopride.tech не включены.'
   contact:
     url: https://github.com/StarMadeGalaxy/JudeOS/issues/16
@@ -316,8 +316,10 @@ paths:
         сортировка starts_at/session_id, cursor связан с actor/tenant/date; каждая страница проверяет актуальные
         grants. Бывшее назначение само по себе не даёт историю. Wire-расширение ожидает приёмки; представление
         сетевого разрешения согласуется с #21.'
-      x-status: planned
+      x-status: implemented
       x-issue: 16
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       parameters:
       - $ref: '#/components/parameters/TenantId'
       - name: date
@@ -393,7 +395,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -422,8 +424,9 @@ paths:
         его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id. CSRF/exact
         HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md. Никакого
         расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -510,7 +513,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: POST
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -594,9 +597,11 @@ paths:
         контакт при отсутствии/истечении/отзыве; fallback запрещён. Семьи, другие представители, основание
         проверки, финансы, дата рождения не выдаются. Архивный/исключённый участник сохраняет допустимые факты,
         но контакт/admission не выдаются. История не создаёт бессрочного доступа. Область ролей подтверждена;
-        wire и новые поля приняты в #102, сетевое разрешение согласуется с #21.'
-      x-status: planned
+        wire и новые поля приняты в #102, сетевая область принята #27; #29 не выдаёт optional contact/admission.'
+      x-status: implemented
       x-issue: 16
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       parameters:
       - $ref: '#/components/parameters/TenantId'
       - $ref: '#/components/parameters/SessionId'
@@ -2736,9 +2741,11 @@ paths:
         отдельный флаг, participation=visit для разового визита. Уже активный roster не дублируется; новый
         ID без эффекта не повышает версию. Исключённая строка без отдельного правила повторного включения даёт
         409 ROSTER_EXCLUDED. Отметка не записывается этой командой. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
-        Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
-      x-status: planned
+        Реализовано #29; optional contact/admission не выдаются. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
+      x-status: implemented
       x-issue: 26
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: accepted
       x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
@@ -3075,9 +3082,11 @@ paths:
         Уже excluded новый ID даёт результат без нового эффекта. В closed/cancelled изменение состава запрещено.
         Coach-only не исключает/не заменяет состав. Исключённая строка доступна разрешённой истории, но не
         новому контакту/отметке. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984.
-        Нет реализации. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
-      x-status: planned
+        Реализовано #29; optional contact/admission не выдаются. Правила/атомарность/повтор — api/S1-CONTRACT.md.'
+      x-status: implemented
       x-issue: 26
+      x-runtime-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: accepted
       x-s1-business-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066552281
       x-s1-role-source: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6066079471
@@ -6371,8 +6380,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -6464,7 +6474,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -6490,8 +6500,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -6557,7 +6568,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: POST
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -6629,8 +6640,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -6698,7 +6710,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -6724,8 +6736,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -6799,7 +6812,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: PUT
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -6872,8 +6885,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7019,8 +7033,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7112,7 +7127,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -7138,8 +7153,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7205,7 +7221,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: POST
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -7277,8 +7293,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7346,7 +7363,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -7372,8 +7389,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7447,7 +7465,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: PUT
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -7520,8 +7538,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7667,8 +7686,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7762,7 +7782,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -7788,8 +7808,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -7859,7 +7880,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: POST
+              example: GET, POST
           content:
             application/json:
               schema:
@@ -7933,8 +7954,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8006,7 +8028,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -8032,8 +8054,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8111,7 +8134,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: PUT
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -8186,8 +8209,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8337,8 +8361,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8491,8 +8516,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8651,8 +8677,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8805,8 +8832,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -8965,8 +8993,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -9037,7 +9066,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: GET
+              example: GET, PUT
           content:
             application/json:
               schema:
@@ -9063,8 +9092,9 @@ paths:
         owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id.
         CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md.
         Никакого расписания/генерации/отметок/гостей/допуска этим срезом.'
-      x-status: planned
+      x-status: implemented
       x-issue: 29
+      x-runtime-source: https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659
       x-contract-status: proposed
       parameters:
       - $ref: '#/components/parameters/TenantId'
@@ -9141,7 +9171,7 @@ paths:
               schema:
                 type: string
               description: Разрешённые методы этого конкретного пути.
-              example: PUT
+              example: GET, PUT
           content:
             application/json:
               schema:

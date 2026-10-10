@@ -1,6 +1,6 @@
 # Группы и ручные занятия — #29
 
-Ближайший wire-срез #29. Существующие DTO #16/#26 и people/access #27 сохранены. Новые формы — технический вариант для независимого review, не дополнительные подтверждённые бизнес-требования. До реализации этот файл и OpenAPI фиксируются отдельным коммитом. Источник поручения — [Issue29](https://github.com/StarMadeGalaxy/JudeOS/issues/29); выбор менеджером подтверждён пользователем в текущем чате 10 октября 2026: «Да, явный выбор менеджера».
+Реализованный backend-срез #29 (schema12), PR114 на независимом review. Существующие DTO #16/#26 и people/access #27 сохранены. Новые формы — технический вариант для независимого review, не дополнительные подтверждённые бизнес-требования. Wire зафиксирован до реализации коммитом8ff75fbd8d72e31c7b5439969ca05b532b74270a; пользователь отдельно разрешил реализацию: [источник](https://github.com/StarMadeGalaxy/JudeOS/issues/29#issuecomment-6095187659), «Да, реализуй этот контракт». Это согласование реализации, не приёмка финального кода. Источник поручения — [Issue29](https://github.com/StarMadeGalaxy/JudeOS/issues/29); выбор менеджером подтверждён пользователем в текущем чате 10 октября 2026: «Да, явный выбор менеджера».
 
 ## Состав и границы
 
@@ -32,8 +32,10 @@ Manager/administrator клуба, явный owner его сети или platfo
 
 Каталоги: поиск по буквальной подстроке имени, state active/archived/all, UUID keyset, limit1–100(default30), не snapshot. Список Session: обязательная date в Europe/Minsk, limit1–100(default50), порядок starts_at/session_id, непрозрачный cursor связан с текущим входом/actor/tenant/date; каждая страница заново проверяет назначения. Истёкшая/другая сессия не принимает cursor. Точная дата/UUID/UTC Z валидируются. Полные production сроки OperationResult/retention/recovery epoch остаются #18/#24/#52; очистка ключей здесь не реализуется.
 
-## Проверяемые сценарии реализации
+## Проверка реализации
 
 Настоящий HTTPS HTTP→PostgreSQL: manager создаёт каталоги/группы/периоды/ручное занятие; несколько групп/тренеров; end/start перевод не меняет старый roster; GroupCoach не заменяет SessionCoach; coach видит только назначенное и после снятия получает404; coach add известного — visit без Enrollment, exclude/replace403; административное исключение сохраняет строку. Два клуба: чужие FK404/SQL отказ/RLS отсутствие контекста; старые версии409; два roster/coach изменения с одной версией — один эффект/один конфликт; конкурентные одинаковые operation_id — один результат/один аудит; отзыв роли против записи не пропускает потерявшего право.
 
 HTTP/DB evidence отделяется от OpenAPI/AJV fixtures/Swagger/TS/chi.Walk. Closed/cancelled на границе29 проверяются отдельным synthetic setup в БД, без утверждения реализации close/cancel. Upgrade schema11→новая, повтор migrate/readiness/audit и неизменность прежних SQL обязательны. VPS/release/checkout/manifest/рабочие тома сохраняются; merge/зелёная CI не являются публикацией на judopride.tech.
+
+Воспроизведение и разделение evidence: [training README](../docs/training/README.md), техническое решение — [ADR0015](../planning/adr/0015-training-groups-and-saved-roster.md). Shared people/training operation namespace проверяется под общей club lock; один ключ не создаёт эффект в обоих модулях. Replay временного добавления исключённого участника также возвращает ROSTER_EXCLUDED.

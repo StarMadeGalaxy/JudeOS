@@ -419,6 +419,16 @@ func (s *Service) Command(ctx context.Context, token, csrf, tenant, request, kin
 				return notFound()
 			}
 		}
+		// #29 shares the accepted tenant/actor operation namespace. Both modules
+		// hold the same club lock, so simultaneous cross-module ID reuse cannot
+		// commit two effects. Never read another module's saved response here.
+		var trainingKey bool
+		if e = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM core.training_operations WHERE actor_id=$1 AND operation_id=$2)`, session.Account, c.Operation).Scan(&trainingKey); e != nil {
+			return e
+		}
+		if trainingKey {
+			return conflict("OPERATION_ID_REUSED", c.Operation, nil)
+		}
 		var oldhash string
 		var rawrefs []byte
 		e = tx.QueryRowContext(ctx, `SELECT request_hash,response,references_json FROM core.registry_operations WHERE actor_id=$1 AND operation_id=$2`, session.Account, c.Operation).Scan(&oldhash, &result, &rawrefs)

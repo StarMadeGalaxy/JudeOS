@@ -29,13 +29,14 @@ for (const [route, item] of Object.entries(spec.paths)) {
     operations.push(operation.operationId);
     assert(['planned', 'implemented'].includes(operation['x-status']));
     assert([16, 19, 21, 26, 27, 29].includes(operation['x-issue']));
-    assert.equal(operation['x-status'], [19, 21, 27].includes(operation['x-issue']) ? 'implemented' : 'planned');
+    const owner = operation['x-runtime-issue'] || operation['x-issue'];
+    assert.equal(operation['x-status'], [19,21,27,29].includes(owner) ? 'implemented' : 'planned');
     if (operation['x-status'] === 'implemented') {
-      assert([19,21,27].includes(operation['x-issue']));
+      assert([19,21,27,29].includes(owner));
     }
     if (operation['x-issue'] === 26 || operation['x-s1-issue'] === 26) {
       assert.equal(operation['x-contract-status'], 'accepted');
-      assert.equal(operation['x-status'], operation['x-issue']===27?'implemented':'planned');
+      assert.equal(operation['x-status'], [27,29].includes(owner)?'implemented':'planned');
     }
     assert(registry.includes(`| ${method.toUpperCase()} | \`${route}\` | \`${operation.operationId}\` |`), `Registry misses ${operation.operationId}`);
     if (operation.requestBody) {
@@ -76,7 +77,7 @@ const journalSchema = ajv.compile({ $ref: '#/components/schemas/SessionJournal',
 assert(journalSchema(prototype), `Accepted #23 prototype: ${JSON.stringify(journalSchema.errors)}`);
 for (const entry of prototype.roster) assert.equal(entry.athlete_id, entry.attendance.athlete_id);
 const implemented = Object.values(spec.paths).flatMap(item => Object.values(item)).filter(op => op['x-status'] === 'implemented').length;
-assert.equal(implemented, 46);
+assert.equal(implemented, 72);
 for(const id of ['loginStaff','getAccessSession','inviteStaff','changeStaffAccess','redeemAccessLink'])assert(operations.includes(id));
 const runtime = JSON.parse(fs.readFileSync(path.join(root, 'dist/runtime-openapi.json')));
 assert.equal(Object.values(runtime.paths).flatMap(item => Object.values(item)).length, implemented);
@@ -84,5 +85,6 @@ const runtimeIds = Object.values(runtime.paths).flatMap(item => Object.values(it
 const implementedIds = Object.values(spec.paths).flatMap(item => Object.values(item)).filter(op => op['x-status'] === 'implemented').map(op => op.operationId).sort();
 assert.deepEqual(runtimeIds, implementedIds);
 assert(runtime.components.schemas.PrimaryContact, 'Implemented #27 contact schema is present');
-assert(!runtime.paths['/api/v1/tenants/{tenant_id}/sessions'], 'Journal remains planned');
+assert(runtime.paths['/api/v1/tenants/{tenant_id}/sessions'], 'Training reads are implemented');
+assert(!runtime.paths['/api/v1/tenants/{tenant_id}/sessions/{session_id}/close'], '#31 close remains planned');
 process.stdout.write(`Contract: ${operations.length} operations (${operations.length - implemented} planned, ${implemented} implemented), ${fixtures.cases.length + s1.cases.length + registryCases.cases.length + trainingCases.cases.length} schema fixtures and every response example passed.\n`);

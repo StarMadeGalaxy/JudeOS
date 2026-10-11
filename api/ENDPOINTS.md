@@ -1,6 +1,6 @@
 # Реестр HTTP API
 
-Принятые #16/#26, people/access #27 и training #29: полный контракт75 операций, runtime72, schema12. Только setAttendance (#31), closeSession (#31), createSessionGuest (#32) остаются planned. Источник — [OpenAPI](openapi/openapi.yaml); права и границы — [S1-CONTRACT](S1-CONTRACT.md), [TRAINING-CONTRACT](TRAINING-CONTRACT.md). Новые22 формы согласованы для реализации; независимая приёмка PR114 ожидается.
+Принятые #16/#26, people/access #27 и training #29: полный контракт77 операций, runtime72, schema12. setAttendance (#31), closeSession (#31), createSessionGuest (#32), rescheduleSession/cancelSession (#30) остаются planned. Источник — [OpenAPI](openapi/openapi.yaml); права и границы — [S1-CONTRACT](S1-CONTRACT.md), [TRAINING-CONTRACT](TRAINING-CONTRACT.md). Новые22 формы согласованы для реализации; независимая приёмка PR114 ожидается.
 
 | Method | Path | operationId | Модуль | Аудитория | Авторизация/scope | Статус |
 |---|---|---|---|---|---|---|
@@ -82,3 +82,8 @@
 | PUT | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/coaches` | `setSessionCoaches` | training | REST сотрудника | Manager/administrator разрешённого клуба, owner/platform; CSRF + Origin для команд | реализован #29; wire согласован для реализации, final review ожидается |
 
 Статические исключения chi.Walk — [static-routes.json](static-routes.json). HEAD/OPTIONS/404/405/слеши — [общая HTTP политика](README.md#http-политика-основы-s0). Runtime требует schema 12 и показывает только implemented операции. Произвольные клубные administrator не получают сеть: принадлежность и organizational grant явные. Production/реальный пилот/restore не разрешены.
+
+| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/reschedule` | `rescheduleSession` | training | REST сотрудника | Только administrator в принятой области сети/клуба, planned/in_progress | wire принят #34; backend #30 planned |
+| POST | `/api/v1/tenants/{tenant_id}/sessions/{session_id}/cancel` | `cancelSession` | training | REST сотрудника | Только administrator в принятой области сети/клуба, planned/in_progress | wire принят #34; backend #30 planned |
+
+[Настройка Session](SESSION-CONFIGURATION-CONTRACT.md) принята отдельно. Для createManualSession/setSessionCoaches прежние строки и runtime описывают реализованный #29; целевая administrator-only ревизия выбора тренеров, optional reason setter и replay до проверки состояния ещё planned в #30. Manager создаёт новое занятие с пустым coach_membership_ids; только administrator выбирает coaches. После closed/cancelled допускается отдельный отзыв текущих назначений без добавления. Два новых маршрута отсутствуют в runtime; live /docs сохраняет прежние две операции и request без reason через pinned legacy snapshot.

@@ -2,7 +2,7 @@
 
 Внутренняя система Judo Pride и основа будущего продукта для спортивных клубов. Первый выпуск предназначен для сотрудников: люди и семьи, занятия, посещаемость, добровольная поддержка и сверка поступлений, Telegram и ограниченный офлайн.
 
-Реализованы синтетическая Go/PostgreSQL/web основа, people/access и явные сетевые/платформенные права, группы/интервалы и ручные занятия с сохранённым roster (#29/PR114 на независимом review). Runtime schema12; OpenAPI/Swagger72 реализованные операции из75. Отметки/закрытие/новый гость planned, интерфейс журнала отдельно #34. [Training: правила и настоящие HTTP/PostgreSQL проверки](docs/training/README.md).
+Реализованы синтетическая Go/PostgreSQL/web основа, people/access и явные сетевые/платформенные права, группы/интервалы и ручные занятия с сохранённым roster ([#29/PR114 merged](https://github.com/StarMadeGalaxy/JudeOS/pull/114)). Runtime schema12; full OpenAPI77 операций, runtime/Swagger72 реализованные. Отметки/закрытие/новый гость и backend настройки/отмены planned. [Синтетический мобильный журнал #34](apps/web/src/online-journal/README.md) демонстрирует полный UI; [принятый контракт настройки](api/SESSION-CONFIGURATION-CONTRACT.md) отдельно обозначает будущие команды/права и точную legacy ревизию runtime #29. [Training: правила и настоящие HTTP/PostgreSQL проверки](docs/training/README.md).
 
 - [Планирование и порядок чтения](planning/README.md)
 - [План MVP 1.1](planning/MVP-DEVELOPMENT-PLAN.md)

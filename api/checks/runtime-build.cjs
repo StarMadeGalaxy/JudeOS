@@ -1,6 +1,20 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const spec = JSON.parse(fs.readFileSync('dist/openapi.json'));
+// The accepted Session-configuration revision is ahead of backend #30.
+// Keep the actual #29 wire in live /docs until that revision is implemented.
+const legacy = JSON.parse(fs.readFileSync('runtime-legacy/session-configuration-v1.json'));
+const pendingRevisions = new Set();
+for (const item of Object.values(spec.paths)) for (const [method, operation] of Object.entries(item)) {
+  if (operation['x-session-configuration-status'] !== 'planned') continue;
+  const previous = legacy.operations[operation.operationId];
+  if (!previous || previous.operationId !== operation.operationId) throw new Error('Missing pinned runtime revision');
+  pendingRevisions.add(operation.operationId);
+  item[method] = previous;
+}
+if (pendingRevisions.has('setSessionCoaches')) {
+  spec.components.schemas.SetSessionCoachesRequest = legacy.schemas.SetSessionCoachesRequest;
+}
 spec.paths = Object.fromEntries(Object.entries(spec.paths).map(([route, item]) => [route,
   Object.fromEntries(Object.entries(item).filter(([, operation]) => operation['x-status'] === 'implemented'))
 ]).filter(([, item]) => Object.keys(item).length));

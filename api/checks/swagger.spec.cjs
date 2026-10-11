@@ -3,7 +3,7 @@ test('Swagger resolves the accepted planned operations and displays command and 
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await expect(page.locator('.opblock')).toHaveCount(75);
+  await expect(page.locator('.opblock')).toHaveCount(77);
   await page.locator('#operations-attendance-setAttendance .opblock-summary').click();
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('base_version');
   await expect(page.locator('#operations-attendance-setAttendance')).toContainText('ATTENDANCE_VERSION_CONFLICT');
@@ -35,6 +35,12 @@ test('Swagger resolves the accepted planned operations and displays command and 
  await expect(page.locator('#operations-training-createEnrollment')).toContainText('INTERVAL_OVERLAP');
  await page.locator('#operations-training-setSessionCoaches .opblock-summary').click();
  await expect(page.locator('#operations-training-setSessionCoaches')).toContainText('base_version');
+ for (const id of ['rescheduleSession', 'cancelSession']) {
+   await page.locator(`#operations-training-${id} .opblock-summary`).click();
+   await expect(page.locator(`#operations-training-${id}`)).toContainText('base_version');
+   await expect(page.locator(`#operations-training-${id}`)).toContainText('reason');
+   await expect(page.locator(`#operations-training-${id}`)).toContainText('SESSION_VERSION_CONFLICT');
+ }
  const spec = await page.evaluate(() => window.ui.specSelectors.specJson().toJS());
   expect(spec.openapi).toBe('3.0.3');
   expect(spec.components.schemas.PrimaryContact.properties.phone.nullable).toBe(true);

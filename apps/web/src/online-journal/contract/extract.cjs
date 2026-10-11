@@ -1,15 +1,15 @@
-// Read-only subset of the accepted #16/#26/#27/#29 wire. Never writes shared OpenAPI.
+// Read-only subset of the accepted #16/#26/#27/#29 wire and owner-accepted #34 configuration. Never writes shared OpenAPI.
 const fs = require("node:fs");
 const path = require("node:path");
 const yaml = require("../../../../../api/node_modules/js-yaml");
-const source = "7219d0d9703de08fb9779ba1c215cf7a60cd16db";
+const source = "9fc3267daadf2dcd79d67155dae8b97eb28aa72e";
 // Feed `git show <source>:api/openapi/openapi.yaml` through stdin, also in restricted sandboxes.
 const input = fs.readFileSync(0, "utf8");
 const hash = require("node:crypto")
   .createHash("sha256")
   .update(input)
   .digest("hex");
-if (hash !== "cc09aaccf0931b4faf29eff7ddc8cff6e9841dd4e86666f650a136346a0d61ac")
+if (hash !== "4fa436f48d79cfb444eafca881c501bfc9aa29af99e084735b82fbcea625725a")
   throw new Error(
     "Expected the pinned accepted OpenAPI; do not silently replace the wire.",
   );
@@ -23,6 +23,11 @@ const ids = new Set([
   "addKnownRosterAthlete",
   "excludeRosterAthlete",
   "listAthletes",
+  "rescheduleSession",
+  "cancelSession",
+  "getSessionCoaches",
+  "setSessionCoaches",
+  "listStaff",
 ]);
 const subset = {
   openapi: spec.openapi,

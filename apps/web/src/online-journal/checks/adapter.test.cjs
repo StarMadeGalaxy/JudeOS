@@ -62,8 +62,8 @@ const rejects = (promise, code, status = 409, schema) =>
   });
 const adapter = (role = "coach") => new SyntheticJournalAdapter(role, 0);
 
-test("the fixture projections and all eight consumed operations use the accepted wire", async () => {
-  assert.equal(operations.length, 8);
+test("the fixture projections and all thirteen consumed operations use the accepted wire", async () => {
+  assert.equal(operations.length, 13);
   assert.deepEqual(spec.components.schemas.AttendanceStatus.enum, [
     "present",
     "absent",
@@ -75,6 +75,8 @@ test("the fixture projections and all eight consumed operations use the accepted
   validate("SessionPage", await a.list(fixtureDate));
   validate("AthletePage", await a.known(""));
   validate("SessionJournal", await a.get(uuid(501)));
+  validate("StaffPage", await a.staff());
+  validate("SessionCoaches", await a.coaches(uuid(501)));
   for (const status of ["present", "absent", "sick", "unmarked"]) {
     const row = (await a.get(uuid(501))).roster[1];
     const { value } = await execute(
@@ -410,4 +412,397 @@ test("bad status and extra sensitive fields are rejected by the unchanged accept
       reason: null,
     }),
   );
+});
+
+const moved = {
+  starts_at: "2026-10-11T12:30:00Z",
+  ends_at: "2026-10-11T13:30:00Z",
+};
+test("club time round-trips Minsk independent of the browser zone and preserves unchanged seconds", () => {
+  const { clubLocalToUTC, localDateTimeInClub } = require(
+    path.join(moduleRoot, "dist/adapter-tests/club-time.js"),
+  );
+  assert.equal(localDateTimeInClub(moved.starts_at), "2026-10-11T15:30");
+  assert.equal(clubLocalToUTC("2026-10-11T15:30"), "2026-10-11T12:30:00.000Z");
+  assert.equal(clubLocalToUTC("2026-02-30T15:30"), null);
+  assert.equal(
+    clubLocalToUTC("2026-10-11T15:30", "2026-10-11T12:30:47.125Z"),
+    "2026-10-11T12:30:47.125Z",
+  );
+});
+test("reschedule moves one stable session to the new club date without changing venue, state, roster or marks", async () => {
+  const a = adapter("administrator"),
+    before = await a.get(uuid(501));
+  const { value } = await execute(
+    a,
+    input("rescheduleSession", {
+      base_version: 1,
+      ...moved,
+      reason: "Синтетическая настройка",
+    }),
+  );
+  assert.equal(value.session_id, before.session.session_id);
+  assert.deepEqual(value.venue, before.session.venue);
+  assert.deepEqual(value.group, before.session.group);
+  assert.equal(value.state, "in_progress");
+  assert.equal(value.version, 2);
+  assert.deepEqual((await a.get(uuid(501))).roster, before.roster);
+  assert(
+    !(await a.list(fixtureDate)).items.some((s) => s.session_id === uuid(501)),
+  );
+  assert.equal((await a.list("2026-10-11")).items[0].session_id, uuid(501));
+  assert.equal((await a.get(uuid(502))).session.version, 1);
+  assert.equal(a.history.length, 1);
+});
+test("manager and coach cannot configure even by calling the synthetic adapter directly", async () => {
+  for (const role of ["manager", "coach"]) {
+    const a = adapter(role);
+    assert.equal(a.canConfigure, false);
+    for (const command of [
+      input("rescheduleSession", { base_version: 1, ...moved }),
+      input("cancelSession", { base_version: 1 }),
+      input("setSessionCoaches", { base_version: 1, coach_membership_ids: [] }),
+    ])
+      await rejects(a.execute(command), "FORBIDDEN", 403, "Error");
+    assert.equal(a.history.length, 0);
+  }
+});
+test("lost cancellation retries the exact operation after its own state became cancelled; facts stay intact", async () => {
+  const a = adapter("administrator"),
+    before = await a.get(uuid(501));
+  const command = input("cancelSession", {
+    base_version: 1,
+    reason: "Синтетическая отмена",
+  });
+  a.failNext("lost-response");
+  await rejects(execute(a, command), "SERVICE_UNAVAILABLE", 0);
+  const replay = await execute(a, command);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.value.state, "cancelled");
+  assert.equal(replay.value.version, 2);
+  assert.deepEqual((await a.get(uuid(501))).roster, before.roster);
+  assert.equal(a.history.length, 1);
+  await rejects(
+    execute(a, input("cancelSession", { base_version: 2 })),
+    "SESSION_CANCELLED",
+    409,
+    "S1CommandConflict",
+  );
+  await rejects(
+    execute(
+      a,
+      input("setAttendance", { base_version: 0, status: "absent" }, uuid(402)),
+    ),
+    "SESSION_CANCELLED",
+  );
+});
+test("coaches use existing StaffPage and SessionCoaches, retain history and leave all attendance versions unchanged", async () => {
+  const a = adapter("administrator"),
+    before = await a.get(uuid(501)),
+    old = await a.coaches(uuid(501));
+  const { value } = await execute(
+    a,
+    input("setSessionCoaches", {
+      base_version: 1,
+      coach_membership_ids: [uuid(802)],
+      reason: "Синтетическая замена",
+    }),
+  );
+  assert.equal(value.version, 2);
+  assert.deepEqual(
+    value.coaches
+      .filter((r) => r.valid_until === null)
+      .map((r) => r.membership_id),
+    [uuid(802)],
+  );
+  assert(
+    value.coaches.find(
+      (r) => r.session_coach_id === old.coaches[0].session_coach_id,
+    ).valid_until,
+  );
+  assert.deepEqual(
+    value.coaches.find(
+      (r) => r.session_coach_id === old.coaches[1].session_coach_id,
+    ),
+    old.coaches[1],
+  );
+  assert.deepEqual((await a.get(uuid(501))).roster, before.roster);
+  assert.equal(
+    (await a.get(uuid(501))).session.starts_at,
+    before.session.starts_at,
+  );
+});
+test("closed and cancelled allow only administrator revocation, retain assignment rows and reject re-addition", async () => {
+  for (const sessionId of [uuid(503), uuid(504)]) {
+    const a = adapter("administrator"),
+      before = await a.get(sessionId);
+    const added = input(
+      "setSessionCoaches",
+      { base_version: 1, coach_membership_ids: [uuid(802)] },
+      undefined,
+      sessionId,
+    );
+    await rejects(
+      execute(a, added),
+      "SESSION_ROSTER_LOCKED",
+      409,
+      "TrainingCommandConflict",
+    );
+    const revoked = await execute(
+      a,
+      input(
+        "setSessionCoaches",
+        { base_version: 1, coach_membership_ids: [] },
+        undefined,
+        sessionId,
+      ),
+    );
+    assert.equal(
+      revoked.value.coaches.filter((r) => r.valid_until === null).length,
+      0,
+    );
+    assert.equal(revoked.value.coaches.length, 2);
+    assert.equal((await a.get(sessionId)).session.state, before.session.state);
+    assert.deepEqual((await a.get(sessionId)).roster, before.roster);
+    await rejects(
+      execute(
+        a,
+        input(
+          "setSessionCoaches",
+          { base_version: 2, coach_membership_ids: [uuid(801)] },
+          undefined,
+          sessionId,
+        ),
+      ),
+      "SESSION_ROSTER_LOCKED",
+      409,
+      "TrainingCommandConflict",
+    );
+    await rejects(
+      execute(
+        a,
+        input(
+          "rescheduleSession",
+          { base_version: 2, ...moved },
+          undefined,
+          sessionId,
+        ),
+      ),
+      before.session.state === "closed"
+        ? "SESSION_CLOSED"
+        : "SESSION_CANCELLED",
+      409,
+      "S1CommandConflict",
+    );
+  }
+});
+test("new configuration version conflict is terminal; explicit new confirmation uses a fresh operation and version", async () => {
+  const a = adapter("administrator"),
+    command = input("rescheduleSession", { base_version: 1, ...moved });
+  a.failNext("conflict");
+  await rejects(
+    execute(a, command),
+    "SESSION_VERSION_CONFLICT",
+    409,
+    "S1CommandConflict",
+  );
+  await rejects(
+    execute(a, command),
+    "SESSION_VERSION_CONFLICT",
+    409,
+    "S1CommandConflict",
+  );
+  assert.equal((await a.get(uuid(501))).session.version, 2);
+  assert.equal(a.history.length, 0);
+  await rejects(
+    execute(a, { ...command, body: { ...command.body, base_version: 2 } }),
+    "OPERATION_ID_REUSED",
+    409,
+    "S1CommandConflict",
+  );
+  await execute(a, input("rescheduleSession", { base_version: 2, ...moved }));
+  assert.equal((await a.get(uuid(501))).session.version, 3);
+  assert.equal(a.history.length, 1);
+});
+test("canonical configuration replay normalizes empty reason, UTC instants and coach set ordering; no-ops add no history", async () => {
+  const a = adapter("administrator"),
+    before = await a.get(uuid(501));
+  const time = input("rescheduleSession", {
+    base_version: 1,
+    starts_at: before.session.starts_at,
+    ends_at: before.session.ends_at,
+  });
+  assert.equal((await execute(a, time)).value.version, 1);
+  assert(
+    (
+      await execute(a, {
+        ...time,
+        body: {
+          ...time.body,
+          starts_at: "2026-10-10T12:00:00.000Z",
+          ends_at: "2026-10-10T13:00:00.000Z",
+          reason: "",
+        },
+      })
+    ).replayed,
+  );
+  assert.equal(a.history.length, 0);
+  const coaches = input("setSessionCoaches", {
+    base_version: 1,
+    coach_membership_ids: [uuid(802), uuid(801)],
+  });
+  const first = await execute(a, coaches);
+  assert.deepEqual(
+    await execute(a, {
+      ...coaches,
+      body: {
+        ...coaches.body,
+        coach_membership_ids: [uuid(801), uuid(802)],
+        reason: "",
+      },
+    }),
+    { value: first.value, replayed: true },
+  );
+  assert.equal(a.history.length, 1);
+  assert.equal(
+    (
+      await execute(
+        a,
+        input("setSessionCoaches", {
+          base_version: 2,
+          coach_membership_ids: [uuid(801), uuid(802)],
+          reason: "Только пояснение",
+        }),
+      )
+    ).value.version,
+    2,
+  );
+  assert.equal(a.history.length, 1);
+});
+test("old successful time and coach results can replay after closure but never downgrade fresh state; revoked actor cannot replay", async () => {
+  for (const command of [
+    input("rescheduleSession", { base_version: 1, ...moved }),
+    input("setSessionCoaches", {
+      base_version: 1,
+      coach_membership_ids: [uuid(801), uuid(802)],
+    }),
+  ]) {
+    const a = adapter("administrator");
+    const original = await execute(a, command);
+    await execute(a, input("closeSession", { base_version: 2 }));
+    assert.deepEqual(await execute(a, command), {
+      value: original.value,
+      replayed: true,
+    });
+    assert.equal((await a.get(uuid(501))).session.state, "closed");
+    assert.equal((await a.get(uuid(501))).session.version, 3);
+    assert.equal(a.history.length, 2);
+    a.revoke();
+    await rejects(execute(a, command), "FORBIDDEN", 403, "Error");
+  }
+});
+test("inactive/non-coach/foreign membership and strict time bodies are rejected without touching facts", async () => {
+  const a = adapter("administrator"),
+    before = await a.get(uuid(501));
+  for (const member of [uuid(803), uuid(804)])
+    await rejects(
+      execute(
+        a,
+        input("setSessionCoaches", {
+          base_version: 1,
+          coach_membership_ids: [member],
+        }),
+      ),
+      "COACH_INACTIVE",
+      409,
+      "TrainingCommandConflict",
+    );
+  await rejects(
+    execute(
+      a,
+      input("setSessionCoaches", {
+        base_version: 1,
+        coach_membership_ids: [uuid(999)],
+      }),
+    ),
+    "NOT_FOUND",
+    404,
+    "Error",
+  );
+  for (const patch of [
+    { starts_at: "2026-10-11T15:30:00+03:00" },
+    { ends_at: "2026-10-11T12:29:00Z" },
+    { starts_at: "2026-02-30T12:00:00Z" },
+    { venue_id: uuid(700) },
+    { reason: null },
+  ])
+    await rejects(
+      a.execute(
+        input("rescheduleSession", { base_version: 1, ...moved, ...patch }),
+      ),
+      "INVALID_REQUEST",
+      400,
+      "Error",
+    );
+  assert.deepEqual(await a.get(uuid(501)), before);
+  assert.equal(a.history.length, 0);
+});
+test("configuration shares the existing operation namespace without repeating or replacing another command", async () => {
+  const a = adapter("administrator"),
+    mark = input(
+      "setAttendance",
+      { base_version: 0, status: "present" },
+      uuid(402),
+    );
+  await execute(a, mark);
+  await rejects(
+    execute(a, {
+      operation: "cancelSession",
+      sessionId: uuid(501),
+      body: { operation_id: mark.body.operation_id, base_version: 1 },
+    }),
+    "OPERATION_ID_REUSED",
+    409,
+    "S1CommandConflict",
+  );
+  assert.equal((await a.get(uuid(501))).session.state, "in_progress");
+  assert.equal(a.history.length, 1);
+});
+test("coach selection read faults and revoked access disclose no staff or stored results", async () => {
+  const a = adapter("administrator");
+  a.failNext("503");
+  await rejects(a.staff(), "SERVICE_UNAVAILABLE", 503, "Error");
+  a.revoke();
+  await rejects(a.coaches(uuid(501)), "FORBIDDEN", 403, "Error");
+  await rejects(a.staff(), "FORBIDDEN", 403, "Error");
+  await rejects(adapter("coach").staff(), "FORBIDDEN", 403, "Error");
+});
+
+test("accepted fractional UTC timestamps retain precision in canonical replay and version comparison", async () => {
+  const { canonicalUTC, compareUTC } = require(
+    path.join(moduleRoot, "dist/adapter-tests/club-time.js"),
+  );
+  assert.equal(
+    canonicalUTC("2026-10-10T12:00:00.0000000010Z"),
+    "2026-10-10T12:00:00.000000001Z",
+  );
+  assert(
+    compareUTC("2026-10-10T12:00:00.000000001Z", "2026-10-10T12:00:00Z") > 0,
+  );
+  const a = adapter("administrator"),
+    command = input("rescheduleSession", {
+      base_version: 1,
+      starts_at: "2026-10-10T12:00:00.000000001Z",
+      ends_at: "2026-10-10T13:00:00Z",
+    });
+  assert.equal((await execute(a, command)).value.version, 2);
+  assert(
+    (
+      await execute(a, {
+        ...command,
+        body: { ...command.body, starts_at: "2026-10-10T12:00:00.0000000010Z" },
+      })
+    ).replayed,
+  );
+  assert.equal(a.history.length, 1);
 });

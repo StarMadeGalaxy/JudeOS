@@ -6,6 +6,65 @@ export const tenantId = uuid(101);
 export const fixtureDate = "2026-10-10";
 export const fixtureNow = "2026-10-10T12:04:00Z";
 export const actorId = uuid(1);
+export const coachMembership = uuid(801);
+// Accepted StaffPage/SessionCoaches shapes; these accounts never refer to live staff.
+export const staffFixtures = (): Schema["StaffMember"][] => [
+  {
+    membership_id: coachMembership,
+    account_id: actorId,
+    login: "synthetic_coach_a",
+    active: true,
+    state: "active",
+    grants: [{ role: "coach", scope: "assigned_sessions" }],
+  },
+  {
+    membership_id: uuid(802),
+    account_id: uuid(2),
+    login: "synthetic_coach_b",
+    active: true,
+    state: "active",
+    grants: [{ role: "coach", scope: "assigned_sessions" }],
+  },
+  {
+    membership_id: uuid(803),
+    account_id: uuid(3),
+    login: "synthetic_revoked_coach",
+    active: false,
+    state: "revoked",
+    grants: [],
+  },
+  {
+    membership_id: uuid(804),
+    account_id: uuid(4),
+    login: "synthetic_manager",
+    active: true,
+    state: "active",
+    grants: [{ role: "manager", scope: "club" }],
+  },
+];
+export const coachFixtures = (): Map<
+  string,
+  Schema["SessionCoachAssignment"][]
+> =>
+  new Map(
+    [501, 502, 503, 504].map((id) => [
+      uuid(id),
+      [
+        {
+          session_coach_id: uuid(id + 2000),
+          membership_id: id === 502 ? uuid(802) : coachMembership,
+          valid_from: "2026-10-09T12:00:00Z",
+          valid_until: null,
+        },
+        {
+          session_coach_id: uuid(id + 3000),
+          membership_id: uuid(802),
+          valid_from: "2026-10-08T12:00:00Z",
+          valid_until: "2026-10-09T10:00:00Z",
+        },
+      ],
+    ]),
+  );
 function entry(index: number, name: string): Entry {
   const athleteId = uuid(401 + index);
   return {

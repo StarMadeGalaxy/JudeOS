@@ -34,23 +34,44 @@ export type Command =
       sessionId: string;
       athleteId: string;
       body: Schema["ExcludeRosterRequest"];
+    }
+  | {
+      operation: "rescheduleSession";
+      sessionId: string;
+      body: Schema["RescheduleSessionRequest"];
+    }
+  | {
+      operation: "cancelSession";
+      sessionId: string;
+      body: Schema["CancelSessionRequest"];
+    }
+  | {
+      operation: "setSessionCoaches";
+      sessionId: string;
+      body: Schema["SetSessionCoachesRequest"];
     };
 export type Result =
   | Schema["AttendanceSaved"]
   | Schema["CloseSessionResult"]
-  | Schema["RosterCommandResult"];
+  | Schema["RosterCommandResult"]
+  | TrainingSession
+  | Schema["SessionCoaches"];
 export type Failure =
   | Schema["Error"]
   | Schema["AttendanceConflict"]
-  | Schema["S1CommandConflict"];
+  | Schema["S1CommandConflict"]
+  | Schema["TrainingCommandConflict"];
 
 // UI adapter methods are wrappers over the extracted wire, not additional HTTP DTOs.
 export interface JournalAdapter {
   readonly mode: "synthetic" | "live";
   readonly canManage: boolean;
+  readonly canConfigure: boolean;
   list(date: string, cursor?: string): Promise<Schema["SessionPage"]>;
   get(sessionId: string): Promise<Journal>;
   known(q: string, cursor?: string): Promise<Schema["AthletePage"]>;
+  staff(): Promise<Schema["StaffPage"]>;
+  coaches(sessionId: string): Promise<Schema["SessionCoaches"]>;
   execute(command: Command): Promise<{ value: Result; replayed: boolean }>;
 }
 export class JournalError extends Error {
@@ -98,5 +119,9 @@ export const displayDate = (value: string) =>
     timeZone: "Europe/Minsk",
     dateStyle: "long",
   }).format(new Date(`${value}T12:00:00Z`));
+export const timeRangeInClub = (
+  session: Pick<TrainingSession, "starts_at" | "ends_at">,
+) =>
+  `${timeInClub(session.starts_at)}–${dateInClub(session.starts_at) === dateInClub(session.ends_at) ? "" : displayDate(dateInClub(session.ends_at)) + ", "}${timeInClub(session.ends_at)}`;
 export const isUnknown = (error: unknown) =>
   !(error instanceof JournalError) || error.status === 0 || error.status >= 500;

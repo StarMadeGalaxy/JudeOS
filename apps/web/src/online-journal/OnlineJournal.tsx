@@ -7,14 +7,17 @@ import {
   type FormEvent,
 } from "react";
 import { Dialog } from "./Dialog";
+import { TimeForm, CoachesForm, CancelForm } from "./SessionConfiguration";
 import {
   JournalError,
+  dateInClub,
   displayDate,
   isUnknown,
   markName,
   marks,
   sessionNames,
   timeInClub,
+  timeRangeInClub,
   type Attendance,
   type Command,
   type Entry,
@@ -39,6 +42,9 @@ type Form =
   | { kind: "guest" }
   | { kind: "known" }
   | { kind: "close" }
+  | { kind: "time" }
+  | { kind: "coaches" }
+  | { kind: "cancel" }
   | { kind: "exclude"; entry: Entry };
 const outstanding = (value?: Pending) =>
   value?.phase === "sending" || value?.phase === "unknown";
@@ -54,6 +60,10 @@ const failureText = (code: string) =>
       "Команда не принята: требуется обновить данные и заново подтвердить действие.",
     INVALID_REQUEST: "Проверьте поля формы. Запись не принята.",
     RATE_LIMITED: "Слишком много запросов. Повторите позже.",
+    COACH_INACTIVE:
+      "Тренер больше не доступен для назначения. Перечитайте данные и выберите действующего тренера.",
+    SESSION_ROSTER_LOCKED:
+      "Занятие закрыто или отменено. Можно только отдельно отозвать текущие назначения тренеров.",
   })[code] || "Запись не принята. Обновите данные перед новым действием.";
 
 function useOnline() {
@@ -90,6 +100,14 @@ function mergeJournal(current: Journal | null, incoming: Journal): Journal {
   };
 }
 function applyResult(current: Journal, result: Result): Journal {
+  // SessionCoaches is a partial response, not a new journal snapshot.
+  if ("coaches" in result) return current;
+  if ("starts_at" in result)
+    return {
+      ...current,
+      session:
+        current.session.version <= result.version ? result : current.session,
+    };
   if ("attendance" in result)
     return {
       ...current,
@@ -201,6 +219,20 @@ export function OnlineJournal({
         if (generation !== readGeneration.current || selected.current !== id)
           return false;
         putJournal(mergeJournal(journalRef.current, value));
+        setSessions((prior) =>
+          prior
+            .map((session) =>
+              session.session_id === id ? value.session : session,
+            )
+            .filter((session) => dateInClub(session.starts_at) === date)
+            .sort(
+              (a, b) =>
+                a.starts_at.localeCompare(b.starts_at) ||
+                a.session_id.localeCompare(b.session_id),
+            ),
+        );
+        const actualDate = dateInClub(value.session.starts_at);
+        if (actualDate !== date) setDate(actualDate);
         setNeedsRefresh(false);
         needsRefreshRef.current = false;
         setDenied(false);
@@ -226,7 +258,7 @@ export function OnlineJournal({
         if (generation === readGeneration.current) setReadBusy(false);
       }
     },
-    [adapter],
+    [adapter, date],
   );
   const loadList = useCallback(
     async (day: string, after?: string) => {
@@ -367,12 +399,26 @@ export function OnlineJournal({
           setNotice(
             `Занятие закрыто. Не отмечены: ${result.value.unmarked_count}. Отсутствие не проставлено.`,
           );
+        else if (frozen.operation === "cancelSession")
+          setNotice(
+            "Отмена подтверждена в демонстрации. Состав, отметки и история сохранены; не отмеченные не стали отсутствующими.",
+          );
         else
           setNotice(
             result.replayed
               ? "Повтор подтверждён. Журнал перечитан; показаны актуальные отметки."
               : acknowledgement + ".",
           );
+        if (
+          frozen.operation === "rescheduleSession" ||
+          frozen.operation === "cancelSession"
+        ) {
+          const actualDate = journalRef.current
+            ? dateInClub(journalRef.current.session.starts_at)
+            : date;
+          if (actualDate !== date) setDate(actualDate);
+          else void loadList(date);
+        }
       } else if (!deniedRef.current)
         setNotice(
           "Команда подтверждена, но актуальный журнал не получен. Обновите данные; повторять запись не требуется.",
@@ -447,7 +493,7 @@ export function OnlineJournal({
     if (!selected.current || !(await refresh(selected.current))) return;
     putPending(key);
     setNotice(
-      "Данные обновлены. Проверьте состав и подтвердите действие заново.",
+      "Данные обновлены. Проверьте актуальное занятие и подтвердите действие заново.",
     );
   }
   const closeForm = () => {
@@ -573,6 +619,17 @@ export function OnlineJournal({
     journal?.session.state !== "closed" &&
     !hasOutstanding &&
     !aggregateLocked;
+  const canConfigure =
+    adapter.canConfigure &&
+    online &&
+    !denied &&
+    !needsRefresh &&
+    !readBusy &&
+    !hasOutstanding &&
+    !aggregateLocked;
+  const configurationLocked =
+    journal?.session.state === "closed" ||
+    journal?.session.state === "cancelled";
   const shown =
     journal?.roster.filter(
       (entry) =>
@@ -658,8 +715,7 @@ export function OnlineJournal({
                 >
                   <strong>{session.group.name}</strong>
                   <span>
-                    {timeInClub(session.starts_at)}–
-                    {timeInClub(session.ends_at)} · {session.venue.name}
+                    {timeRangeInClub(session)} · {session.venue.name}
                   </span>
                   <span>{sessionNames[session.state]}</span>
                 </button>
@@ -680,19 +736,6 @@ export function OnlineJournal({
             Показаны загруженные занятия. Перенос может изменить порядок;
             обновление перечитывает список.
           </p>
-          {adapter.canManage && (
-            <div className="oj-boundary">
-              <p>Изменение времени и отмена пока недоступны.</p>
-              <div className="oj-actions">
-                <button type="button" className="oj-secondary" disabled>
-                  Перенести занятие
-                </button>
-                <button type="button" className="oj-secondary" disabled>
-                  Отменить занятие
-                </button>
-              </div>
-            </div>
-          )}
         </div>
         <div className="oj-journal">
           {readBusy && <p role="status">Обновляем журнал…</p>}
@@ -715,8 +758,8 @@ export function OnlineJournal({
                 {journal.session.group.name}
               </h2>
               <p>
-                {timeInClub(journal.session.starts_at)}–
-                {timeInClub(journal.session.ends_at)} ·{" "}
+                {displayDate(dateInClub(journal.session.starts_at))} ·{" "}
+                {timeRangeInClub(journal.session)} ·{" "}
                 {journal.session.venue.name}
               </p>
               <p>
@@ -775,6 +818,41 @@ export function OnlineJournal({
                   Обновить журнал
                 </button>
               </div>
+              {adapter.canConfigure && (
+                <div className="oj-actions" aria-label="Настройка занятия">
+                  <button
+                    type="button"
+                    className="oj-secondary"
+                    disabled={!canConfigure || configurationLocked}
+                    onClick={() => setForm({ kind: "time" })}
+                  >
+                    Изменить дату и время
+                  </button>
+                  <button
+                    type="button"
+                    className="oj-secondary"
+                    disabled={!canConfigure}
+                    onClick={() => setForm({ kind: "coaches" })}
+                  >
+                    {configurationLocked
+                      ? "Отозвать доступ тренера"
+                      : "Назначить тренеров"}
+                  </button>
+                  <button
+                    type="button"
+                    className="oj-secondary"
+                    disabled={!canConfigure || configurationLocked}
+                    onClick={() => setForm({ kind: "cancel" })}
+                  >
+                    Отменить занятие
+                  </button>
+                </div>
+              )}
+              {adapter.canManage && !adapter.canConfigure && (
+                <p className="oj-muted">
+                  Дату, время и тренеров занятия настраивает администратор.
+                </p>
+              )}
               {!adapter.canManage && (
                 <p className="oj-muted">
                   Тренер временно добавляет гостя в это занятие. Постоянный
@@ -950,11 +1028,89 @@ export function OnlineJournal({
               known: "Добавить известного участника",
               close: "Закрыть занятие",
               exclude: "Исключить из состава",
+              time: "Изменить дату и время",
+              coaches: configurationLocked
+                ? "Отозвать доступ тренера"
+                : "Назначить тренеров",
+              cancel: "Отменить занятие",
             }[form.kind]
           }
           locked={outstanding(pending.session)}
           onClose={closeForm}
         >
+          {form.kind === "time" && (
+            <TimeForm
+              session={journal.session}
+              disabled={
+                !canConfigure || configurationLocked || !!pending.session
+              }
+              onSubmit={(starts, ends, reason) =>
+                void send(
+                  {
+                    operation: "rescheduleSession",
+                    sessionId: journal.session.session_id,
+                    body: {
+                      operation_id: crypto.randomUUID(),
+                      base_version: journal.session.version,
+                      starts_at: starts,
+                      ends_at: ends,
+                      ...(reason ? { reason } : {}),
+                    },
+                  },
+                  "session",
+                  "Изменение даты и времени",
+                )
+              }
+            />
+          )}
+          {form.kind === "coaches" && (
+            <CoachesForm
+              adapter={adapter}
+              session={journal.session}
+              disabled={!canConfigure || !!pending.session}
+              onDenied={deny}
+              onSubmit={(ids, version, reason) =>
+                void send(
+                  {
+                    operation: "setSessionCoaches",
+                    sessionId: journal.session.session_id,
+                    body: {
+                      operation_id: crypto.randomUUID(),
+                      base_version: version,
+                      coach_membership_ids: ids,
+                      ...(reason ? { reason } : {}),
+                    },
+                  },
+                  "session",
+                  configurationLocked
+                    ? "Отзыв доступа тренера"
+                    : "Назначение тренеров",
+                )
+              }
+            />
+          )}
+          {form.kind === "cancel" && (
+            <CancelForm
+              disabled={
+                !canConfigure || configurationLocked || !!pending.session
+              }
+              onSubmit={(reason) =>
+                void send(
+                  {
+                    operation: "cancelSession",
+                    sessionId: journal.session.session_id,
+                    body: {
+                      operation_id: crypto.randomUUID(),
+                      base_version: journal.session.version,
+                      ...(reason ? { reason } : {}),
+                    },
+                  },
+                  "session",
+                  "Отмена занятия",
+                )
+              }
+            />
+          )}
           {form.kind === "guest" && (
             <GuestForm
               disabled={!canWrite || !!pending.session}

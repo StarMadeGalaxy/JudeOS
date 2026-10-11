@@ -64,6 +64,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenant_id}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список сотрудников клуба
+         * @description Только активный administrator club. Актуальные membership/grants проверяются сервером в tenant transaction; менеджер/тренер/чужой tenant получают 403. Без password/session/token. Профилей детей здесь нет.
+         */
+        get: operations["listStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenants/{tenant_id}/athletes": {
         parameters: {
             query?: never;
@@ -158,6 +178,72 @@ export interface paths {
          * @description Принятый wire #26 / PR #102; бизнес-минимум/область ролей подтверждены: Только administrator клуба своей сети / manager назначенного клуба; только planned/in_progress. base_version — Session. Сохранённая строка становится excluded=true, остаются отметка/автор/история, физического DELETE нет. Уже excluded новый ID даёт результат без нового эффекта. В closed/cancelled изменение состава запрещено. Coach-only не исключает/не заменяет состав. Исключённая строка доступна разрешённой истории, но не новому контакту/отметке. Источник: https://github.com/StarMadeGalaxy/JudeOS/issues/26#issuecomment-6060282984. Реализовано #29; optional contact/admission не выдаются. Правила/атомарность/повтор — api/S1-CONTRACT.md.
          */
         post: operations["excludeRosterAthlete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/sessions/{session_id}/coaches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Прочитать историю назначений занятия
+         * @description Технический wire #29 для независимого review. Менеджер/administrator разрешённого клуба, явный owner его сети или platform; coach запрещён. Текущие права/tenant проверяются до ссылок, версий и operation_id. CSRF/exact HTTPS Origin для записей. Полная семантика, история, UTC Z, лимиты и повтор — api/TRAINING-CONTRACT.md. Никакого расписания/генерации/отметок/гостей/допуска этим срезом.
+         */
+        get: operations["getSessionCoaches"];
+        /**
+         * Задать текущих тренеров занятия
+         * @description Принятая целевая ревизия настройки Session; backend #30 ещё planned. Runtime #29 сохраняет прежние manager/administrator права и прежний request без reason; см. api/runtime-legacy/session-configuration-v1.json.
+         *
+         *     Принятая целевая ревизия: manager/coach-only запрещены. Administrator задаёт список в planned/in_progress; в closed/cancelled допускается только подмножество текущих назначений для отзыва доступа. Добавлено необязательное reason; no-op не меняет версию. Текущий backend29 реализует прежнюю ревизию.
+         */
+        put: operations["setSessionCoaches"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/sessions/{session_id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * изменить дату/время одного занятия
+         * @description Только administrator в принятой области сети/клуба. planned/in_progress; closed/cancelled запрещены для новой команды. Необязательная reason. Точный протокол версий/повторов/прав и отличия от действующего API — api/SESSION-CONFIGURATION-CONTRACT.md. Текущие права/ссылки проверяются до сохранённого результата; состояние/версия новой команды — после replay. Раздельные подтверждения, operation_id/base_version; no-op без изменения версии. Серверная реализация #30 planned.
+         */
+        post: operations["rescheduleSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/sessions/{session_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * отменить одно занятие без удаления фактов
+         * @description Только administrator в принятой области сети/клуба. planned/in_progress; closed/cancelled запрещены для новой команды. Необязательная reason. Точный протокол версий/повторов/прав и отличия от действующего API — api/SESSION-CONFIGURATION-CONTRACT.md. Текущие права/ссылки проверяются до сохранённого результата; состояние/версия новой команды — после replay. Раздельные подтверждения, operation_id/base_version; no-op без изменения версии. Серверная реализация #30 planned.
+         */
+        post: operations["cancelSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -295,6 +381,33 @@ export interface components {
             /** @description Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён. */
             reason?: string;
         };
+        StaffPage: {
+            items: components["schemas"]["StaffMember"][];
+        };
+        StaffMember: {
+            /** Format: uuid */
+            membership_id: string;
+            /** Format: uuid */
+            account_id: string;
+            login: string;
+            active: boolean;
+            /**
+             * @description Состояние membership для интерфейса. Pending ожидает установки пароля, active разрешён, revoked отозван. active остаётся совместимым признаком разрешения membership.
+             * @enum {string}
+             */
+            state: "pending" | "active" | "revoked";
+            grants: components["schemas"]["RoleGrant"][];
+        };
+        RoleGrant: {
+            role: components["schemas"]["Role"];
+            /** @enum {string} */
+            scope: "club" | "assigned_sessions";
+        };
+        /**
+         * @description Роль в клубе; сама по себе не выдаёт предметные права.
+         * @enum {string}
+         */
+        Role: "administrator" | "manager" | "coach";
         AthletePage: {
             items: components["schemas"]["AthleteSummary"][];
             /** Format: uuid */
@@ -374,6 +487,60 @@ export interface components {
             /** Format: uuid */
             operation_id: string;
             base_version: number;
+        };
+        SessionCoaches: {
+            /** Format: uuid */
+            session_id: string;
+            version: number;
+            coaches: components["schemas"]["SessionCoachAssignment"][];
+        };
+        SessionCoachAssignment: {
+            /** Format: uuid */
+            session_coach_id: string;
+            /** Format: uuid */
+            membership_id: string;
+            /** Format: date-time */
+            valid_from: string;
+            /** Format: date-time */
+            valid_until: string | null;
+        };
+        TrainingCommandConflict: {
+            /** @enum {string} */
+            code: "ENTITY_VERSION_CONFLICT" | "SESSION_VERSION_CONFLICT" | "OPERATION_ID_REUSED" | "ENTITY_ARCHIVED" | "ATHLETE_ARCHIVED" | "INTERVAL_OVERLAP" | "INTERVAL_ENDED" | "SESSION_ROSTER_LOCKED" | "COACH_INACTIVE" | "ROSTER_ALREADY_EXCLUDED";
+            message: string;
+            request_id: string;
+            /** Format: uuid */
+            operation_id: string;
+            current_version: number | null;
+        };
+        SetSessionCoachesRequest: {
+            /** Format: uuid */
+            operation_id: string;
+            base_version: number;
+            coach_membership_ids: string[];
+            /** @description Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён. */
+            reason?: string;
+        };
+        RescheduleSessionRequest: {
+            /** Format: uuid */
+            operation_id: string;
+            base_version: number;
+            /**
+             * Format: date-time
+             * @description UTC, RFC 3339 с Z; дата списка вычисляется в зоне клуба.
+             */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            /** @description Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён. */
+            reason?: string;
+        };
+        CancelSessionRequest: {
+            /** Format: uuid */
+            operation_id: string;
+            base_version: number;
+            /** @description Необязательная причина; отсутствие и пустая строка нормализуются одинаково; null запрещён. */
+            reason?: string;
         };
     };
     responses: {
@@ -996,6 +1163,97 @@ export interface operations {
             415: components["responses"]["Error415"];
             429: components["responses"]["Error429"];
             500: components["responses"]["Error500"];
+            503: components["responses"]["Error503"];
+        };
+    };
+    listStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Кандидат клуба, проверяется через активный ClubMembership; не разрешение.
+                 * @example 00000000-0000-4000-8000-000000000101
+                 */
+                tenant_id: components["parameters"]["TenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Список сотрудников клуба */
+            200: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "membership_id": "00000000-0000-4000-8000-000000000201",
+                     *           "account_id": "00000000-0000-4000-8000-000000000001",
+                     *           "login": "synthetic.coach",
+                     *           "active": true,
+                     *           "state": "active",
+                     *           "grants": [
+                     *             {
+                     *               "role": "coach",
+                     *               "scope": "assigned_sessions"
+                     *             }
+                     *           ]
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["StaffPage"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            /** @description Метод не поддерживается; Allow содержит разрешённые методы этого пути. */
+            405: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description Разрешённые методы этого конкретного пути.
+                     * @example GET
+                     */
+                    Allow?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "METHOD_NOT_ALLOWED",
+                     *       "message": "Синтетический пример безопасной ошибки.",
+                     *       "request_id": "synthetic-request-001"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["Error429"];
             503: components["responses"]["Error503"];
         };
     };
@@ -1770,6 +2028,491 @@ export interface operations {
                      *       "current_version": 2
                      *     }
                      */
+                    "application/json": components["schemas"]["S1CommandConflict"];
+                };
+            };
+            413: components["responses"]["Error413"];
+            415: components["responses"]["Error415"];
+            429: components["responses"]["Error429"];
+            500: components["responses"]["Error500"];
+            503: components["responses"]["Error503"];
+        };
+    };
+    getSessionCoaches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Кандидат клуба, проверяется через активный ClubMembership; не разрешение.
+                 * @example 00000000-0000-4000-8000-000000000101
+                 */
+                tenant_id: components["parameters"]["TenantId"];
+                /**
+                 * @description UUID объекта выбранного клуба.
+                 * @example 00000000-0000-4000-8000-000000000501
+                 */
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Синтетический пример; точные права/версии в TRAINING-CONTRACT.md. */
+            200: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "session_id": "00000000-0000-4000-8000-000000000501",
+                     *       "version": 1,
+                     *       "coaches": [
+                     *         {
+                     *           "session_coach_id": "00000000-0000-4000-8000-000000000706",
+                     *           "membership_id": "00000000-0000-4000-8000-000000000707",
+                     *           "valid_from": "2026-10-10T10:00:00Z",
+                     *           "valid_until": null
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SessionCoaches"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            /** @description Метод не поддерживается; Allow содержит разрешённые методы этого пути. */
+            405: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description Разрешённые методы этого конкретного пути.
+                     * @example GET, PUT
+                     */
+                    Allow?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "METHOD_NOT_ALLOWED",
+                     *       "message": "Синтетический пример безопасной ошибки.",
+                     *       "request_id": "synthetic-request-001"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["Error429"];
+            500: components["responses"]["Error500"];
+            503: components["responses"]["Error503"];
+        };
+    };
+    setSessionCoaches: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Токен GET /access/csrf, связанный с preauth или действующей сессией; не сохранять на диске.
+                 * @example synthetic-csrf-token-0000000000000001
+                 */
+                "X-CSRF-Token": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                /**
+                 * @description Кандидат клуба, проверяется через активный ClubMembership; не разрешение.
+                 * @example 00000000-0000-4000-8000-000000000101
+                 */
+                tenant_id: components["parameters"]["TenantId"];
+                /**
+                 * @description UUID объекта выбранного клуба.
+                 * @example 00000000-0000-4000-8000-000000000501
+                 */
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "operation_id": "00000000-0000-4000-8000-000000000708",
+                 *       "base_version": 1,
+                 *       "coach_membership_ids": [
+                 *         "00000000-0000-4000-8000-000000000707"
+                 *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["SetSessionCoachesRequest"];
+            };
+        };
+        responses: {
+            /** @description Синтетический пример; точные права/версии в TRAINING-CONTRACT.md. */
+            200: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description true при возврате исходного результата после проверки текущих прав/состояния.
+                     * @example false
+                     */
+                    "Operation-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "session_id": "00000000-0000-4000-8000-000000000501",
+                     *       "version": 1,
+                     *       "coaches": [
+                     *         {
+                     *           "session_coach_id": "00000000-0000-4000-8000-000000000706",
+                     *           "membership_id": "00000000-0000-4000-8000-000000000707",
+                     *           "valid_from": "2026-10-10T10:00:00Z",
+                     *           "valid_until": null
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SessionCoaches"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            /** @description Метод не поддерживается; Allow содержит разрешённые методы этого пути. */
+            405: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description Разрешённые методы этого конкретного пути.
+                     * @example GET, PUT
+                     */
+                    Allow?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "METHOD_NOT_ALLOWED",
+                     *       "message": "Синтетический пример безопасной ошибки.",
+                     *       "request_id": "synthetic-request-001"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Синтетический пример; точные права/версии в TRAINING-CONTRACT.md. */
+            409: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description true при возврате исходного результата после проверки текущих прав/состояния.
+                     * @example false
+                     */
+                    "Operation-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "SESSION_VERSION_CONFLICT",
+                     *       "message": "Синтетический конфликт версии.",
+                     *       "request_id": "synthetic-request-029",
+                     *       "operation_id": "00000000-0000-4000-8000-000000000708",
+                     *       "current_version": 2
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TrainingCommandConflict"];
+                };
+            };
+            413: components["responses"]["Error413"];
+            415: components["responses"]["Error415"];
+            429: components["responses"]["Error429"];
+            500: components["responses"]["Error500"];
+            503: components["responses"]["Error503"];
+        };
+    };
+    rescheduleSession: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Токен GET /access/csrf, связанный с preauth или действующей сессией; не сохранять на диске.
+                 * @example synthetic-csrf-token-0000000000000001
+                 */
+                "X-CSRF-Token": components["parameters"]["CsrfHeader"];
+                /**
+                 * @description Точное совпадение с настроенным HTTPS origin; отсутствие/null отклоняется.
+                 * @example https://judeos.example
+                 */
+                Origin: components["parameters"]["Origin"];
+            };
+            path: {
+                /**
+                 * @description Кандидат клуба, проверяется через активный ClubMembership; не разрешение.
+                 * @example 00000000-0000-4000-8000-000000000101
+                 */
+                tenant_id: components["parameters"]["TenantId"];
+                /**
+                 * @description Устойчивый ID занятия внутри проверенного tenant.
+                 * @example 00000000-0000-4000-8000-000000000501
+                 */
+                session_id: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Подтверждённый результат предложения; после ответа/replay перечитать текущий журнал. */
+            200: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description true при возврате исходного результата после проверки текущих прав/состояния.
+                     * @example false
+                     */
+                    "Operation-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingSession"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            /** @description Метод не поддерживается; Allow содержит разрешённые методы этого пути. */
+            405: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description Разрешённые методы этого конкретного пути.
+                     * @example POST
+                     */
+                    Allow?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "METHOD_NOT_ALLOWED",
+                     *       "message": "Синтетический пример безопасной ошибки.",
+                     *       "request_id": "synthetic-request-001"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID. */
+            409: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["S1CommandConflict"];
+                };
+            };
+            413: components["responses"]["Error413"];
+            415: components["responses"]["Error415"];
+            429: components["responses"]["Error429"];
+            500: components["responses"]["Error500"];
+            503: components["responses"]["Error503"];
+        };
+    };
+    cancelSession: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Токен GET /access/csrf, связанный с preauth или действующей сессией; не сохранять на диске.
+                 * @example synthetic-csrf-token-0000000000000001
+                 */
+                "X-CSRF-Token": components["parameters"]["CsrfHeader"];
+                /**
+                 * @description Точное совпадение с настроенным HTTPS origin; отсутствие/null отклоняется.
+                 * @example https://judeos.example
+                 */
+                Origin: components["parameters"]["Origin"];
+            };
+            path: {
+                /**
+                 * @description Кандидат клуба, проверяется через активный ClubMembership; не разрешение.
+                 * @example 00000000-0000-4000-8000-000000000101
+                 */
+                tenant_id: components["parameters"]["TenantId"];
+                /**
+                 * @description Устойчивый ID занятия внутри проверенного tenant.
+                 * @example 00000000-0000-4000-8000-000000000501
+                 */
+                session_id: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Подтверждённый результат предложения; после ответа/replay перечитать текущий журнал. */
+            200: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description true при возврате исходного результата после проверки текущих прав/состояния.
+                     * @example false
+                     */
+                    "Operation-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingSession"];
+                };
+            };
+            400: components["responses"]["Error400"];
+            401: components["responses"]["Error401"];
+            403: components["responses"]["Error403"];
+            404: components["responses"]["Error404"];
+            /** @description Метод не поддерживается; Allow содержит разрешённые методы этого пути. */
+            405: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    /**
+                     * @description Разрешённые методы этого конкретного пути.
+                     * @example POST
+                     */
+                    Allow?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "METHOD_NOT_ALLOWED",
+                     *       "message": "Синтетический пример безопасной ошибки.",
+                     *       "request_id": "synthetic-request-001"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Версия, состояние или неактуальная связь; без частичного эффекта. Точный повтор конфликта версии терминален для ID. */
+            409: {
+                headers: {
+                    /**
+                     * @description Приватные данные и токены не кешируются.
+                     * @example no-store
+                     */
+                    "Cache-Control"?: "no-store";
+                    /**
+                     * @description Безопасная корреляция диагностики; не секрет и не ID человека.
+                     * @example synthetic-request-001
+                     */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["S1CommandConflict"];
                 };
             };

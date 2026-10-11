@@ -17,6 +17,11 @@ const ids = new Set([
   "addKnownRosterAthlete",
   "excludeRosterAthlete",
   "listAthletes",
+  "rescheduleSession",
+  "cancelSession",
+  "getSessionCoaches",
+  "setSessionCoaches",
+  "listStaff",
 ]);
 let count = 0;
 for (const [url, methods] of Object.entries(snapshot.paths))
@@ -30,5 +35,5 @@ for (const [group, entries] of Object.entries(snapshot.components))
   for (const [name, schema] of Object.entries(entries))
     assert.deepEqual(schema, accepted.components[group][name]);
 console.log(
-  `${count} operations and all snapshot components match accepted main7219d0d exactly.`,
+  `${count} operations and all snapshot components match owner-accepted contract9fc3267 exactly.`,
 );

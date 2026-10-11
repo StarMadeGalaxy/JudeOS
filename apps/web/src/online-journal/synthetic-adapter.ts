@@ -16,7 +16,11 @@ import {
   fixtureNow,
   tenantId,
   uuid,
+  staffFixtures,
+  coachFixtures,
+  coachMembership,
 } from "./fixtures";
+import { canonicalUTC, compareUTC } from "./club-time";
 
 export type Fault =
   | "none"
@@ -28,6 +32,10 @@ export type Fault =
   | "404"
   | "conflict";
 type Stored = { canonical: string; value?: Result; conflict?: Failure };
+type ConfigurationCommand = Extract<
+  Command,
+  { operation: "rescheduleSession" | "cancelSession" | "setSessionCoaches" }
+>;
 const clone = <T>(value: T): T => structuredClone(value);
 const sorted = (value: unknown): unknown =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -42,6 +50,24 @@ function canonicalCommand(command: Command) {
   if (normalized.operation === "setAttendance") normalized.body.reason ??= "";
   if (normalized.operation === "createSessionGuest")
     normalized.body.phone ??= null;
+  if (
+    normalized.operation === "rescheduleSession" ||
+    normalized.operation === "cancelSession" ||
+    normalized.operation === "setSessionCoaches"
+  ) {
+    normalized.body.reason ??= "";
+    normalized.body.operation_id = normalized.body.operation_id.toLowerCase();
+    normalized.sessionId = normalized.sessionId.toLowerCase();
+    if (normalized.operation === "setSessionCoaches")
+      normalized.body.coach_membership_ids =
+        normalized.body.coach_membership_ids
+          .map((id) => id.toLowerCase())
+          .sort();
+    if (normalized.operation === "rescheduleSession") {
+      normalized.body.starts_at = canonicalUTC(normalized.body.starts_at)!;
+      normalized.body.ends_at = canonicalUTC(normalized.body.ends_at)!;
+    }
+  }
   return JSON.stringify(
     sorted({ api: "v1", tenantId, actorId, command: normalized }),
   );
@@ -51,8 +77,11 @@ function canonicalCommand(command: Command) {
 export class SyntheticJournalAdapter implements JournalAdapter {
   readonly mode = "synthetic" as const;
   readonly canManage: boolean;
+  readonly canConfigure: boolean;
   private data = fixtures();
   private athletes = knownAthletes();
+  private staffData = staffFixtures();
+  private assignments = coachFixtures();
   private results = new Map<string, Stored>();
   private fault: Fault = "none";
   private allowed = true;
@@ -65,6 +94,7 @@ export class SyntheticJournalAdapter implements JournalAdapter {
     readonly delay = 180,
   ) {
     this.canManage = role !== "coach";
+    this.canConfigure = role === "administrator";
   }
   failNext(fault: Fault) {
     this.fault = fault;
@@ -182,6 +212,191 @@ export class SyntheticJournalAdapter implements JournalAdapter {
       next_cursor: items.length > 2 ? items[1].athlete_id : null,
     });
   }
+  async staff(): Promise<Schema["StaffPage"]> {
+    await this.wait();
+    this.checkAccess();
+    if (!this.canManage) this.error(403, "FORBIDDEN");
+    this.rejectFault(this.takeFault());
+    return clone({ items: this.staffData });
+  }
+  async coaches(id: string): Promise<Schema["SessionCoaches"]> {
+    await this.wait();
+    const journal = this.target(id);
+    if (!this.canManage) this.error(403, "FORBIDDEN");
+    this.rejectFault(this.takeFault());
+    return clone({
+      session_id: id,
+      version: journal.session.version,
+      coaches: this.assignments.get(id)!,
+    });
+  }
+  private configure(
+    command: ConfigurationCommand,
+    journal: Journal,
+    fault: Fault,
+  ): { value: Result; replayed: boolean } {
+    const { session } = journal;
+    const keys = [
+      "operation_id",
+      "base_version",
+      "reason",
+      ...(command.operation === "rescheduleSession"
+        ? ["starts_at", "ends_at"]
+        : command.operation === "setSessionCoaches"
+          ? ["coach_membership_ids"]
+          : []),
+    ];
+    if (
+      Object.keys(command.body).some((key) => !keys.includes(key)) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        command.body.operation_id,
+      ) ||
+      !Number.isSafeInteger(command.body.base_version) ||
+      command.body.base_version < 1 ||
+      (command.body.reason !== undefined &&
+        (typeof command.body.reason !== "string" ||
+          command.body.reason.length > 500))
+    )
+      this.error(400, "INVALID_REQUEST");
+    if (command.operation === "rescheduleSession") {
+      const comparison = compareUTC(
+        command.body.ends_at,
+        command.body.starts_at,
+      );
+      if (comparison === null || comparison <= 0)
+        this.error(400, "INVALID_REQUEST");
+    }
+    const rows = this.assignments.get(session.session_id)!;
+    const current = rows
+      .filter((row) => row.valid_until === null)
+      .map((row) => row.membership_id);
+    let desired = current;
+    if (command.operation === "setSessionCoaches") {
+      if (
+        !Array.isArray(command.body.coach_membership_ids) ||
+        command.body.coach_membership_ids.length > 20 ||
+        command.body.coach_membership_ids.some(
+          (id) =>
+            typeof id !== "string" ||
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              id,
+            ),
+        ) ||
+        new Set(command.body.coach_membership_ids.map((id) => id.toLowerCase()))
+          .size !== command.body.coach_membership_ids.length
+      )
+        this.error(400, "INVALID_REQUEST");
+      desired = command.body.coach_membership_ids.map((id) => id.toLowerCase());
+      for (const id of desired)
+        if (!this.staffData.some((member) => member.membership_id === id))
+          this.error(404, "NOT_FOUND");
+    }
+    const canonical = canonicalCommand(command);
+    const key = command.body.operation_id.toLowerCase();
+    const reject = (
+      code:
+        | Schema["S1CommandConflict"]["code"]
+        | Schema["TrainingCommandConflict"]["code"],
+      version: number | null = null,
+    ): never => {
+      const conflict = {
+        code,
+        message: "Синтетический конфликт настройки занятия.",
+        request_id: "synthetic-journal",
+        operation_id: command.body.operation_id,
+        current_version: version,
+      } as Failure;
+      this.results.set(key, { canonical, conflict: clone(conflict) });
+      throw new JournalError(409, conflict);
+    };
+    const previous = this.results.get(key);
+    if (previous) {
+      if (previous.canonical !== canonical)
+        throw new JournalError(
+          409,
+          this.s1(command, "OPERATION_ID_REUSED", null),
+        );
+      if (previous.conflict)
+        throw new JournalError(409, clone(previous.conflict));
+      return { value: clone(previous.value!), replayed: true };
+    }
+    const locked = session.state === "closed" || session.state === "cancelled";
+    if (command.operation === "setSessionCoaches") {
+      if (locked && desired.some((id) => !current.includes(id)))
+        reject("SESSION_ROSTER_LOCKED");
+      for (const id of desired.filter((id) => !current.includes(id))) {
+        const member = this.staffData.find(
+          (member) => member.membership_id === id,
+        )!;
+        if (
+          !member.active ||
+          member.state !== "active" ||
+          !member.grants.some(
+            (grant) =>
+              grant.role === "coach" && grant.scope === "assigned_sessions",
+          )
+        )
+          reject("COACH_INACTIVE");
+      }
+    } else if (locked)
+      reject(
+        session.state === "closed" ? "SESSION_CLOSED" : "SESSION_CANCELLED",
+      );
+    if (fault === "conflict") session.version += 1;
+    if (session.version !== command.body.base_version)
+      reject("SESSION_VERSION_CONFLICT", session.version);
+    let changed = false;
+    let result: Result;
+    if (command.operation === "rescheduleSession") {
+      changed =
+        compareUTC(command.body.starts_at, session.starts_at) !== 0 ||
+        compareUTC(command.body.ends_at, session.ends_at) !== 0;
+      if (changed) {
+        session.starts_at = command.body.starts_at;
+        session.ends_at = command.body.ends_at;
+        session.version += 1;
+      }
+      result = clone(session);
+    } else if (command.operation === "cancelSession") {
+      changed = true;
+      session.state = "cancelled";
+      session.version += 1;
+      result = clone(session);
+    } else {
+      changed =
+        current.length !== desired.length ||
+        desired.some((id) => !current.includes(id));
+      if (changed) {
+        const now = new Date(
+          Date.parse(fixtureNow) + ++this.sequence,
+        ).toISOString();
+        for (const row of rows)
+          if (row.valid_until === null && !desired.includes(row.membership_id))
+            row.valid_until = now;
+        for (const id of desired)
+          if (!current.includes(id))
+            rows.push({
+              session_coach_id: uuid(++this.sequence + 20000),
+              membership_id: id,
+              valid_from: now,
+              valid_until: null,
+            });
+        session.version += 1;
+        if (desired.includes(coachMembership))
+          this.assigned.add(session.session_id);
+        else this.assigned.delete(session.session_id);
+      }
+      result = {
+        session_id: session.session_id,
+        version: session.version,
+        coaches: clone(rows),
+      };
+    }
+    if (changed) this.history.push(clone(command));
+    this.results.set(key, { canonical, value: clone(result) });
+    if (fault === "lost-response") this.error(0, "SERVICE_UNAVAILABLE");
+    return { value: clone(result), replayed: false };
+  }
   private s1(
     command: Command,
     code: Schema["S1CommandConflict"]["code"],
@@ -208,8 +423,19 @@ export class SyntheticJournalAdapter implements JournalAdapter {
     const journal = this.target(command.sessionId);
     if (command.operation === "excludeRosterAthlete" && !this.canManage)
       this.error(403, "FORBIDDEN");
+    const configuration =
+      command.operation === "rescheduleSession" ||
+      command.operation === "cancelSession" ||
+      command.operation === "setSessionCoaches";
+    if (configuration && !this.canConfigure) this.error(403, "FORBIDDEN");
     const fault = this.takeFault();
     this.rejectFault(fault);
+    if (
+      command.operation === "rescheduleSession" ||
+      command.operation === "cancelSession" ||
+      command.operation === "setSessionCoaches"
+    )
+      return this.configure(command, journal, fault);
     const { session } = journal;
     if (session.state === "cancelled")
       this.conflict(command, "SESSION_CANCELLED");
